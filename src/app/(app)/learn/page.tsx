@@ -58,6 +58,7 @@ function CoursePath({ courseSlug }: { courseSlug: string }) {
     data: courseData,
     loading: courseLoading,
     error: courseError,
+    code: courseErrorCode,
   } = useApiData<{ course: CourseWithUnits }>(`/api/courses/${encodeURIComponent(courseSlug)}`);
   const [completed, setCompleted] = useState<Set<string> | null>(null);
   const [claimed, setClaimed] = useState<Set<string>>(() => new Set());
@@ -92,6 +93,18 @@ function CoursePath({ courseSlug }: { courseSlug: string }) {
     );
   }
 
+  /*
+   * ⚠ Курс нь ОЛДОХГҮЙ байж болно: админ түүнийг устгасан (эсвэл slug-ийг
+   * сольсон) ч хэрэглэгчийн `activeCourseSlug` тэр рүү зааж хоцордог.
+   * Тэр үед хар улаан алдаа харуулбал сурагч МУХАРДАНА — дэлгэц дээр
+   * гарах ямар ч зам байхгүй, курсээ солих товч ч үгүй.
+   *
+   * Тиймээс 404-ыг «курс сонгоогүй»-тэй ИЖИЛ гэж үзнэ: тэр төлөв нь
+   * «Курс сонгох» товчтой бөгөөд сурагч өөрөө гарч чадна. Бусад алдаа
+   * (сүлжээ, 500) нь ХЭВЭЭР харагдана — тэд дахин оролдоход зөв болдог
+   * тул нуух нь зөв биш.
+   */
+  if (courseErrorCode === "not-found") return <NoCourseYet />;
   if (courseError) return <ErrorNote message={courseError} />;
   const course = courseData?.course;
   if (!course) return <NoCourseYet />;
