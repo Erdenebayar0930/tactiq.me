@@ -31,6 +31,18 @@ const CHARACTER_SETS = {
     { src: "/images/characters/checkers/boy-tablets.webp", w: 322, h: 398 },
     { src: "/images/characters/checkers/boy-compass.webp", w: 442, h: 400 },
   ],
+  /** Шатрын курс — шатар тоглож буй сурагчид. */
+  chess: [
+    { src: "/images/characters/chess/girl-books.webp", w: 553, h: 400 },
+    { src: "/images/characters/chess/boy-board.webp", w: 284, h: 400 },
+    { src: "/images/characters/chess/girl-tablet.webp", w: 524, h: 400 },
+    { src: "/images/characters/chess/boy-glasses.webp", w: 372, h: 400 },
+    { src: "/images/characters/chess/boy-globe.webp", w: 523, h: 400 },
+    { src: "/images/characters/chess/robot.webp", w: 256, h: 400 },
+    { src: "/images/characters/chess/girl-telescope.webp", w: 557, h: 400 },
+    { src: "/images/characters/chess/boy-tablets.webp", w: 412, h: 400 },
+    { src: "/images/characters/chess/boy-compass.webp", w: 486, h: 400 },
+  ],
 } as const;
 
 export type CharacterSet = keyof typeof CHARACTER_SETS;
