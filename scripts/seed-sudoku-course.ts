@@ -80,20 +80,28 @@ type Unit = {
   lessons: { title: string; xp: number; items: Spec[] }[];
 };
 
+/** Хүндрэл тус бүрийн НИЙТ хөлөг. */
+const TOTAL_PER_LEVEL = 20;
+
 /**
- * Хүндрэл бүрийн хөлгийг хэд хэдэн ХИЧЭЭЛД хуваана.
+ * НЭГ хичээлд хэдэн хөлөг байх вэ — хүндрэлээс хамаарна.
  *
- * ⚠ 20 хөлгийг НЭГ хичээлд хийвэл тэр нь платформ дээрх хамгийн урт
- * хичээл болж, нэг суултад 20 судоку бодох шаардлага гарна. Мөн замын
- * зураг (`lib/tactiq/path.ts`) нь ХИЧЭЭЛ тутамд нэг цэг зурдаг тул урт
- * хичээл нь замыг УРТ БИШ, харин ХООСОН болгоно — ахиц харагдахаа болино.
+ * ⚠ ОНОО ЯАГААД ЭНД ШИЙДЭГДЭЖ БАЙНА: XP нь ХИЧЭЭЛ дуусгахад олгогддог
+ * (`api/learn/lessons/[lessonId]/complete`) — тэр route нь лиг, хосын
+ * даалгавар, дараалал, найзын урамшууллын «төв зангилаа» тул дасгал
+ * тутамд оноо олгохоор хуваах нь эдгээр бүгдийг давхар тоолох эрсдэлтэй.
+ * Харин хичээлд ГАНЦ судоку байвал «бөглөмөгц оноо» нь аль хэдийн
+ * туршигдсан замаар ӨӨРӨӨ биелнэ. Тиймээс дунд, хүнд нь 1 хөлөгтэй.
  *
- * ⚠ 5 × 3 хүндрэл = нэгж тутам 15 хичээл. `CHEST_EVERY` нь 3 тул
- * (`path.ts`) хайрцаг нь 15-д ТЭГШ хуваагдаж, нэгж бүрд 5 хайрцаг
- * тэнцүү зайтай гарна. Эдгээр тоог өөрчлөх бол тэр хуваагдалтыг санаарай.
+ * ⚠ Хөнгөн нь 2 хөлөгтэй: 4×4 хөнгөн судоку нь хормын зуур бөглөгддөг тул
+ * ганцаар нь бүтэн хичээл болгоход зам хэт хуваагдмал болно. Дунд, хүнд
+ * (ялангуяа 9×9) нь нэг хөлөг нь өөрөө хэдэн минутын ажил.
  */
-const LESSONS_PER_LEVEL = 5;
-const PER_LESSON = 4;
+const PER_LESSON: Record<Level, number> = {
+  easy: 2,
+  medium: 1,
+  hard: 1,
+};
 
 /**
  * Хөлөг бүрийн ӨВӨРМӨЦ seed.
@@ -107,8 +115,6 @@ function seedFor(size: SudokuSize, levelIndex: number, index: number): number {
   return size * 10_000 + levelIndex * 1_000 + index;
 }
 
-/** Хүндрэл тус бүрийн нийт хөлөг — сурагчид «12/20» гэж харагдана. */
-const TOTAL_PER_LEVEL = LESSONS_PER_LEVEL * PER_LESSON;
 
 const LEVELS: { level: Level; label: string }[] = [
   { level: "easy", label: "хөнгөн" },
@@ -197,16 +203,20 @@ function sizeUnit(
     title,
     color,
     /*
-     * Хүндрэл бүр → `LESSONS_PER_LEVEL` хичээл. Дугаарлалт нь ХҮНДРЭЛ
-     * дамнасан (1/20 … 20/20) — сурагч 5 хичээлийг НЭГ үргэлжилсэн
-     * дасгал гэж харах ёстой, хичээл тус бүрд 1/4-ээс дахин эхлэхгүй.
+     * Хүндрэл бүр → `TOTAL_PER_LEVEL` хөлгийг `PER_LESSON[level]`-ээр
+     * хуваасан тооны хичээл. Дугаарлалт нь ХҮНДРЭЛ дамнасан (1/20 …
+     * 20/20) — сурагч тэдгээрийг НЭГ үргэлжилсэн дасгал гэж харах ёстой,
+     * хичээл тутамд 1-ээс дахин эхлэхгүй.
      */
-    lessons: LEVELS.flatMap(({ level, label }, levelIndex) =>
-      Array.from({ length: LESSONS_PER_LEVEL }, (_, lessonIndex) => ({
+    lessons: LEVELS.flatMap(({ level, label }, levelIndex) => {
+      const perLesson = PER_LESSON[level];
+      const lessonCount = TOTAL_PER_LEVEL / perLesson;
+
+      return Array.from({ length: lessonCount }, (_, lessonIndex) => ({
         title: `${size}×${size} ${label} ${lessonIndex + 1}`,
         xp: xp[levelIndex],
-        items: Array.from({ length: PER_LESSON }, (_, slot): Spec => {
-          const index = lessonIndex * PER_LESSON + slot;
+        items: Array.from({ length: perLesson }, (_, slot): Spec => {
+          const index = lessonIndex * perLesson + slot;
           const tips = TIPS[size][level];
 
           return {
@@ -218,8 +228,8 @@ function sizeUnit(
             explanation: tips[index % tips.length],
           };
         }),
-      }))
-    ),
+      }));
+    }),
   };
 }
 
@@ -306,13 +316,13 @@ const UNITS: Unit[] = [
     ],
   },
   /*
-   * ⚠ XP нь одоо платформын ХЭВИЙН хязгаарт (10-25) буцлаа: хичээл бүр
-   * 4 дасгалтай тул бусад курсийн хичээлтэй жишиж болохуйц болов. Хуучин
-   * 40-60 нь 20 дасгалтай НЭГ хичээлд зориулагдсан байсан.
+   * XP — [хөнгөн, дунд, хүнд]. Хичээл нь 1-2 хөлөгтэй тул платформын
+   * хэвийн хязгаарт (8-20) байна. Хөлөг том, хүнд болох тусам өснө:
+   * 9×9 хүнд нэг хөлөг нь 4×4 хөнгөн хоёроос хамаагүй их ажил.
    */
-  sizeUnit(4, "4×4 — хөнгөнөөс хүнд", "emerald", [10, 12, 15]),
-  sizeUnit(6, "6×6 — хайрцаг дөрвөлжин биш", "amber", [12, 15, 18]),
-  sizeUnit(9, "9×9 — жинхэнэ судоку", "violet", [15, 18, 20]),
+  sizeUnit(4, "4×4 — хөнгөнөөс хүнд", "emerald", [8, 10, 12]),
+  sizeUnit(6, "6×6 — хайрцаг дөрвөлжин биш", "amber", [10, 12, 15]),
+  sizeUnit(9, "9×9 — жинхэнэ судоку", "violet", [12, 15, 20]),
 ];
 
 /** Дасгалын хөлгийг бэлдэж, ЗААВАЛ эргүүлж шалгана. */
