@@ -234,6 +234,16 @@ export async function getLessonOrder(courseSlug: string): Promise<string[]> {
   return unitIds.flatMap((id) => byUnit.get(id) ?? []);
 }
 
+/**
+ * Сангийн мөрийг клиентийн дасгал болгоно.
+ *
+ * ⚠ `type` нь ЦАГААН ЖАГСААЛТААР шүүгддэг: жагсаалтад БАЙХГҮЙ төрөл
+ * чимээгүйхэн "choice" болж хувирна. Энэ нь сангаас танихгүй мөр ирэхэд
+ * дэлгэц эвдрэхээс сэргийлэх зорилготой — ГЭВЧ шинэ төрөл нэмэхэд ЭНД
+ * нэмэхээ мартвал тэр дасгал сонголтгүй "choice" болж, сурагчид ХООСОН
+ * харагдана (`matchstick` нэмэхэд яг тэр болсон). Шинэ төрөл нэмэх бол
+ * `lib/tactiq/courses.ts`-ийн `ExerciseType`-тай ХАМТ энд нэмнэ.
+ */
 function toExerciseData(row: typeof exercises.$inferSelect): ExerciseData {
   return {
     id: row.id,
@@ -247,6 +257,7 @@ function toExerciseData(row: typeof exercises.$inferSelect): ExerciseData {
       row.type === "net-puzzle" ||
       row.type === "slide-puzzle" ||
       row.type === "sudoku" ||
+      row.type === "matchstick" ||
       row.type === "code-maze" ||
       row.type === "go-move" ||
       row.type === "memory-game"
