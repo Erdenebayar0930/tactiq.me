@@ -33,10 +33,22 @@ import {
   type SudokuSize,
 } from "../src/lib/puzzles/sudoku";
 
-const [emailArg] = process.argv.slice(2);
+const args = process.argv.slice(2);
+
+/**
+ * ⚠ `--force` нь БАЙГАА хичээлийн дасгалыг ШИНЭЧИЛНЭ (хуучныг устгаад
+ * шинээр бичнэ). Туггүй үед скрипт зөвхөн БАЙХГҮЙГ нэмнэ — sibling
+ * seed-үүдийн (`seed-puzzles-course.ts`) гэрээ тэр хэвээр.
+ *
+ * Дасгалыг сольсон ч ЯВЦ АЛДАГДАХГҮЙ: `lesson_progress` нь ХИЧЭЭЛИЙН
+ * түвшинд (`lessonId`) бүртгэгддэг, дасгал руу заадаггүй бөгөөд дасгал
+ * руу өөр ямар ч хүснэгт заадаггүй. Хичээлийн XP-г ч дагуулж шинэчилнэ.
+ */
+const force = args.includes("--force");
+const [emailArg] = args.filter((arg) => !arg.startsWith("--"));
 
 if (!emailArg) {
-  console.error("Хэрэглээ: npm run seed:sudoku -- <email>");
+  console.error("Хэрэглээ: npm run seed:sudoku -- <email> [--force]");
   process.exit(1);
 }
 
@@ -68,11 +80,131 @@ type Unit = {
   lessons: { title: string; xp: number; items: Spec[] }[];
 };
 
+/** Хүндрэлийн хичээл тус бүрд хэдэн хөлөг вэ. */
+const PER_LESSON = 20;
+
+/**
+ * Хөлөг бүрийн ӨВӨРМӨЦ seed.
+ *
+ * ⚠ ДАВХАРДВАЛ ижил хөлөг хоёр хичээлд гарна — сурагч тэр дор нь анзаарна.
+ * Тиймээс (хэмжээ, хүндрэл, индекс) гурвыг зайтай зурвасуудад хуваана:
+ * 4×4 хөнгөн → 40000…40019, 4×4 дунд → 41000…, 9×9 хүнд → 92000… .
+ * «Дүрэм» нэгжийн 101/102-той ч хөндөлдөхгүй.
+ */
+function seedFor(size: SudokuSize, levelIndex: number, index: number): number {
+  return size * 10_000 + levelIndex * 1_000 + index;
+}
+
+const LEVELS: { level: Level; label: string }[] = [
+  { level: "easy", label: "хөнгөн" },
+  { level: "medium", label: "дунд" },
+  { level: "hard", label: "хүнд" },
+];
+
+/**
+ * Тайлбарын сан — хэмжээ, хүндрэл тус бүрд.
+ *
+ * ⚠ 20 хөлөгт ИЖИЛ тайлбар давтвал сурагч уншихаа болино. Тиймээс хөлөг
+ * тус бүрд эндээс дараалан (индексээр) өөр зөвлөгөө хуваарилна — бүгд
+ * тухайн хэмжээ/хүндрэлд ҮНЭХЭЭР хамаатай байхаар бичсэн.
+ */
+const TIPS: Record<SudokuSize, Record<Level, string[]>> = {
+  4: {
+    easy: [
+      "Нэг мөрөнд аль тоо дутаж байгааг хар — 4 тооны гурав нь байвал дөрөв дэх нь шууд тодорно.",
+      "Хайрцаг бүр 2×2. Гурван нүд бөглөгдсөн хайрцгийг эрж хай.",
+      "Багана руу ч ижил дүрмээр хар — мөр, багана, хайрцаг гурвуулаа хүчинтэй.",
+    ],
+    medium: [
+      "Нэг нүдэнд хоёр тоо тохирвол түүнийг ОРХИ — өөр нүднээс эхэлбэл дараа нь өөрөө тодорно.",
+      "Аль тоо хамгийн олон удаа өгөгдсөн бэ? Түүнийг бүх хайрцгаас хайж эхэл.",
+      "Хоёр дүрэм зэрэг шалгавал (мөр БА хайрцаг) боломж хурдан хумигдана.",
+    ],
+    hard: [
+      "Цөөн тоо өгөгдсөн ч ГАНЦ шийдэлтэй — таах шаардлагагүй, зөвхөн тэвчээр.",
+      "Нүд бүрийн боломжийг санаж бод: хамгийн цөөн боломжтойгоос эхэл.",
+      "Бүх нүд тодорхойгүй санагдвал тоо тус бүрээр (1, 2, 3, 4) хайрцгуудыг шүү.",
+    ],
+  },
+  6: {
+    easy: [
+      "Хайрцаг нь 2 мөр × 3 багана — ДӨРВӨЛЖИН БИШ. Зузаан шугамууд хилийг заана.",
+      "6 тооны тав нь байвал зургаа дахь нь шууд тодорно.",
+      "Хайрцаг өргөн тул МӨРӨӨС илүү багана руу анхаарвал хурдан гарна.",
+    ],
+    medium: [
+      "Хайрцаг 2×3 тул нэг мөр хоёр хайрцгийг л хөндөнө — тэр хоёрыг хамт шалга.",
+      "Аль тоо хамгийн олон өгөгдсөн бэ? Түүнийг зургаан хайрцгаас дараалан хай.",
+      "Багана нь гурван хайрцгийг хөндөнө — багананы шалгалт илүү их мэдээлэл өгнө.",
+    ],
+    hard: [
+      "Нүд бүрийн боломжуудыг санаж бодох чадвар эндээс хөгжинө.",
+      "Хоёр нүдэнд ижил хоёр тоо л тохирвол тэр хоёр тоо бусад нүднээс хасагдана.",
+      "Ганц шийдэлтэй тул мухардвал буруу тавьсан нүд байна — эргэж шалга.",
+    ],
+  },
+  9: {
+    easy: [
+      "Том хөлөг ч ижил гурван дүрэм. Нэг хайрцгийг бүтэн дуусгахыг хичээ.",
+      "Тоо тус бүрээр (1, 2, 3…) бүх хайрцгийг шалгах арга хамгийн тогтвортой.",
+      "Олон тоо өгөгдсөн мөр, багана, хайрцгаас эхэл — тэнд боломж хамгийн цөөн.",
+    ],
+    medium: [
+      "Гурван хайрцгийн мөрийг хамт хар: хоёрт нь тоо байвал гуравдахь нь хумигдана.",
+      "Нэг хайрцагт тухайн тоо зөвхөн нэг нүдэнд тохирвол тэр нь шийдэгдсэн.",
+      "Бүх нүдийг зэрэг бодох гэж БИТГИЙ хичээ — нэг тоог сонгоод түүнийг л ажилла.",
+    ],
+    hard: [
+      "Ганц шийдэлтэй тул ТААХ шаардлагагүй — ямагт логикоор гарах нүд байна.",
+      "Хоёр нүдэнд ижил хоёр тоо л тохирвол бусад нүднээс тэр хоёрыг хас.",
+      "Ахиц гарахаа болиход тоо тус бүрээр бүх хайрцгийг эргүүлж шүү — нэг нь ил гарна.",
+    ],
+  },
+};
+
+/**
+ * Хэмжээ тус бүрийн нэгж — хүндрэл бүрд `PER_LESSON` хөлөгтэй гурван хичээл.
+ *
+ * ⚠ XP: платформын бусад хичээл 1-3 дасгалтай, 10-30 XP авдаг. Энд хичээл
+ * бүр 20 хөлөгтэй тул XP-г өсгөсөн, ГЭХДЭЭ дасгал тутмын харьцаагаар
+ * (~10 XP) БИШ — эдгээр нь шинэ зүйл ЗААХ хичээл биш, ижил дүрмийг
+ * давтах ДАСГАЛ. Тэр харьцаагаар өгвөл нэг хичээл 200 XP болж, лигийн
+ * тэнцвэрийг бусад курсийн эсрэг эвдэнэ. Хичээл тус бүрийн XP-г админаас
+ * (`/admin/courses/sudoku`) хүссэн үед засаж болно.
+ */
+function sizeUnit(
+  size: SudokuSize,
+  title: string,
+  color: string,
+  xp: [number, number, number]
+): Unit {
+  return {
+    title,
+    color,
+    lessons: LEVELS.map(({ level, label }, levelIndex) => ({
+      title: `${size}×${size} ${label}`,
+      xp: xp[levelIndex],
+      items: Array.from({ length: PER_LESSON }, (_, index): Spec => {
+        const tips = TIPS[size][level];
+
+        return {
+          kind: "sudoku",
+          prompt: `${size}×${size} ${label} — ${index + 1}/${PER_LESSON}`,
+          size,
+          level,
+          seed: seedFor(size, levelIndex, index),
+          explanation: tips[index % tips.length],
+        };
+      }),
+    })),
+  };
+}
+
 /**
  * Хөтөлбөр.
  *
- * `seed` нь нэгж тус бүрд өөр зуутаар (100, 200, …) — санамсаргүй ижил
- * хөлөг хоёр хичээлд давхардахаас сэргийлнэ.
+ * Эхний нэгж нь ДҮРМИЙГ заана (гараар бичсэн асуулт + хоёр жижиг хөлөг),
+ * дараагийн гурав нь хэмжээ тус бүрийн дасгал (програмчлан үүсгэгдсэн).
  */
 const UNITS: Unit[] = [
   {
@@ -129,6 +261,15 @@ const UNITS: Unit[] = [
               "4×4 нь дөрвөн 2×2 хайрцагт хуваагдана. Зузаан шугамууд хайрцгийн хилийг заана.",
           },
           {
+            kind: "choice",
+            prompt: "6×6 судокугийн хайрцаг ямар хэмжээтэй вэ?",
+            options: ["2 мөр × 3 багана", "3×3", "6×6", "2×2"],
+            correct: 0,
+            explanation:
+              "6×6-д хайрцаг нь ДӨРВӨЛЖИН БИШ — 2 мөр, 3 багана. Үүнийг мартвал " +
+              "хайрцгийн шалгалт бүхэлдээ буруу болно.",
+          },
+          {
             kind: "sudoku",
             prompt: "Хайрцаг бүрийг шалгаж бөглө.",
             size: 4,
@@ -141,189 +282,9 @@ const UNITS: Unit[] = [
       },
     ],
   },
-  {
-    title: "4×4 — хөнгөнөөс хүнд",
-    color: "emerald",
-    lessons: [
-      {
-        title: "4×4 хөнгөн",
-        xp: 15,
-        items: [
-          {
-            kind: "sudoku",
-            prompt: "4×4 хөнгөн. Олон тоо өгөгдсөн.",
-            size: 4,
-            level: "easy",
-            seed: 201,
-            explanation: "Нэг мөрөнд аль тоо дутаж байгааг бодох нь хамгийн хурдан арга.",
-          },
-          {
-            kind: "sudoku",
-            prompt: "Дахин 4×4 хөнгөн.",
-            size: 4,
-            level: "easy",
-            seed: 202,
-            explanation: "Дүрэм гурвыг дараалан шалгах дадал эндээс тогтоно.",
-          },
-        ],
-      },
-      {
-        title: "4×4 дунд",
-        xp: 20,
-        items: [
-          {
-            kind: "sudoku",
-            prompt: "4×4 дунд. Өгөгдсөн тоо цөөрлөө.",
-            size: 4,
-            level: "medium",
-            seed: 211,
-            explanation:
-              "Нэг нүдэнд хоёр тоо тохирвол тэр нүдийг ОРХИ — өөр нүднээс эхэлбэл " +
-              "дараа нь тэр өөрөө тодорно.",
-          },
-          {
-            kind: "sudoku",
-            prompt: "Дахин 4×4 дунд.",
-            size: 4,
-            level: "medium",
-            seed: 212,
-            explanation: "Таамаглах шаардлагагүй — ямагт логикоор гарах нүд байдаг.",
-          },
-        ],
-      },
-      {
-        title: "4×4 хүнд",
-        xp: 25,
-        items: [
-          {
-            kind: "sudoku",
-            prompt: "4×4 хүнд. Хамгийн цөөн тоо өгөгдсөн.",
-            size: 4,
-            level: "hard",
-            seed: 221,
-            explanation:
-              "Хүнд хөлөг ч ГАНЦ шийдэлтэй — тэвчээртэй шалгавал зөв нүд ямагт олдоно.",
-          },
-        ],
-      },
-    ],
-  },
-  {
-    title: "6×6 — хайрцаг дөрвөлжин биш",
-    color: "amber",
-    lessons: [
-      {
-        title: "6×6 хөнгөн",
-        xp: 20,
-        items: [
-          {
-            kind: "choice",
-            prompt: "6×6 судокугийн хайрцаг ямар хэмжээтэй вэ?",
-            options: ["2 мөр × 3 багана", "3×3", "6×6", "2×2"],
-            correct: 0,
-            explanation:
-              "6×6-д хайрцаг нь ДӨРВӨЛЖИН БИШ — 2 мөр, 3 багана. Үүнийг мартвал " +
-              "хайрцгийн шалгалт бүхэлдээ буруу болно.",
-          },
-          {
-            kind: "sudoku",
-            prompt: "6×6 хөнгөн. 1-ээс 6 хүртэлх тоог бөглө.",
-            size: 6,
-            level: "easy",
-            seed: 301,
-            explanation: "Зузаан шугамууд 2×3 хайрцгийн хилийг заана — тэднийг дага.",
-          },
-        ],
-      },
-      {
-        title: "6×6 дунд",
-        xp: 25,
-        items: [
-          {
-            kind: "sudoku",
-            prompt: "6×6 дунд.",
-            size: 6,
-            level: "medium",
-            seed: 311,
-            explanation: "Хайрцаг нь 2×3 тул мөрөөс илүү БАГАНА руу анхаарвал хурдан гарна.",
-          },
-          {
-            kind: "sudoku",
-            prompt: "Дахин 6×6 дунд.",
-            size: 6,
-            level: "medium",
-            seed: 312,
-            explanation: "Аль тоо хамгийн олон удаа өгөгдсөн бэ? Түүнээс эхлэх нь дөт.",
-          },
-        ],
-      },
-      {
-        title: "6×6 хүнд",
-        xp: 30,
-        items: [
-          {
-            kind: "sudoku",
-            prompt: "6×6 хүнд.",
-            size: 6,
-            level: "hard",
-            seed: 321,
-            explanation: "Нүд бүрийн боломжуудыг санаж бодох чадвар эндээс хөгжинө.",
-          },
-        ],
-      },
-    ],
-  },
-  {
-    title: "9×9 — жинхэнэ судоку",
-    color: "violet",
-    lessons: [
-      {
-        title: "9×9 хөнгөн",
-        xp: 30,
-        items: [
-          {
-            kind: "sudoku",
-            prompt: "9×9 хөнгөн. Тэвчээр, логик хоёр л хэрэгтэй.",
-            size: 9,
-            level: "easy",
-            seed: 401,
-            explanation:
-              "Том хөлөг ч ижил гурван дүрэм. Нэг хайрцгийг бүтэн дуусгахыг хичээ.",
-          },
-        ],
-      },
-      {
-        title: "9×9 дунд",
-        xp: 35,
-        items: [
-          {
-            kind: "sudoku",
-            prompt: "9×9 дунд.",
-            size: 9,
-            level: "medium",
-            seed: 411,
-            explanation:
-              "Тоо тус бүрээр (1, 2, 3…) бүх хайрцгийг шалгах арга нь хамгийн тогтвортой.",
-          },
-        ],
-      },
-      {
-        title: "9×9 хүнд",
-        xp: 40,
-        items: [
-          {
-            kind: "sudoku",
-            prompt: "9×9 хүнд. Хөтөлбөрийн хамгийн хүнд хөлөг.",
-            size: 9,
-            level: "hard",
-            seed: 421,
-            explanation:
-              "Ганц шийдэлтэй тул ТААХ шаардлагагүй — ямагт логикоор гарах нүд байна.",
-          },
-        ],
-      },
-    ],
-  },
+  sizeUnit(4, "4×4 — хөнгөнөөс хүнд", "emerald", [40, 45, 50]),
+  sizeUnit(6, "6×6 — хайрцаг дөрвөлжин биш", "amber", [45, 50, 55]),
+  sizeUnit(9, "9×9 — жинхэнэ судоку", "violet", [50, 55, 60]),
 ];
 
 /** Дасгалын хөлгийг бэлдэж, ЗААВАЛ эргүүлж шалгана. */
@@ -435,6 +396,8 @@ async function main() {
 
     let addedLessons = 0;
     let addedExercises = 0;
+    let replacedLessons = 0;
+    let removedExercises = 0;
 
     for (const [unitIndex, unit] of built.entries()) {
       const [existingUnit] = await db
@@ -462,26 +425,52 @@ async function main() {
       }
 
       const existingLessons = await db
-        .select({ title: lessons.title, sortOrder: lessons.sortOrder })
+        .select({ id: lessons.id, title: lessons.title, sortOrder: lessons.sortOrder })
         .from(lessons)
         .where(eq(lessons.unitId, unitId));
-      const existingTitles = new Set(existingLessons.map((row) => row.title));
+      const existingByTitle = new Map(existingLessons.map((row) => [row.title, row]));
       let lessonOrder = existingLessons.reduce((max, row) => Math.max(max, row.sortOrder + 1), 0);
 
       for (const lesson of unit.lessons) {
-        if (existingTitles.has(lesson.title)) continue;
+        const existing = existingByTitle.get(lesson.title);
 
-        const lessonId = crypto.randomUUID();
+        if (existing && !force) continue;
 
-        await db.insert(lessons).values({
-          id: lessonId,
-          unitId,
-          title: lesson.title,
-          xpReward: lesson.xp,
-          sortOrder: lessonOrder++,
-          createdBy: owner.uid,
-        });
-        addedLessons += 1;
+        let lessonId: string;
+
+        if (existing) {
+          /*
+           * `--force`: хичээлийг ХАДГАЛЖ (тиймээс сурагчийн явц хэвээр),
+           * зөвхөн дасгалыг бүхэлд сольно. XP нь дасгалын тоотой хамт
+           * өөрчлөгддөг тул түүнийг ч шинэчилнэ.
+           */
+          lessonId = existing.id;
+
+          await db
+            .update(lessons)
+            .set({ xpReward: lesson.xp })
+            .where(eq(lessons.id, lessonId));
+
+          const removed = await db
+            .delete(exercises)
+            .where(eq(exercises.lessonId, lessonId))
+            .returning({ id: exercises.id });
+
+          replacedLessons += 1;
+          removedExercises += removed.length;
+        } else {
+          lessonId = crypto.randomUUID();
+
+          await db.insert(lessons).values({
+            id: lessonId,
+            unitId,
+            title: lesson.title,
+            xpReward: lesson.xp,
+            sortOrder: lessonOrder++,
+            createdBy: owner.uid,
+          });
+          addedLessons += 1;
+        }
 
         let exerciseOrder = 0;
 
@@ -505,12 +494,22 @@ async function main() {
       }
     }
 
-    console.log(
-      addedLessons === 0
-        ? "Бүх хичээл аль хэдийн байна — юу ч өөрчлөөгүй."
-        : `✅ "Судоку" — ${addedLessons} хичээл, ${addedExercises} дасгал нэмэгдлээ.\n` +
-            `Засах: /admin/courses/${COURSE_SLUG}`
-    );
+    if (addedLessons === 0 && replacedLessons === 0) {
+      console.log(
+        "Бүх хичээл аль хэдийн байна — юу ч өөрчлөөгүй.\n" +
+          "Дасгалыг ШИНЭЧЛЭХ бол: npm run seed:sudoku -- <email> --force"
+      );
+    } else {
+      const parts = [];
+      if (addedLessons > 0) parts.push(`${addedLessons} хичээл нэмэгдлээ`);
+      if (replacedLessons > 0) {
+        parts.push(`${replacedLessons} хичээлийн дасгал шинэчлэгдлээ (${removedExercises} устав)`);
+      }
+      console.log(
+        `✅ "Судоку" — ${parts.join(", ")}. Нийт ${addedExercises} дасгал бичигдлээ.\n` +
+          `Засах: /admin/courses/${COURSE_SLUG}`
+      );
+    }
   } finally {
     await pool.end();
   }
