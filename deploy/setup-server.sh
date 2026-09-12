@@ -16,7 +16,7 @@ APP_DIR="/var/www/${APP_NAME}"
 LOG_DIR="/var/log/${APP_NAME}"
 DB_NAME="tactiq"
 DB_USER="tactiq"
-REPO_URL="https://github.com/Erdenebayar0930/tactiq.git"
+REPO_URL="https://github.com/Erdenebayar0930/tactiq.me.git"
 NODE_MAJOR=20
 
 if [[ $EUID -ne 0 ]]; then

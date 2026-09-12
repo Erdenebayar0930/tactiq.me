@@ -22,7 +22,7 @@
 
 ```bash
 # Серверт root эрхээр
-git clone https://github.com/Erdenebayar0930/tactiq.git /var/www/tactiq
+git clone https://github.com/Erdenebayar0930/tactiq.me.git /var/www/tactiq
 cd /var/www/tactiq
 
 # Скриптийн дээд талын хувьсагчдыг ЭХЛЭЭД засна (домэйн, DB нэр/нууц үг)
@@ -41,9 +41,18 @@ nano .env.local        # DATABASE_URL, FIREBASE_*, NEXT_PUBLIC_*
 Схемийг үүсгээд агуулга цутгана:
 
 ```bash
-npm run db:push
-npm run db:check       # тохиргоо зөв эсэхийг батална
-npm run db:seed        # эхлэлийн курс, хичээл, тэмдгүүд
+npm run db:push        # схем үүсгэнэ (устгах санал гарвал уншаад баталгаажуулна)
+
+# Агуулга цутгах — курс тус бүр ТУСДАА скрипттэй (`npm run` гэж бичээд
+# бүх seed:* жагсаалтыг харж болно). Хэрэгтэйг нь сонгоно:
+npm run seed:piano
+npm run seed:puzzles
+npm run seed:networks
+npm run seed:kids
+npm run seed:draughts
+npm run seed:go
+npm run seed:coding
+
 npm run build
 pm2 start deploy/ecosystem.config.js
 pm2 save
