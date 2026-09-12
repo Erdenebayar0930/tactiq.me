@@ -1,0 +1,236 @@
+"use client";
+
+import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useCallback, useMemo, useRef, useState } from "react";
+import { ChevronLeft } from "lucide-react";
+
+import { apiFetch } from "@/lib/apiClient";
+import { DRAUGHTS_BOT_DIFFICULTIES, pickBotMove } from "@/lib/draughts/bot";
+import { Draughts } from "@/lib/draughts/engine";
+import { DraughtsBoard } from "@/components/draughts/DraughtsBoard";
+import { MatchHeader } from "@/components/chess/MatchHeader";
+import { CoachReview } from "@/components/tactiq/CoachReview";
+import { CoachTip } from "@/components/tactiq/CoachTip";
+import { GameOverAd } from "@/components/tactiq/GameOverAd";
+import { analyzeDraughtsGame } from "@/lib/draughts/analysis";
+
+import type { GameReview } from "@/lib/tactiq/moveQuality";
+import { Mascot } from "@/components/tactiq/Mascot";
+import { DIFFICULTY_LABELS } from "@/lib/tactiq/theme";
+import { useUser } from "@/context/UserContext";
+import { useCoachTip } from "@/hooks/useCoachTip";
+import { draughtsTips } from "@/lib/tactiq/coachTips";
+
+import type { DraughtsBotDifficulty } from "@/lib/draughts/bot";
+import type { Square } from "@/lib/draughts/engine";
+import type { PublicUser } from "@/lib/api/publicUser";
+import { t } from "@/lib/i18n/t";
+
+type EndInfo = {
+  didIWin: boolean | null; // null = тэнцээ
+};
+
+/**
+ * Ботоор дадлагажих "100 нүдэн шашки" (Олон улсын дам) — `/play/bot`-тэй
+ * ИЖИЛ бүтэц (сервер, WebRTC шаардлагагүй, бүхэлдээ клиент дээр), зөвхөн
+ * хөдөлгүүр нь `lib/draughts/*` (`chess.js`-тэй адил сан байхгүй тул
+ * дүрмийг бид өөрсдөө бичсэн — `lib/draughts/engine.ts` үзнэ үү).
+ *
+ * ⚠ Online (P2P) горим ЭНД байхгүй — зөвхөн ботын эсрэг. Шатрын
+ * `chess_rooms`/`chess_queue` бүтэц дамд зориулж хуулбарлаагүй, учир нь энэ
+ * эхний хувилбар зөвхөн дадлагажих горимд анхаарсан.
+ */
+export default function DraughtsBotPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const { apply, user } = useUser();
+
+  const difficulty: DraughtsBotDifficulty = DRAUGHTS_BOT_DIFFICULTIES.includes(
+    searchParams.get("difficulty") as DraughtsBotDifficulty
+  )
+    ? (searchParams.get("difficulty") as DraughtsBotDifficulty)
+    : "beginner";
+
+  const gameRef = useRef(new Draughts());
+  const lastMoveRef = useRef<{ from: Square; to: Square } | null>(null);
+  const [version, forceUpdate] = useState(0);
+  const [thinking, setThinking] = useState(false);
+  const [end, setEnd] = useState<EndInfo | null>(null);
+  const [adDone, setAdDone] = useState(false);
+  const [review, setReview] = useState<GameReview | null>(null);
+
+  const checkGameOver = useCallback(() => {
+    const game = gameRef.current;
+    if (!game.isGameOver()) return false;
+
+    // Тоглогч ЯМАГТ цагаанаар тоглодог (`/play/bot`-той ижил конвенц).
+    const winner = game.winner();
+    const didIWin = winner === null ? null : winner === "w";
+    setEnd({ didIWin });
+
+    /*
+     * Тоглоомын дараах шинжилгээ — тоглогч (цагаан) талын нүүдэл бүрийг
+     * ангилна (`lib/draughts/analysis.ts`).
+     *
+     * ⚠ Гүн 3. Хоёр бол хямд ч дамын хослолыг (нэг дүрс өгөөд хоёр буцааж
+     * идэх) ХАРАХГҮЙ өнгөрдөг тул яг тэр "Гайхалтай" нүүдлүүд нь
+     * тэмдэглэгдэхгүй үлдэнэ — энэ шинжилгээний гол зорилго нь тэднийг олох
+     * тул гүнийг хэмнэх нь утгагүй. Нэг удаагийн зардал, тоглоом дуусмагц.
+     */
+    void analyzeDraughtsGame(game.moveHistory(), "w", 3).then(setReview);
+
+    const outcome = didIWin === null ? "draw" : didIWin ? "win" : "loss";
+    apiFetch<{ user: PublicUser }>("/api/play/draughts/bot/result", {
+      method: "POST",
+      body: { result: outcome },
+    })
+      .then((data) => apply(data.user))
+      .catch(() => {
+        // Тоглолт өөрөө үргэлжлүүлж чадах тул статистик бичихэд алдаа гарсан
+        // ч тоглогчийн UI-г ЭВДЭХГҮЙ.
+      });
+
+    return true;
+  }, [apply]);
+
+  const botTurn = useCallback(async () => {
+    const game = gameRef.current;
+    if (game.isGameOver() || game.turn() !== "b") return;
+
+    setThinking(true);
+    await new Promise(requestAnimationFrame);
+
+    const move = pickBotMove(game, difficulty);
+    if (move) {
+      game.applyMove(move);
+      lastMoveRef.current = { from: move.from, to: move.to };
+    }
+
+    setThinking(false);
+    forceUpdate((v) => v + 1);
+    checkGameOver();
+  }, [difficulty, checkGameOver]);
+
+  const handleMove = (from: Square, to: Square) => {
+    if (thinking || end || gameRef.current.turn() !== "w") return;
+
+    const game = gameRef.current;
+    const applied = game.move(from, to);
+    if (!applied) return;
+
+    lastMoveRef.current = { from, to };
+    forceUpdate((v) => v + 1);
+
+    if (!checkGameOver()) void botTurn();
+  };
+
+  const restart = () => {
+    gameRef.current = new Draughts();
+    lastMoveRef.current = null;
+    setEnd(null);
+    setReview(null);
+    setAdDone(false);
+    forceUpdate((v) => v + 1);
+  };
+
+  const snapshot = useMemo(() => {
+    const game = gameRef.current;
+    return {
+      board: game.board(),
+      turn: game.turn(),
+      lastMove: lastMoveRef.current,
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [version]);
+  const myTurn = !thinking && !end && snapshot.turn === "w";
+
+  // Шатрын `/play/bot`-той ИЖИЛ загвар — тайлбарыг тоглогчийн ээлжид л
+  // гаргана (тэндэх тайлбарыг үзнэ үү).
+  const tips = useMemo(
+    () => (myTurn ? draughtsTips(gameRef.current) : []),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [version, myTurn]
+  );
+  const { tip, dismiss } = useCoachTip(tips);
+
+  return (
+    <div className="mx-auto max-w-lg space-y-4">
+      <div className="surface flex items-center justify-between p-4">
+        <Link
+          href="/play"
+          className="flex items-center gap-1 text-sm font-semibold text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+        >
+          <ChevronLeft className="size-4" aria-hidden />
+          {t("Буцах")}
+        </Link>
+        <div className="text-right">
+          <p className="font-semibold text-gray-900 dark:text-white">
+            {t("Дам")} · {t(DIFFICULTY_LABELS[difficulty])}
+          </p>
+          <p className="text-xs text-gray-500 dark:text-gray-400">
+            {end
+              ? t("Тоглоом дууссан")
+              : thinking
+                ? t("Бот бодож байна…")
+                : myTurn
+                  ? t("Таны ээлж")
+                  : t("Ботын ээлж")}
+          </p>
+        </div>
+      </div>
+
+      <MatchHeader
+        leftName={user?.displayName || t("Та")}
+        rightName={`${t("Бот")} · ${t(DIFFICULTY_LABELS[difficulty])}`}
+      />
+
+      <DraughtsBoard
+        board={snapshot.board}
+        orientation="white"
+        interactive={myTurn}
+        getLegalTargets={(square) => gameRef.current.movesFrom(square).map((m) => m.to)}
+        onMove={handleMove}
+        lastMove={snapshot.lastMove}
+      />
+
+      {tip && !end && (
+        <CoachTip coachId={user?.coachId} text={tip.text} onDismiss={dismiss} />
+      )}
+
+      {end && !adDone && <GameOverAd onDone={() => setAdDone(true)} />}
+
+      {end && adDone && (
+        <div className="surface flex flex-col items-center gap-3 p-6 text-center">
+          <Mascot mood={end.didIWin ? "cheer" : "think"} className="size-24" />
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white">{endMessage(end)}</h2>
+          <div className="flex flex-wrap justify-center gap-3">
+            <button
+              type="button"
+              onClick={restart}
+              className="rounded-xl bg-brand-500 px-6 py-2.5 font-semibold text-white hover:bg-brand-600"
+            >
+              {t("Дахин тоглох")}
+            </button>
+            <button
+              type="button"
+              onClick={() => router.push("/play")}
+              className="rounded-xl border border-gray-300 px-6 py-2.5 font-semibold text-gray-600 hover:bg-gray-100 dark:border-white/15 dark:text-gray-300 dark:hover:bg-white/5"
+            >
+              {t("Буцах")}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {end && adDone && review && (
+        <CoachReview coachId={user?.coachId} review={review} />
+      )}
+    </div>
+  );
+}
+
+function endMessage(end: EndInfo): string {
+  if (end.didIWin === null) return t("Тэнцээ");
+  return end.didIWin ? t("Та ялсан! Ботын бүх нүүдэл дуусав.") : t("Бот яллаа — дахин оролдоорой");
+}

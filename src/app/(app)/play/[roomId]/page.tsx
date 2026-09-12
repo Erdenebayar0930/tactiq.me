@@ -1,0 +1,305 @@
+"use client";
+
+import { useParams, useRouter } from "next/navigation";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Flag } from "lucide-react";
+import { Chess } from "chess.js";
+
+import { apiFetch, ApiError } from "@/lib/apiClient";
+import { ChessWebRTC } from "@/lib/chess/webrtc";
+import { findKingSquare, resolveMove } from "@/lib/chess/utils";
+import { ChessBoard } from "@/components/chess/ChessBoard";
+import { MatchHeader } from "@/components/chess/MatchHeader";
+import { GameOverAd } from "@/components/tactiq/GameOverAd";
+import { Mascot } from "@/components/tactiq/Mascot";
+import { ErrorNote, Skeleton } from "@/components/tactiq/ui";
+import { useCurrentUser, useUser } from "@/context/UserContext";
+
+import type { PublicUser } from "@/lib/api/publicUser";
+import type { Move, Square } from "chess.js";
+import { t } from "@/lib/i18n/t";
+
+type Color = "white" | "black";
+
+type RoomInfo = {
+  roomId: string;
+  color: Color;
+  status: "active" | "finished";
+  opponent: { uid: string; displayName: string; photoUrl: string } | null;
+};
+
+type ConnState = "loading" | "connecting" | "playing" | "ended" | "error";
+
+type EndInfo = {
+  reason: "checkmate" | "resignation" | "draw" | "disconnect";
+  didIWin: boolean | null; // null = draw
+};
+
+/** Хоёр тоглогчийн шатрын өрөө — WebRTC P2P холболт + жинхэнэ хөлөг. */
+export default function ChessRoomPage() {
+  const params = useParams<{ roomId: string }>();
+  const router = useRouter();
+  const me = useCurrentUser();
+  const { apply } = useUser();
+
+  const [room, setRoom] = useState<RoomInfo | null>(null);
+  const [state, setState] = useState<ConnState>("loading");
+  const [error, setError] = useState<string | null>(null);
+  const [end, setEnd] = useState<EndInfo | null>(null);
+  const [adDone, setAdDone] = useState(false);
+  // Зөвхөн rerender өдөөхөд хэрэглэнэ — `chessRef` mutable тул утгыг нь уншихгүй.
+  const [, forceUpdate] = useState(0);
+
+  const chessRef = useRef(new Chess());
+  const rtcRef = useRef<ChessWebRTC | null>(null);
+  const lastMoveRef = useRef<{ from: Square; to: Square } | null>(null);
+  const endedRef = useRef(false);
+
+  const reportEnd = useCallback(
+    async (reason: EndInfo["reason"], winnerUid: string | null) => {
+      if (endedRef.current) return;
+      endedRef.current = true;
+      try {
+        const data = await apiFetch<{ user: PublicUser }>(
+          `/api/play/rooms/${params.roomId}/end`,
+          { method: "POST", body: { reason, winnerUid } }
+        );
+        // Ялалт/хожигдол/тэнцээний тоо (нөгөө тал бичсэн ч, миний хийсэн ч)
+        // толгой хэсэг, профайлд ШУУД харагдана — дахин ачаалах шаардлагагүй.
+        apply(data.user);
+      } catch {
+        // Аль нэг тал аль хэдийн мэдээлсэн байж болно — үл тоомсорлоно.
+      }
+    },
+    [params.roomId, apply]
+  );
+
+  const finishLocally = useCallback(
+    (reason: EndInfo["reason"], didIWin: boolean | null) => {
+      setEnd({ reason, didIWin });
+      setState("ended");
+    },
+    []
+  );
+
+  const myUid = me.uid;
+
+  const checkGameOver = useCallback(
+    (myColor: Color, opponentUid: string | null) => {
+      const chess = chessRef.current;
+      if (!chess.isGameOver()) return;
+
+      if (chess.isCheckmate()) {
+        // Мад хийгдэх үед нүүх ёстой байсан тал (`turn()`) ялагдсан.
+        const loserIsMe = (chess.turn() === "w") === (myColor === "white");
+        finishLocally("checkmate", !loserIsMe);
+        void reportEnd("checkmate", loserIsMe ? opponentUid : myUid);
+        return;
+      }
+
+      finishLocally("draw", null);
+      void reportEnd("draw", null);
+    },
+    [finishLocally, reportEnd, myUid]
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const data = await apiFetch<RoomInfo>(`/api/play/rooms/${params.roomId}`);
+        if (cancelled) return;
+
+        if (data.status === "finished") {
+          setRoom(data);
+          setState("ended");
+          setEnd({ reason: "disconnect", didIWin: null });
+          return;
+        }
+
+        setRoom(data);
+        setState("connecting");
+
+        const rtc = new ChessWebRTC(params.roomId, data.color === "white" ? "offerer" : "answerer");
+        rtcRef.current = rtc;
+
+        rtc.onOpen = () => {
+          if (!cancelled) setState("playing");
+        };
+
+        rtc.onMessage = (raw) => {
+          if (cancelled) return;
+          const msg = raw as { type: string; from?: string; to?: string; promotion?: string };
+
+          if (msg.type === "move" && msg.from && msg.to) {
+            // Хууль бус нүүдэл ирвэл `move()` `null` буцаана — миний `chess.js`
+            // өөрийн байрлалаараа ХЭЗЭЭ Ч зөвшөөрөхгүй тул хуурамч нүүдэл
+            // (өөрчилсөн клиентээс ирсэн ч) энд л зогсоно.
+            const applied = chessRef.current.move({
+              from: msg.from,
+              to: msg.to,
+              promotion: msg.promotion,
+            });
+            if (!applied) return;
+            lastMoveRef.current = { from: msg.from as Square, to: msg.to as Square };
+            forceUpdate((v) => v + 1);
+            checkGameOver(data.color, data.opponent?.uid ?? null);
+            return;
+          }
+
+          if (msg.type === "resign") {
+            finishLocally("resignation", true);
+            void reportEnd("resignation", myUid);
+          }
+        };
+
+        rtc.onClose = () => {
+          if (cancelled || endedRef.current) return;
+          finishLocally("disconnect", null);
+          void reportEnd("disconnect", null);
+        };
+
+        await rtc.start();
+      } catch (cause) {
+        if (!cancelled) {
+          setState("error");
+          setError(cause instanceof ApiError ? cause.message : t("Алдаа гарлаа."));
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+      rtcRef.current?.close();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [params.roomId]);
+
+  const handleMove = (from: Square, to: Square) => {
+    if (!room || state !== "playing") return;
+
+    const chess = chessRef.current;
+    const match = resolveMove(chess, from, to);
+    if (!match) return;
+
+    const applied = chess.move({ from, to, promotion: match.promotion });
+    if (!applied) return;
+
+    lastMoveRef.current = { from, to };
+    forceUpdate((v) => v + 1);
+    rtcRef.current?.send({ type: "move", from, to, promotion: match.promotion });
+    checkGameOver(room.color, room.opponent?.uid ?? null);
+  };
+
+  const resign = () => {
+    if (!room || state !== "playing") return;
+    rtcRef.current?.send({ type: "resign" });
+    finishLocally("resignation", false);
+    void reportEnd("resignation", room.opponent?.uid ?? null);
+  };
+
+  if (state === "loading") {
+    return (
+      <div className="mx-auto max-w-lg space-y-3">
+        <Skeleton className="h-8 w-40" />
+        <Skeleton className="aspect-square w-full" />
+      </div>
+    );
+  }
+
+  if (state === "error") {
+    return (
+      <div className="mx-auto max-w-md p-6">
+        <ErrorNote message={error ?? t("Алдаа гарлаа.")} />
+      </div>
+    );
+  }
+
+  if (!room) return null;
+
+  const chess = chessRef.current;
+  const myTurn = state === "playing" && (chess.turn() === "w") === (room.color === "white");
+  const checkedSquare = chess.inCheck() ? findKingSquare(chess) : null;
+
+  return (
+    <div className="mx-auto max-w-lg space-y-4">
+      <div className="surface flex items-center justify-between p-4">
+        <div className="min-w-0">
+          <p className="truncate font-semibold text-gray-900 dark:text-white">
+            {room.opponent?.displayName || t("Өрсөлдөгч")}
+          </p>
+          <p className="text-xs text-gray-500 dark:text-gray-400">
+            {state === "connecting" && t("Холбогдож байна…")}
+            {state === "playing" && (myTurn ? t("Таны ээлж") : t("Өрсөлдөгчийн ээлж"))}
+            {state === "ended" && t("Тоглоом дууссан")}
+          </p>
+        </div>
+        {state === "playing" && (
+          <button
+            type="button"
+            onClick={resign}
+            className="flex shrink-0 items-center gap-1.5 rounded-lg border border-rose-300 px-3 py-1.5 text-xs font-semibold text-rose-600 hover:bg-rose-50 dark:border-rose-500/40 dark:text-rose-400 dark:hover:bg-rose-500/10"
+          >
+            <Flag className="size-3.5" aria-hidden />
+            {t("Бууж өгөх")}
+          </button>
+        )}
+      </div>
+
+      <MatchHeader
+        leftName={me.displayName || t("Та")}
+        rightName={room.opponent?.displayName || t("Өрсөлдөгч")}
+      />
+
+      <ChessBoard
+        board={chess.board()}
+        orientation={room.color}
+        interactive={myTurn}
+        getLegalTargets={(square) =>
+          (chess.moves({ square, verbose: true }) as Move[]).map((move) => move.to as Square)
+        }
+        onMove={handleMove}
+        lastMove={lastMoveRef.current}
+        checkedSquare={checkedSquare}
+      />
+
+      {state === "connecting" && (
+        <div className="flex flex-col items-center gap-3 py-4 text-center">
+          <Mascot mood="think" className="size-20" />
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            {t("Өрсөлдөгчтэй шууд холбогдож байна…")}
+          </p>
+        </div>
+      )}
+
+      {state === "ended" && end && !adDone && <GameOverAd onDone={() => setAdDone(true)} />}
+
+      {state === "ended" && end && adDone && (
+        <div className="surface flex flex-col items-center gap-3 p-6 text-center">
+          <Mascot mood={end.didIWin ? "cheer" : "think"} className="size-24" />
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+            {endMessage(end)}
+          </h2>
+          <button
+            type="button"
+            onClick={() => router.push("/play")}
+            className="rounded-xl bg-brand-500 px-6 py-2.5 font-semibold text-white hover:bg-brand-600"
+          >
+            {t("Дахин тоглох")}
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function endMessage(end: EndInfo): string {
+  if (end.didIWin === null) {
+    return end.reason === "disconnect" ? t("Өрсөлдөгч тасарлаа") : t("Тэнцээ");
+  }
+  if (end.didIWin) {
+    return end.reason === "resignation" ? t("Өрсөлдөгч бууж өгсөн — Та яллаа!") : t("Мад! Та яллаа!");
+  }
+  return end.reason === "resignation" ? t("Та бууж өглөө") : t("Мад хийгдлээ — Та хожигдлоо");
+}

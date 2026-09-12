@@ -1,0 +1,1 @@
+ALTER TABLE "course_leagues" ADD COLUMN "last_week_key" varchar(10);

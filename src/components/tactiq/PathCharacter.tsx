@@ -1,0 +1,75 @@
+import Image from "next/image";
+
+/**
+ * ЗАМЫН ДҮРҮҮД — хичээлийн зангилааны хажууд зогсох сурагчид.
+ *
+ * ⚠ Зургууд нь ТУНГАЛАГ дэвсгэртэй (эх зургийн саарал дэвсгэрийг
+ * тайрч авсан). Саарал дэвсгэртэй нь замын өнгөт дэвсгэр дээр
+ * дөрвөлжин толбо шиг харагдана.
+ *
+ * ⚠ Өндөр нь тогтмол, өргөнийг эх харьцаагаар нь бичсэн — эс бөгөөс
+ * зураг ачаалагдах агшинд мөр үсэрч (layout shift) сурагчийн нүд алдана.
+ */
+const CHARACTER_SETS = {
+  default: [
+    { src: "/images/characters/girl-books.webp", w: 337, h: 425 },
+    { src: "/images/characters/boy-pen.webp", w: 288, h: 575 },
+    { src: "/images/characters/girl-tablet.webp", w: 257, h: 324 },
+    { src: "/images/characters/boy-glasses.webp", w: 233, h: 332 },
+    { src: "/images/characters/boy-globe.webp", w: 274, h: 299 },
+    { src: "/images/characters/robot.webp", w: 179, h: 305 },
+  ],
+  /** Даамын курс — даам тоглож буй сурагчид. */
+  checkers: [
+    { src: "/images/characters/checkers/girl-books.webp", w: 502, h: 372 },
+    { src: "/images/characters/checkers/boy-board.webp", w: 292, h: 402 },
+    { src: "/images/characters/checkers/girl-tablet.webp", w: 344, h: 396 },
+    { src: "/images/characters/checkers/boy-glasses.webp", w: 384, h: 402 },
+    { src: "/images/characters/checkers/boy-globe.webp", w: 404, h: 368 },
+    { src: "/images/characters/checkers/robot.webp", w: 242, h: 400 },
+    { src: "/images/characters/checkers/girl-telescope.webp", w: 576, h: 402 },
+    { src: "/images/characters/checkers/boy-tablets.webp", w: 322, h: 398 },
+    { src: "/images/characters/checkers/boy-compass.webp", w: 442, h: 400 },
+  ],
+} as const;
+
+export type CharacterSet = keyof typeof CHARACTER_SETS;
+
+/**
+ * @param index — хичээлийн дугаар. Дүрүүд ээлжлэн давтагдана.
+ * @param height — харагдах өндөр (px).
+ * @param set — курсын дүрийн багц.
+ */
+export function PathCharacter({
+  index,
+  height = 76,
+  set = "default",
+  muted = false,
+  className = "",
+}: {
+  index: number;
+  height?: number;
+  set?: CharacterSet;
+  /** Хичээл хийгдээгүй (түгжээтэй) бол саарал, бүдэг харагдана. */
+  muted?: boolean;
+  className?: string;
+}) {
+  const characters = CHARACTER_SETS[set];
+  const character =
+    characters[((index % characters.length) + characters.length) % characters.length];
+  const width = Math.round((character.w / character.h) * height);
+
+  return (
+    <Image
+      aria-hidden
+      alt=""
+      src={character.src}
+      width={width}
+      height={height}
+      className={`pointer-events-none max-w-none select-none drop-shadow-sm transition-[filter,opacity] duration-300 ${
+        muted ? "opacity-60 grayscale" : ""
+      } ${className}`}
+      style={{ width, height }}
+    />
+  );
+}

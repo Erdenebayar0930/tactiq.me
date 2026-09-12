@@ -1,0 +1,1 @@
+ALTER TABLE "exercises" ALTER COLUMN "fen" SET DATA TYPE varchar(200);

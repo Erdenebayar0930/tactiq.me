@@ -1,0 +1,67 @@
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# dependencies
+/.idea
+/node_modules
+/.pnp
+.pnp.js
+.yarn/install-state.gz
+
+# testing
+/coverage
+
+# next.js
+/.next/
+/out/
+
+# next-pwa үүсгэдэг — build бүрт хэш нь өөрчлөгддөг тул git-д хянах утгагүй
+# (сервер дээр build хийхэд working tree бохирдож, git pull саад болно)
+/public/sw.js
+/public/sw.js.map
+/public/workbox-*.js
+/public/workbox-*.js.map
+/public/worker-*.js
+/public/fallback-*.js
+
+# production
+/build
+
+# misc
+.DS_Store
+*.pem
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# local env files
+.env*.local
+# ⚠ Дээрх загвар нь ".local"-оор ТӨГССӨН файлыг л барина — ".env.local.pg-backup"
+# мэтийн нөөц хуулбар нь түүнд УНАДАГГҮЙ тул нууц үг git-д орох эрсдэлтэй.
+.env.local.*
+.env.*.backup
+
+# website/ нь ӨӨР төслийн (ББУЧ) бие даасан Next.js апп — Tactiq-д хамаагүй.
+# Tactiq-ийн вэбсайт ба хяналтын самбар нь ЭНЭ репод, нэг апп дотор байна
+# (src/app/(site) ба src/app/admin).
+/website/
+
+# Дев серверийн лог
+/scratch-dev.log
+/dev-*.log
+
+# vercel
+.vercel
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+
+# firebase — эмулятор ажиллуулах бүрд лог үлдээдэг
+*-debug.log
+.firebase/
+
+# Claude Code-ийн хувийн тохиргоо
+.claude/settings.local.json
+scratch-*.mts

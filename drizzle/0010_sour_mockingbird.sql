@@ -1,0 +1,1 @@
+ALTER TABLE "courses" ADD COLUMN "school" varchar(16) DEFAULT '' NOT NULL;

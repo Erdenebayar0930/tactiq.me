@@ -1,0 +1,1 @@
+ALTER TABLE "users" ADD COLUMN "last_ad_heart_at" timestamp;
