@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { BookOpen, Check, Dumbbell, Lock, Star, Trophy } from "lucide-react";
+import { BookOpen, Check, ChevronDown, Dumbbell, Lock, Star, Trophy } from "lucide-react";
 
 import { useCurrentUser, useUser } from "@/context/UserContext";
 import { apiFetch, ApiError } from "@/lib/apiClient";
@@ -193,6 +193,22 @@ function UnitPath({
   onClaimed: (key: string) => void;
 }) {
   const styles = colorStyles(unit.color);
+
+  /**
+   * Бүлгийг хураах.
+   *
+   * ⚠ ЯАГААД ХЭРЭГТЭЙ: нэг бүлэг 60 хичээлтэй байж болно (судоку) тул
+   * дараагийн бүлэг рүү хүрэхийн тулд сурагч хэдэн зуун цэгийг гүйлгэнэ.
+   * Хураасан бүлгийн толгой тууз хэвээр үлдэж, явц (`2/60`) харагдсаар
+   * байна — мэдээлэл алдагдахгүй, зөвхөн зам хумигдана.
+   *
+   * ⚠ Төлөв нь ЗӨВХӨН САНАХ ОЙД. `localStorage`-д хадгалбал SSR-ийн эхний
+   * зурагт уншиж болохгүй (hydration зөрчил) тул `ThemeContext`-ийн адил
+   * `useSyncExternalStore` загвар шаардана — ганц бүлэг хураах хэрэгцээнд
+   * тэр нь хэт өндөр үнэ.
+   */
+  const [collapsed, setCollapsed] = useState(false);
+
   const unitLessonIds = unit.lessons.map((lesson) => lesson.id);
   const items = buildPath(unit.lessons.length);
   const doneCount = unit.lessons.filter((lesson) => completed.has(lesson.id)).length;
@@ -221,14 +237,34 @@ function UnitPath({
       <div
         className={`sticky top-2 z-10 flex items-center gap-3 rounded-2xl px-4 py-3 shadow-md ${styles.iconBg}`}
       >
-        <div className="min-w-0 flex-1">
-          <p className="text-[11px] font-bold uppercase tracking-wide text-white/75">
-            {t("Бүлэг")} {index + 1} · {doneCount}/{unit.lessons.length}
-          </p>
-          <p className="truncate text-lg font-extrabold text-white">
-            {localized(unit.title, unit.titleEn)}
-          </p>
-        </div>
+        {/*
+          ⚠ Толгойг БҮХЭЛД нь товч болгов (зөвхөн жижиг дүрсийг БИШ) — гар
+          утсан дээр хүрэх талбай том байх ёстой. «Курс солих» холбоос нь
+          товчны ГАДНА үлдэнэ: интерактив элементийг нэг нэгэн дотор
+          угсарвал дарахад хоёул хариу үзүүлнэ.
+        */}
+        <button
+          type="button"
+          onClick={() => setCollapsed((value) => !value)}
+          aria-expanded={!collapsed}
+          aria-controls={`unit-path-${unit.id}`}
+          className="flex min-w-0 flex-1 items-center gap-2 text-left"
+        >
+          <ChevronDown
+            className={`size-5 shrink-0 text-white/80 transition-transform ${
+              collapsed ? "-rotate-90" : ""
+            }`}
+            aria-hidden
+          />
+          <span className="min-w-0 flex-1">
+            <span className="block text-[11px] font-bold uppercase tracking-wide text-white/75">
+              {t("Бүлэг")} {index + 1} · {doneCount}/{unit.lessons.length}
+            </span>
+            <span className="block truncate text-lg font-extrabold text-white">
+              {localized(unit.title, unit.titleEn)}
+            </span>
+          </span>
+        </button>
         <Link
           href="/courses"
           className="grid size-10 shrink-0 place-items-center rounded-xl bg-white/20 text-white hover:bg-white/30"
@@ -238,7 +274,11 @@ function UnitPath({
         </Link>
       </div>
 
-      <ol className="relative flex flex-col items-center gap-1 pb-4 pt-10">
+      <ol
+        id={`unit-path-${unit.id}`}
+        hidden={collapsed}
+        className="relative flex flex-col items-center gap-1 pb-4 pt-10"
+      >
         {items.map((item, position) => {
           const offset = pathOffset(position);
           /*
