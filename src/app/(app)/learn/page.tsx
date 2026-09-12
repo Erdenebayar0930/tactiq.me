@@ -19,7 +19,7 @@ import {
 } from "@/lib/tactiq/path";
 import { AdSlot } from "@/components/tactiq/AdSlot";
 import { Icon } from "@/components/tactiq/Icon";
-import { PathCharacter } from "@/components/tactiq/PathCharacter";
+import { PathCharacter, characterSetForCourse } from "@/components/tactiq/PathCharacter";
 import RewardPopup from "@/components/tactiq/RewardPopup";
 import { EmptyState, ErrorNote, Skeleton } from "@/components/tactiq/ui";
 import { t } from "@/lib/i18n/t";
@@ -495,7 +495,7 @@ function LessonNode({
           <PathCharacter
             // Дүр гарах N дахь байрлал → N дахь дүр: бүх дүр дарааллаар ээлжилнэ
             index={Math.floor(courseLessonIndex / 4)}
-            set={courseSlug === "checkers" ? "checkers" : "default"}
+            set={characterSetForCourse(courseSlug)}
             // Замын хажуугийн хоосон талбайг дүүргэнэ; зангилааны ГОЛД тэгшилнэ
             height={150}
             muted={!isActionable}

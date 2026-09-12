@@ -36,6 +36,20 @@ const CHARACTER_SETS = {
 export type CharacterSet = keyof typeof CHARACTER_SETS;
 
 /**
+ * Курсын slug → дүрийн багц.
+ *
+ * ⚠ Багцын НЭР нь курсын SLUG-тай ижил байхаар зохиосон: шинэ курст
+ * дүрийн багц нэмэхэд `CHARACTER_SETS`-д тэр slug-аар нэг мөр нэмэхэд л
+ * хангалттай, хэрэглэх талд юу ч засахгүй. Урьд нь `/learn` дээр
+ * `courseSlug === "checkers" ? "checkers" : "default"` гэсэн нөхцөл
+ * байсан — багц нэмэх тутам түүнийг засах шаардлагатай байв, бөгөөд
+ * мартвал шинэ зургууд чимээгүйхэн хэрэглэгдэхгүй үлдэнэ.
+ */
+export function characterSetForCourse(slug: string): CharacterSet {
+  return slug in CHARACTER_SETS ? (slug as CharacterSet) : "default";
+}
+
+/**
  * @param index — хичээлийн дугаар. Дүрүүд ээлжлэн давтагдана.
  * @param height — харагдах өндөр (px).
  * @param set — курсын дүрийн багц.
