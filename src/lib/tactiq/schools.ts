@@ -1,9 +1,14 @@
-import { Brain, Code, Globe, MessagesSquare, Palette, Rocket } from "lucide-react";
+import { Backpack, Brain, Code, MessagesSquare, Palette, Shapes } from "lucide-react";
 
 import type { LucideIcon } from "lucide-react";
 
 /**
  * Daamal.org-ийн ЗУРГААН СУРГУУЛЬ — платформын дээд түвшний бүтэц.
+ *
+ * ⚠ Хоёр нь СЭДВЭЭР биш НАСААР хуваагдана (Kids 4-6, Kids 7-10). Курс нь
+ * олон сургуульд харьяалагдаж болдог тул бага насны курс сэдвийнхээ
+ * сургуульд (Mind, Create…) БАЙСААР байж, зэрэгцээд насны сургуульд ч
+ * харагдана — `courses.schools` массив (`db/courses.ts` → `courseSchools`).
  *
  * ⚠ Энэ нь `courses` ХҮСНЭГТЭЭС ӨӨР давхарга. Ялгаа нь:
  *
@@ -85,6 +90,64 @@ export const SCHOOLS: School[] = [
     ],
   },
   {
+    slug: "kids-4-6",
+    title: "Kids 4-6",
+    subtitle: "Бяцхан сурагч",
+    tagline: "Тоолох · Үсэг · Хэлбэр · Зураг",
+    description:
+      "Уншиж эхлээгүй хүүхдэд зориулсан хөтөлбөр. Дасгал бүр ЗУРГААР " +
+      "ойлгогдох тул эцэг эхийн тусламжгүйгээр өөрөө дуусгаж чадна.",
+    Icon: Shapes,
+    gradient: "from-amber-400 to-orange-600",
+    glow: "shadow-orange-500/25",
+    softBg: "bg-amber-50 dark:bg-amber-500/15",
+    softText: "text-amber-700 dark:text-amber-300",
+    groups: [
+      {
+        title: null,
+        topics: [
+          "Тоолох",
+          "Хэлбэр, хэмжээ",
+          "Дараалал",
+          "Нэмэх, хасах",
+          "Авиа, үсэг",
+          "Эхний үгс",
+          "Өнгө",
+          "Зурган логик",
+        ],
+      },
+    ],
+  },
+  {
+    slug: "kids-7-10",
+    title: "Kids 7-10",
+    subtitle: "Бага насны сурагч",
+    tagline: "Унших · Бичих · Бодох · Кодчилол",
+    description:
+      "Уншиж, бичиж сурсан хүүхдэд. Бодлого бодох, өөрөө уншиж ойлгох, " +
+      "анхны программаа бичих хүртэл — сургуулийн хичээлтэй хөл нийлүүлнэ.",
+    Icon: Backpack,
+    gradient: "from-blue-500 to-indigo-700",
+    glow: "shadow-indigo-600/25",
+    softBg: "bg-blue-50 dark:bg-blue-500/15",
+    softText: "text-blue-700 dark:text-blue-300",
+    groups: [
+      {
+        title: null,
+        topics: [
+          "Унших чадвар",
+          "Бичих чадвар",
+          "Бодлого бодох",
+          "Логик",
+          "Шатар, даам",
+          "Анхны кодчилол",
+          "Дижитал аюулгүй байдал",
+          "Бүтээлч дасгал",
+        ],
+      },
+    ],
+  },
+  {
     slug: "codely",
     title: "Codely",
     subtitle: "Код ба технологи",
@@ -128,38 +191,6 @@ export const SCHOOLS: School[] = [
           "AI-тай зөв ажиллах",
           "AI-гаар бүтээл хийх",
           "AI ёс зүй",
-        ],
-      },
-    ],
-  },
-  {
-    slug: "itkids",
-    title: "ITkids",
-    subtitle: "Дижитал иргэн",
-    tagline: "Компьютер · Интернэт · Кибер аюулгүй байдал",
-    description:
-      "Хүүхэд бүрийн заавал мэдэх зүйлс: аюулгүй нэвтрэх, залилан таних, " +
-      "хувийн мэдээллээ хамгаалах, мэдээллийг шалгах.",
-    Icon: Globe,
-    gradient: "from-blue-500 to-indigo-700",
-    glow: "shadow-indigo-600/25",
-    softBg: "bg-blue-50 dark:bg-blue-500/15",
-    softText: "text-blue-700 dark:text-blue-300",
-    groups: [
-      {
-        title: null,
-        topics: [
-          "Интернэтийн аюулгүй байдал",
-          "Кибер аюулгүй байдал",
-          "Нууц үгийн хамгаалалт",
-          "Хувийн мэдээлэл",
-          "Залилан таних",
-          "Сошиал ёс зүй",
-          "Google Workspace",
-          "Microsoft Office",
-          "Cloud",
-          "Дижитал иргэншил",
-          "Мэдээлэл шалгах",
         ],
       },
     ],
@@ -234,37 +265,6 @@ export const SCHOOLS: School[] = [
           "Дадал бий болгох",
           "Өдөр төлөвлөх",
           "Шийдвэр гаргах",
-        ],
-      },
-    ],
-  },
-  {
-    slug: "future",
-    title: "Future",
-    subtitle: "Ирээдүй ба карьер",
-    tagline: "Санхүү · Бизнес · Карьер",
-    description:
-      "Өсвөр наснаас мөнгө, төсөв, бизнесийн үндэс. Өөрийн портфолио, " +
-      "карьерийн замаа эрт эхлүүлэх.",
-    Icon: Rocket,
-    gradient: "from-amber-400 to-orange-600",
-    glow: "shadow-orange-500/25",
-    softBg: "bg-amber-50 dark:bg-amber-500/15",
-    softText: "text-amber-700 dark:text-amber-300",
-    groups: [
-      {
-        title: null,
-        topics: [
-          "Санхүүгийн боловсрол",
-          "Орлого, зарлага",
-          "Хадгаламж",
-          "Төсөв",
-          "Entrepreneurship",
-          "Бизнесийн үндэс",
-          "Marketing",
-          "Personal branding",
-          "Freelancing",
-          "Карьер судлах",
         ],
       },
     ],

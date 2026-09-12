@@ -1,5 +1,5 @@
 /**
- * «Бяцхан кодчин» курсийг ITkids сургуульд үүсгэх CLI.
+ * «Бяцхан кодчин» курсийг Codely сургуульд үүсгэх CLI.
  *
  * Ажиллуулах:
  *   npm run seed:coding -- <багшийн-эсвэл-админы-имэйл>
@@ -284,8 +284,9 @@ async function main() {
         icon: "blocks",
         color: "emerald",
         status: "active",
-        // `lib/tactiq/schools.ts` → "itkids" сургууль
-        school: "itkids",
+        // `lib/tactiq/schools.ts` → "codely" сургууль. Хуучин "itkids"
+        // сургууль кодоос хасагдсан (Kids 4-6 / Kids 7-10-аар орлогдов).
+        school: "codely",
       });
     }
 

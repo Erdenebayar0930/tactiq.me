@@ -80,7 +80,7 @@ export default function LeaderboardPage() {
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Тэргүүлэгчид</h1>
         <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
           Долоо хоног бүр Даваа гарагт шинэ тэмцээн эхэлнэ. Лиг нь сургууль
-          тус бүрд тусдаа — Mind, Codely, ITkids…
+          тус бүрд тусдаа — Mind, Kids 4-6, Codely…
         </p>
       </div>
 

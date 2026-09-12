@@ -207,6 +207,22 @@ async function main() {
           color: course.color,
           status: "active",
           school: course.school,
+          /*
+           * ⚠ ХОЁР сургуульд: сэдвийнхээ (Mind, Create…) БОЛОН насны
+           * "kids-4-6"-д. Курс олон сургуульд байж болдог тул сэдвийн
+           * жагсаалтаас гарахгүй, зэрэгцээд насны сургуульд ч харагдана.
+           *
+           * `school` (үндсэн) нь СЭДЭВ хэвээр — гэрчилгээ, ур чадвар түүнээс
+           * уншдаг тул хүүхэд "Kids 4-6" гэсэн гэрчилгээ биш "Математик"
+           * гэсэн гэрчилгээ авах ёстой.
+           *
+           * `-kids` дагавар нь 4–6 насны хөтөлбөрийн ТОГТСОН шинж
+           * (`components/courses/CourseCard.tsx` ч түүгээр "4–6 нас" гэж
+           * шошгодог). Нас холилдсон курс (жишээ нь `chess`) орохгүй.
+           */
+          schools: course.slug.endsWith("-kids")
+            ? [course.school, "kids-4-6"]
+            : [course.school],
           sortOrder,
         });
         addedCourses += 1;
