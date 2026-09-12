@@ -7,19 +7,6 @@
  * компанийн загвар биш, туршлага ихсэх тусам хөлгийн үнэ цэн өсдөгтэй адил
  * зурган дараалал өгнө.
  */
-export type ChessExperience = "new" | "basics" | "tactics" | "tournament";
-
-export const CHESS_EXPERIENCE_LEVELS: {
-  id: ChessExperience;
-  label: string;
-  glyph: string;
-}[] = [
-  { id: "new", label: "Тоглож мэдэхгүй", glyph: "♟" },
-  { id: "basics", label: "Дүрэм, үндсийг мэднэ", glyph: "♞" },
-  { id: "tactics", label: "Стратеги, тактик мэднэ", glyph: "♜" },
-  { id: "tournament", label: "Тэмцээнд оролцдог", glyph: "♛" },
-];
-
 /**
  * "Дасгалжуулагч сонгох" алхам — chess.com-ийн Mittens/David/Sloane гэх мэт
  * зохиогчийн эрхтэй дүрсийг ХУУЛБАРЛАХГҮЙн тулд өөрсдийн шинэ нэр + lucide
@@ -94,10 +81,6 @@ export const COACHES: Coach[] = [
     gradient: "from-teal-400 to-cyan-600",
   },
 ];
-
-export function isChessExperience(value: unknown): value is ChessExperience {
-  return CHESS_EXPERIENCE_LEVELS.some((level) => level.id === value);
-}
 
 export function isCoachId(value: unknown): value is string {
   return COACHES.some((coach) => coach.id === value);

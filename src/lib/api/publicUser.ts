@@ -65,7 +65,6 @@ export function toPublicUser(row: UserRow, heartRefillMinutes = 30) {
     draughtsWins: row.draughtsWins,
     draughtsLosses: row.draughtsLosses,
     draughtsDraws: row.draughtsDraws,
-    chessExperience: row.chessExperience,
     coachId: row.coachId,
 
     /** Elo үнэлгээ ба тоглосон тоглолт (`lib/tactiq/rating.ts`). */

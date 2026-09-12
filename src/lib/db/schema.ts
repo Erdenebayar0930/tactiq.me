@@ -202,15 +202,6 @@ export const users = pgTable(
     draughtsLosses: integer("draughts_losses").notNull().default(0),
     draughtsDraws: integer("draughts_draws").notNull().default(0),
     /**
-     * Бүртгүүлэх үед сонгосон өөрийн үнэлгээ — "new" | "basics" | "tactics" |
-     * "tournament" (`lib/tactiq/coaches.ts`-ийн `CHESS_EXPERIENCE_LEVELS`).
-     * Зөвхөн ЭХЛЭХ түвшинг тааруулахад л ашиглана (жишээ нь хичээлийн санал
-     * болгох дараалал) — дараа нь автоматаар өөрчлөгддөггүй.
-     */
-    chessExperience: varchar("chess_experience", { length: 20 })
-      .notNull()
-      .default("new"),
-    /**
      * Бүртгэлийн үед сонгосон "дасгалжуулагч" аватар (`lib/tactiq/coaches.ts`-
      * ийн `COACHES`) — цэвэр загварчлал, ХИЧЭЭЛИЙН агуулгад нөлөөлдөггүй.
      */

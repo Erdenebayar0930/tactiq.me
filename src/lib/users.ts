@@ -41,8 +41,7 @@ export type RegisterInput = {
   secondaryRole?: "teacher" | "parent";
   /** Найзын хувийн код (заавал биш) — тохирвол хоёулаа бонус оноо авна. */
   referralCode?: string;
-  /** Бүртгэлийн эхний алхамд сонгосон өөрийн үнэлгээ, дасгалжуулагч (заавал биш). */
-  chessExperience?: string;
+  /** Бүртгэлийн эхний алхамд сонгосон дасгалжуулагч (заавал биш). */
   coachId?: string;
 };
 
@@ -100,7 +99,6 @@ export async function registerWithEmail(
     role: input.role,
     secondaryRole: input.secondaryRole,
     referralCode: input.referralCode,
-    chessExperience: input.chessExperience,
     coachId: input.coachId,
   });
 }
@@ -121,7 +119,6 @@ export async function signInWithGoogle(
   role?: "student" | "teacher" | "parent",
   referralCode?: string,
   secondaryRole?: "teacher" | "parent",
-  chessExperience?: string,
   coachId?: string
 ): Promise<PublicUser> {
   const provider = new GoogleAuthProvider();
@@ -135,7 +132,6 @@ export async function signInWithGoogle(
       role,
       secondaryRole,
       referralCode,
-      chessExperience,
       coachId,
     },
   });

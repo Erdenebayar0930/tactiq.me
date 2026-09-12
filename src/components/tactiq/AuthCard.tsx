@@ -6,11 +6,10 @@ import { useEffect, useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
 
 import { Icon } from "@/components/tactiq/Icon";
-import { Mascot } from "@/components/tactiq/Mascot";
 import { useUser } from "@/context/UserContext";
 import { REFERRAL_BONUS_DAYS, TRIAL_DAYS } from "@/lib/billing";
 import { asRole, homeForRole } from "@/lib/permissions";
-import { CHESS_EXPERIENCE_LEVELS, COACHES } from "@/lib/tactiq/coaches";
+import { COACHES } from "@/lib/tactiq/coaches";
 import {
   registerWithEmail,
   sendResetEmail,
@@ -18,7 +17,6 @@ import {
   signInWithGoogle,
 } from "@/lib/users";
 
-import type { ChessExperience } from "@/lib/tactiq/coaches";
 
 type Mode = "login" | "register";
 
@@ -45,14 +43,12 @@ export default function AuthCard({ mode }: { mode: Mode }) {
   const [displayName, setDisplayName] = useState("");
   const [role, setRole] = useState<"student" | "teacher" | "parent">("student");
   /**
-   * Бүртгэлийн ЭХНИЙ хоёр алхам (chess.com-ийн онбоардингтой адил санаа) —
-   * зөвхөн `mode === "register"` үед л харагдана, нэвтрэх карт шууд
-   * "form" алхамаас эхэлнэ.
+   * Бүртгэлийн эхний алхам — зөвхөн `mode === "register"` үед л харагдана,
+   * нэвтрэх карт шууд "form" алхамаас эхэлнэ.
    */
-  const [wizardStep, setWizardStep] = useState<"experience" | "coach" | "form">(
-    mode === "register" ? "experience" : "form"
+  const [wizardStep, setWizardStep] = useState<"coach" | "form">(
+    mode === "register" ? "coach" : "form"
   );
-  const [chessExperience, setChessExperience] = useState<ChessExperience>("new");
   const [coachId, setCoachId] = useState<string>(COACHES[0].id);
   /** "Мөн X эсэх" чекбокс — зөвхөн `role` нь teacher/parent үед л утга учиртай. */
   const [alsoOtherRole, setAlsoOtherRole] = useState(false);
@@ -135,7 +131,6 @@ export default function AuthCard({ mode }: { mode: Mode }) {
           role,
           secondaryRole,
           referralCode: role === "student" ? referralCode : undefined,
-          chessExperience,
           coachId,
         });
         // `UserProvider` аль хэдийн НЭГ удаа /api/users/me татсан байна —
@@ -166,7 +161,6 @@ export default function AuthCard({ mode }: { mode: Mode }) {
         mode === "register" ? role : undefined,
         mode === "register" && role === "student" ? referralCode : undefined,
         mode === "register" ? secondaryRole : undefined,
-        mode === "register" ? chessExperience : undefined,
         mode === "register" ? coachId : undefined
       );
       // Доорх тайлбарыг `submit()`-ийн адил зорилготой `refresh()` дуудлагаас үзнэ үү.
@@ -193,25 +187,12 @@ export default function AuthCard({ mode }: { mode: Mode }) {
     }
   };
 
-  if (mode === "register" && wizardStep === "experience") {
-    return (
-      <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm dark:border-white/10 dark:bg-gray-900">
-        <ExperienceStep
-          value={chessExperience}
-          onSelect={setChessExperience}
-          onContinue={() => setWizardStep("coach")}
-        />
-      </div>
-    );
-  }
-
   if (mode === "register" && wizardStep === "coach") {
     return (
       <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm dark:border-white/10 dark:bg-gray-900">
         <CoachStep
           value={coachId}
           onSelect={setCoachId}
-          onBack={() => setWizardStep("experience")}
           onContinue={() => setWizardStep("form")}
         />
       </div>
@@ -439,80 +420,20 @@ export default function AuthCard({ mode }: { mode: Mode }) {
 const inputClass =
   "w-full rounded-xl border border-gray-300 bg-white px-3.5 py-2.5 text-sm text-gray-900 outline-none transition-colors placeholder:text-gray-400 focus:border-brand-400 focus:ring-2 focus:ring-brand-100 dark:border-white/15 dark:bg-white/5 dark:text-white dark:focus:ring-brand-500/20";
 
-/** Бүртгэлийн 1-р алхам — "Та шатрын ямар туршлагатай вэ?" (chess.com-ийн онбоардингтой ижил санаа). */
-function ExperienceStep({
-  value,
-  onSelect,
-  onContinue,
-}: {
-  value: ChessExperience;
-  onSelect: (value: ChessExperience) => void;
-  onContinue: () => void;
-}) {
-  return (
-    <div className="space-y-4">
-      <div className="text-center">
-        <Mascot mood="think" className="mx-auto size-20" animated={false} />
-        <h2 className="mt-2 text-lg font-bold text-gray-900 dark:text-white">
-          Та шатрын ямар туршлагатай вэ?
-        </h2>
-      </div>
-
-      <div className="space-y-2">
-        {CHESS_EXPERIENCE_LEVELS.map((level) => (
-          <button
-            key={level.id}
-            type="button"
-            onClick={() => onSelect(level.id)}
-            className={`flex w-full items-center gap-3 rounded-xl border-2 px-4 py-3 text-left transition-colors ${
-              value === level.id
-                ? "border-brand-500 bg-brand-50 dark:bg-brand-500/15"
-                : "border-gray-200 hover:bg-gray-50 dark:border-white/10 dark:hover:bg-white/5"
-            }`}
-          >
-            <span className="text-2xl leading-none text-gray-700 dark:text-gray-200" aria-hidden>
-              {level.glyph}
-            </span>
-            <span className="font-medium text-gray-800 dark:text-gray-100">{level.label}</span>
-          </button>
-        ))}
-      </div>
-
-      <button
-        type="button"
-        onClick={onContinue}
-        className="w-full rounded-xl bg-brand-500 py-2.5 font-semibold text-white transition-colors hover:bg-brand-600"
-      >
-        Үргэлжлүүлэх
-      </button>
-    </div>
-  );
-}
-
-/** Бүртгэлийн 2-р алхам — дасгалжуулагч сонгох. Дүрсүүд ЗӨВХӨН манай өөрсдийн (lucide + градиент) — chess.com-ийн зохиогчийн эрхтэй дүрсийг хуулбарлаагүй. */
+/** Бүртгэлийн 1-р алхам — дасгалжуулагч сонгох. Дүрсүүд ЗӨВХӨН манай өөрсдийн (lucide + градиент) — chess.com-ийн зохиогчийн эрхтэй дүрсийг хуулбарлаагүй. */
 function CoachStep({
   value,
   onSelect,
-  onBack,
   onContinue,
 }: {
   value: string;
   onSelect: (id: string) => void;
-  onBack: () => void;
   onContinue: () => void;
 }) {
   const selected = COACHES.find((coach) => coach.id === value) ?? COACHES[0];
 
   return (
     <div className="space-y-4">
-      <button
-        type="button"
-        onClick={onBack}
-        className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
-      >
-        ← Буцах
-      </button>
-
       <div className="text-center">
         <h2 className="text-lg font-bold text-gray-900 dark:text-white">
           Дасгалжуулагчаа сонго

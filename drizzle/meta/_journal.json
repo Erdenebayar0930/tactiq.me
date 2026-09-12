@@ -253,6 +253,13 @@
       "when": 1789099185954,
       "tag": "0035_silky_vanisher",
       "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1789193517633,
+      "tag": "0036_chubby_surge",
+      "breakpoints": true
     }
   ]
 }

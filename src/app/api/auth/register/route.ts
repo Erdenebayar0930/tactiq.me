@@ -9,7 +9,7 @@ import { rateLimit } from "@/lib/api/rateLimit";
 import { db } from "@/lib/db";
 import { appConfig, referrals, users } from "@/lib/db/schema";
 import { asRole, isStudentRole, type UserStatus } from "@/lib/permissions";
-import { isChessExperience, isCoachId } from "@/lib/tactiq/coaches";
+import { isCoachId } from "@/lib/tactiq/coaches";
 import { today } from "@/lib/tactiq/day";
 import { TRIAL_DAYS } from "@/lib/billing";
 import { trialUntil } from "@/lib/api/premium";
@@ -105,11 +105,8 @@ export async function POST(request: NextRequest) {
 
     const referralCode = normalizeInviteCode(body.referralCode);
 
-    // Хоёулаа заавал биш (Google-ээр нэвтрэх хуучин мөр шинэ талбаргүй ирж
-    // болно) — танихгүй/дутуу утга бол баганын өөрийн DEFAULT-руу унана.
-    const chessExperience = isChessExperience(body.chessExperience)
-      ? body.chessExperience
-      : undefined;
+    // Заавал биш (Google-ээр нэвтрэх хуучин мөр шинэ талбаргүй ирж болно) —
+    // танихгүй/дутуу утга бол баганын өөрийн DEFAULT-руу унана.
     const coachId = isCoachId(body.coachId) ? body.coachId : undefined;
 
     // Гүйлгээний БҮХ бичилт ИЖИЛ мөчийг лавлана.
@@ -162,7 +159,6 @@ export async function POST(request: NextRequest) {
           // "1 өдөр" харагдана.
           lastActiveDay: "",
           streakDays: 0,
-          ...(chessExperience ? { chessExperience } : {}),
           ...(coachId ? { coachId } : {}),
           // Үнэгүй туршилт. Мөр ХАРААХАН байхгүй тул `extendPremium` БИШ,
           // шууд утга оноож болно.
