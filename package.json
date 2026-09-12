@@ -15,6 +15,7 @@
     "seed:piano": "tsx --env-file=.env.local scripts/seed-piano-course.ts",
     "seed:piano:rhythm": "tsx --env-file=.env.local scripts/seed-piano-rhythm.ts",
     "seed:puzzles": "tsx --env-file=.env.local scripts/seed-chess-puzzles.ts",
+    "seed:sudoku": "tsx --env-file=.env.local scripts/seed-sudoku-course.ts",
     "audit:puzzles": "tsx --env-file=.env.local scripts/audit-puzzles.ts",
     "seed:networks": "tsx --env-file=.env.local scripts/seed-networks-course.ts",
     "seed:puzzlepack": "tsx --env-file=.env.local scripts/seed-puzzles-course.ts",
