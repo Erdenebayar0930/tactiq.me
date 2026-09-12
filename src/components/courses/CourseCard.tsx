@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowRight, CheckCircle2, Clock, Crown, Lock } from "lucide-react";
+import { ArrowRight, CheckCircle2, Clock, Lock } from "lucide-react";
 
 import { CourseCover } from "@/components/tactiq/CourseCover";
 import { Icon } from "@/components/tactiq/Icon";
@@ -109,12 +109,6 @@ export function CourseCard({
               {time}
             </span>
           )
-        )}
-        {hasContent && (
-          <span className="absolute right-2.5 top-2.5 inline-flex items-center gap-1 rounded-full bg-white/95 px-2 py-0.5 text-[11px] font-bold text-gray-800 shadow-sm dark:bg-gray-900/90 dark:text-gray-100">
-            <Crown className="size-3.5 text-amber-500" fill="#f59e0b" aria-hidden />
-            Түвшин {stat.currentLevel}
-          </span>
         )}
       </div>
 
