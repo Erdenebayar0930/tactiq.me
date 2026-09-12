@@ -32,7 +32,7 @@ import { findSpecies } from "@/lib/tactiq/pets";
 import { signOutCompletely } from "@/lib/session";
 import { asRole, isStudentRole, roleLabels } from "@/lib/permissions";
 import { ratingTitle } from "@/lib/tactiq/rating";
-import { SCHOOLS } from "@/lib/tactiq/schools";
+import { useSchools } from "@/context/SchoolsContext";
 
 /** Миний профайл (#9 дэлгэц) — угталт, ахиц, хөтөлбөрийн хурдан холбоос. */
 export default function ProfilePage() {
@@ -444,13 +444,15 @@ function XpCard({
  * нь 404 болж, ажиллаж буй холбоосоос дор.
  */
 function SchoolShortcuts() {
+  const schools = useSchools();
+
   return (
     <section>
       <h2 className="mb-3 text-sm font-bold text-gray-900 dark:text-white">
         Курсууд
       </h2>
       <div className="grid grid-cols-3 gap-3">
-        {SCHOOLS.map((school) => (
+        {schools.map((school) => (
           <Link
             key={school.slug}
             href="/courses"

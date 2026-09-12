@@ -7,9 +7,13 @@ import type { LucideIcon } from "lucide-react";
  *
  * ⚠ Энэ нь `courses` ХҮСНЭГТЭЭС ӨӨР давхарга. Ялгаа нь:
  *
- *   • СУРГУУЛЬ (энэ файл) — брэндийн бүтэц. Тогтмол зургаа, кодод бичигдсэн,
- *     хэрэглэгч/админы үйлдлээр өөрчлөгдөхгүй. Нүүр хуудас, цэс, бүлэглэлт
- *     эндээс уншина.
+ *   • СУРГУУЛЬ (энэ файл) — брэндийн бүтэц. Тогтмол зургаа, кодод бичигдсэн.
+ *     Нүүр хуудас, цэс, бүлэглэлт эндээс уншина.
+ *
+ *     ⚠ ЖАГСААЛТ нь админаас өөрчлөгддөггүй (нэмэх/устгах/дараалал байхгүй),
+ *     харин ТЕКСТ нь өөрчлөгдөнө: `school_texts` хүснэгт нь нэр, тайлбар,
+ *     сэдвүүдийг дарж бичнэ (`mergeSchoolTexts` доор). Энэ файл нь ҮРГЭЛЖ
+ *     хүчинтэй анхдагч — засвар нь хоосон эсвэл байхгүй бол эндээс уншина.
  *   • КУРС (`courses` хүснэгт) — ЗААХ АГУУЛГА. Админ нэмж, засаж, устгана.
  *     Курс бүр `school` баганаар аль сургуульд харьяалагдахаа хэлнэ.
  *
@@ -266,6 +270,61 @@ export const SCHOOLS: School[] = [
     ],
   },
 ];
+
+/**
+ * Админ талаас засаж болох ТЕКСТ — `school_texts` хүснэгтийн мөр.
+ *
+ * `null`/`undefined` багана = «кодын анхдагчийг хэрэглэ». Зориуд: админ
+ * талбарыг хоослоход сургуулийн нэр хоосон болж нүүр хуудас эвдрэхгүй,
+ * харин анхдагч утга руугаа буцна.
+ */
+export type SchoolText = {
+  slug: string;
+  title?: string | null;
+  subtitle?: string | null;
+  tagline?: string | null;
+  description?: string | null;
+  groups?: TopicGroup[] | null;
+};
+
+/** Хоосон, зөвхөн зайнаас тогтсон утгыг «заагаагүй» гэж үзнэ. */
+function pick(override: string | null | undefined, fallback: string): string {
+  const trimmed = override?.trim();
+  return trimmed ? trimmed : fallback;
+}
+
+/**
+ * Кодын `SCHOOLS`-ийг админы засвартай нийлүүлнэ.
+ *
+ * ⚠ ЖАГСААЛТЫГ ӨӨРЧЛӨХГҮЙ — урт, дараалал, `slug`, дүрс, өнгө бүгд кодын
+ * хэвээр. Зөвхөн текст дарж бичигдэнэ. Танихгүй `slug`-тай засвар
+ * (сургуулийг кодоос хассан үед) чимээгүй алгасагдана.
+ *
+ * Клиент, сервер ХОЁУЛАНД дуудагдана: дүрс нь React компонент тул
+ * өгөгдлийн сангаар дамжуулах боломжгүй — клиент өөрөө кодын жагсаалттай
+ * нийлүүлдэг байх ёстой.
+ */
+export function mergeSchoolTexts(texts: readonly SchoolText[]): School[] {
+  if (texts.length === 0) return SCHOOLS;
+
+  const bySlug = new Map(texts.map((text) => [text.slug, text]));
+
+  return SCHOOLS.map((school) => {
+    const text = bySlug.get(school.slug);
+    if (!text) return school;
+
+    return {
+      ...school,
+      title: pick(text.title, school.title),
+      subtitle: pick(text.subtitle, school.subtitle),
+      tagline: pick(text.tagline, school.tagline),
+      description: pick(text.description, school.description),
+      // Хоосон массив нь ХҮЧИНТЭЙ засвар (сэдвээ бүгдийг авсан) тул
+      // `length`-ээр биш `null` эсэхээр шалгана.
+      groups: text.groups ?? school.groups,
+    };
+  });
+}
 
 /** Сургуулийн нийт сэдвийн тоо — картан дээр "24 сэдэв" гэж харуулна. */
 export function topicCount(school: School): number {

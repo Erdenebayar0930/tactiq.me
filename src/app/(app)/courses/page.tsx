@@ -8,7 +8,8 @@ import { apiFetch, ApiError } from "@/lib/apiClient";
 import { useApiData } from "@/hooks/useApiData";
 import { CourseCard } from "@/components/courses/CourseCard";
 import { ErrorNote, Skeleton } from "@/components/tactiq/ui";
-import { SCHOOLS, UNGROUPED_LABEL } from "@/lib/tactiq/schools";
+import { useSchools } from "@/context/SchoolsContext";
+import { UNGROUPED_LABEL } from "@/lib/tactiq/schools";
 
 import type { CourseStat } from "@/lib/api/courseStats";
 import type { Course } from "@/lib/tactiq/courses";
@@ -26,6 +27,7 @@ import type { School } from "@/lib/tactiq/schools";
 export default function CoursesPage() {
   const { user, apply } = useUser();
   const router = useRouter();
+  const schools = useSchools();
   const [busySlug, setBusySlug] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -97,7 +99,7 @@ export default function CoursesPage() {
         </div>
       ) : (
         <div className="space-y-10">
-          {groupBySchool(courses).map(({ school, label, items }) => (
+          {groupBySchool(courses, schools).map(({ school, label, items }) => (
             <section key={label} aria-labelledby={`school-${label}`}>
               <div className="mb-4 flex items-center gap-3">
                 {school && (
@@ -151,21 +153,24 @@ export default function CoursesPage() {
 }
 
 /**
- * Курсуудыг СУРГУУЛИАР бүлэглэнэ — `SCHOOLS`-ийн дарааллаар.
+ * Курсуудыг СУРГУУЛИАР бүлэглэнэ — сургуулийн дарааллаар.
  *
  * ⚠ Курс ОЛОН сургуульд байж болно — тэр үед сургууль бүрийн бүлэгт гарна.
  * ⚠ Сургуульд харьяалагдаагүй курсыг ХАЯХГҮЙ — төгсгөлд "Бусад" бүлэгт.
  * Хоосон бүлэг (курсгүй сургууль) огт зурагдахгүй.
+ *
+ * `schools`-ыг ПАРАМЕТРЭЭР авна (`useSchools()`) — нэрийг админ засаж
+ * болдог тул кодын жагсаалтыг шууд импортолж болохгүй.
  */
-function groupBySchool(courses: Course[]) {
+function groupBySchool(courses: Course[], schools: readonly School[]) {
   const groups: { school: School | null; label: string; items: Course[] }[] = [];
 
-  for (const school of SCHOOLS) {
+  for (const school of schools) {
     const items = courses.filter((course) => (course.schools ?? []).includes(school.slug));
     if (items.length > 0) groups.push({ school, label: school.title, items });
   }
 
-  const known = new Set(SCHOOLS.map((school) => school.slug));
+  const known = new Set(schools.map((school) => school.slug));
   const rest = courses.filter((course) => !(course.schools ?? []).some((slug) => known.has(slug)));
   if (rest.length > 0) groups.push({ school: null, label: UNGROUPED_LABEL, items: rest });
 

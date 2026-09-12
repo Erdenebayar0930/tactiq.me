@@ -4,7 +4,7 @@ import { Icon } from "@/components/tactiq/Icon";
 import { ErrorNote, ProgressBar, Skeleton } from "@/components/tactiq/ui";
 import { useApiData } from "@/hooks/useApiData";
 import { colorStyles } from "@/lib/tactiq/theme";
-import { findSchool } from "@/lib/tactiq/schools";
+import { useSchool } from "@/context/SchoolsContext";
 
 import type { Skill } from "@/lib/api/skills";
 
@@ -58,7 +58,7 @@ export default function StudentCourses({
 
 function CourseRow({ course }: { course: Skill }) {
   const styles = colorStyles(course.color);
-  const school = findSchool(course.school);
+  const school = useSchool(course.school);
 
   return (
     <div className="flex items-center gap-3">

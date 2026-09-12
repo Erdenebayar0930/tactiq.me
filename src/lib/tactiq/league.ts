@@ -21,6 +21,8 @@
 
 import { SCHOOLS } from "./schools";
 
+import type { School } from "./schools";
+
 /**
  * Шатлал — доогуураас дээш. Индекс нь сангийн `tier` багана.
  *
@@ -103,9 +105,15 @@ export function leagueKeysForSchools(schools: readonly string[]): string[] {
   return keys.length > 0 ? keys : [OTHER_LEAGUE];
 }
 
-/** Сонгогч дээрх нэр — «Mind · Оюун ухаан». */
-export function leagueTitle(key: string): string {
-  const school = SCHOOLS.find((item) => item.slug === key);
+/**
+ * Сонгогч дээрх нэр — «Mind · Оюун ухаан».
+ *
+ * `schools`-ыг заавал биш параметрээр авна: сургуулийн НЭРИЙГ админ засаж
+ * болдог тул дуудагч нийлүүлсэн жагсаалтыг (`getSchools()`) дамжуулах
+ * ёстой. Дамжуулаагүй бол кодын анхдагч нэрээр буцна.
+ */
+export function leagueTitle(key: string, schools: readonly School[] = SCHOOLS): string {
+  const school = schools.find((item) => item.slug === key);
   return school ? `${school.title} · ${school.subtitle}` : "Бусад";
 }
 

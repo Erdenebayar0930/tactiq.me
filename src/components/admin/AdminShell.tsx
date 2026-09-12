@@ -10,7 +10,7 @@ import {
   Menu,
   Sparkles,
   Users,
-  X, Tag } from "lucide-react";
+  X, Tag, GraduationCap } from "lucide-react";
 
 import { useUser } from "@/context/UserContext";
 import { isAdminRole } from "@/lib/permissions";
@@ -29,6 +29,7 @@ const NAV = [
   { href: "/admin", label: "Хяналт", Icon: LayoutDashboard, exact: true, adminOnly: true },
   { href: "/admin/users", label: "Хэрэглэгчид", Icon: Users, adminOnly: true },
   { href: "/admin/courses", label: "Сургалт", Icon: BookOpen, adminOnly: false },
+  { href: "/admin/schools", label: "Сургууль", Icon: GraduationCap, adminOnly: true },
   { href: "/admin/promo", label: "Сурталчлагч", Icon: Tag, adminOnly: true },
 ];
 

@@ -21,7 +21,9 @@ import { useApiData } from "@/hooks/useApiData";
 import { isAdminRole } from "@/lib/permissions";
 import { apiFetch, ApiError } from "@/lib/apiClient";
 import { colorStyles } from "@/lib/tactiq/theme";
-import { SCHOOLS } from "@/lib/tactiq/schools";
+import { useSchools } from "@/context/SchoolsContext";
+
+import type { School } from "@/lib/tactiq/schools";
 
 type CourseRow = {
   slug: string;
@@ -101,22 +103,22 @@ export default function AdminCoursesPage() {
 }
 
 /**
- * Курсуудыг СУРГУУЛИАР бүлэглэнэ — `SCHOOLS`-ийн дарааллаар, бүлэг дотроо
+ * Курсуудыг СУРГУУЛИАР бүлэглэнэ — сургуулийн дарааллаар, бүлэг дотроо
  * ирсэн (`sortOrder`) дарааллаар. Сургуульгүй курсууд төгсгөлд «Бүлэглээгүй».
  *
  * ⚠ Хэрэглэгчийн `/courses` дэлгэц ЯГ ИЖИЛ бүлэглэлтээр харуулдаг
  * (`groupBySchool`, `app/(app)/courses/page.tsx`) — тиймээс энд харагдаж
  * буй бүлэг доторх дараалал нь хэрэглэгчид харагдах дараалал.
  */
-function groupCoursesBySchool(courses: CourseRow[]) {
+function groupCoursesBySchool(courses: CourseRow[], schools: readonly School[]) {
   // ⚠ Курс ОЛОН сургуульд байж болно — тэр үед бүлэг бүрт давхар харагдана.
-  const groups = SCHOOLS.map((school) => ({
+  const groups = schools.map((school) => ({
     key: school.slug,
     title: `${school.title} · ${school.subtitle}`,
     items: courses.filter((course) => (course.schools ?? []).includes(school.slug)),
   }));
 
-  const known = new Set(SCHOOLS.map((school) => school.slug));
+  const known = new Set(schools.map((school) => school.slug));
   groups.push({
     key: "",
     title: "Бүлэглээгүй",
@@ -145,6 +147,7 @@ function groupCoursesBySchool(courses: CourseRow[]) {
  * ⚠ Өөрчлөлт нь ШУУД хадгалагдана (тусдаа «Хадгалах» товчгүй).
  */
 function CourseList({ courses, canReorder }: { courses: CourseRow[]; canReorder: boolean }) {
+  const schools = useSchools();
   const [order, setOrder] = useState(courses);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -154,7 +157,7 @@ function CourseList({ courses, canReorder }: { courses: CourseRow[]; canReorder:
     setOrder(courses);
   }, [courses]);
 
-  const groups = groupCoursesBySchool(order);
+  const groups = groupCoursesBySchool(order, schools);
 
   const move = async (groupKey: string, index: number, delta: number) => {
     const group = groups.find((entry) => entry.key === groupKey);
@@ -290,13 +293,14 @@ function CreateCourseForm({
   onCancel: () => void;
 }) {
   const router = useRouter();
+  const allSchools = useSchools();
   const [slug, setSlug] = useState("");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [icon, setIcon] = useState("book");
   const [color, setColor] = useState("violet");
   const [status, setStatus] = useState<"active" | "coming-soon">("coming-soon");
-  const [schools, setSchools] = useState<string[]>([SCHOOLS[0].slug]);
+  const [schools, setSchools] = useState<string[]>([allSchools[0].slug]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 

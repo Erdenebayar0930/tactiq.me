@@ -14,7 +14,10 @@ import {
 } from "lucide-react";
 
 import { BRAND_NAME, BRAND_PROMISE, BRAND_SHORT } from "@/lib/brand";
-import { SCHOOLS, topicCount } from "@/lib/tactiq/schools";
+import { getSchools } from "@/lib/api/schools";
+import { topicCount } from "@/lib/tactiq/schools";
+
+import type { School } from "@/lib/tactiq/schools";
 
 /**
  * Нүүр хуудас (#1 дэлгэц).
@@ -103,11 +106,23 @@ const PARENT_FEATURES = [
   },
 ];
 
-export default function HomePage() {
+/**
+ * Сургуулийн текстийг санд уншдаг болсон тул хуудас нь цэвэр статик биш —
+ * ISR-ээр 5 минут кэшлэнэ.
+ *
+ * ⚠ `force-dynamic` БИШ: маркетингийн нүүр хуудас нь хамгийн их ачаалалтай,
+ * хамгийн бага өөрчлөгддөг хуудас. Хүсэлт бүрд сан цохих нь ямар ч
+ * өгөөжгүй — админ нэрийг сольсны дараа 5 минутын дотор гарна.
+ */
+export const revalidate = 300;
+
+export default async function HomePage() {
+  const schools = await getSchools();
+
   return (
     <>
-      <Hero />
-      <Products />
+      <Hero schools={schools} />
+      <Products schools={schools} />
       <Progress />
       <Tournaments />
       <Parents />
@@ -118,7 +133,7 @@ export default function HomePage() {
 
 /* ───────────────────────── Hero ───────────────────────── */
 
-function Hero() {
+function Hero({ schools }: { schools: School[] }) {
   return (
     <section className="relative isolate overflow-hidden">
       <Aurora />
@@ -169,7 +184,7 @@ function Hero() {
           </p>
         </div>
 
-        <HeroPreview />
+        <HeroPreview schools={schools} />
       </div>
     </section>
   );
@@ -207,7 +222,7 @@ function Aurora() {
  * хуучирч, монитор бүр дээр өөр өнгөтэй харагддаг. Энэ хувилбар нь брэндийн
  * өнгө, фонтоо шууд өвлөнө.
  */
-function HeroPreview() {
+function HeroPreview({ schools }: { schools: School[] }) {
   return (
     <div className="relative mx-auto w-full min-w-0 max-w-md">
       <div className="absolute inset-6 -z-10 rounded-[2.5rem] bg-brand-500/25 blur-3xl" aria-hidden />
@@ -242,7 +257,7 @@ function HeroPreview() {
           </div>
 
           <div className="mt-3 grid grid-cols-3 gap-2.5">
-            {SCHOOLS.map((school) => (
+            {schools.map((school) => (
               <div
                 key={school.slug}
                 className={`flex min-w-0 flex-col items-center gap-1.5 rounded-xl bg-gradient-to-br ${school.gradient} px-2 py-3`}
@@ -314,7 +329,7 @@ function PreviewStat({
 
 /* ─────────────────────── Зургаан сургууль ─────────────────────── */
 
-function Products() {
+function Products({ schools }: { schools: School[] }) {
   return (
     <section id="schools" className="scroll-mt-24 border-t border-white/5 py-20">
       <div className="mx-auto max-w-6xl px-4">
@@ -325,7 +340,7 @@ function Products() {
         />
 
         <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {SCHOOLS.map((school) => (
+          {schools.map((school) => (
             <article
               key={school.slug}
               className="group relative flex flex-col overflow-hidden rounded-2xl border border-white/10 bg-white/[0.035] p-6 transition-[transform,border-color,background-color] duration-200 hover:-translate-y-1 hover:border-white/20 hover:bg-white/[0.06]"

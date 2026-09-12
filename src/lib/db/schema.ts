@@ -1452,12 +1452,47 @@ export const appConfig = pgTable("app_config", {
 });
 
 // ---------------------------------------------------------------------------
+// Сургуулийн текстийн засвар (админ)
+// ---------------------------------------------------------------------------
+
+/**
+ * Сургуулийн ТЕКСТИЙГ админ талаас засах — нэр, тайлбар, сэдвүүд.
+ *
+ * ⚠ Энэ нь сургуулийн ЖАГСААЛТ БИШ. Зургаан сургуулийн бүрэлдэхүүн
+ * (`slug`, дүрс, өнгө, дараалал) `lib/tactiq/schools.ts`-д кодод хэвээр —
+ * тэр нь ХОЁР шалтгаантай:
+ *
+ *   • Tailwind нь эх кодыг ТЕКСТЭЭР сканнердана. Градиент классыг DB-ээс
+ *     уншвал (`from-indigo-500`) CSS-д огт үүсэхгүй, өнгө нь алга болно.
+ *   • Дүрс нь Lucide-ийн React КОМПОНЕНТ — өгөгдлийн сангаар дамжуулж
+ *     болохгүй.
+ *
+ * Тиймээс энэ хүснэгт нь ЗӨВХӨН дарж бичих (override) давхарга: мөр
+ * байхгүй, эсвэл багана `null` бол кодын анхдагч утга хэрэглэгдэнэ.
+ * Ингэснээр админ хэдий зөрүүтэй утга оруулсан ч сургууль өөрөө нүүр
+ * хуудаснаас хэзээ ч алга болохгүй.
+ */
+export const schoolTexts = pgTable("school_texts", {
+  /** `lib/tactiq/schools.ts`-ийн `slug` — кодод байхгүй slug-ийг уншихдаа алгасна. */
+  slug: varchar("slug", { length: 16 }).primaryKey(),
+  /** Бүгд NULLABLE: `null` = «кодын анхдагчийг хэрэглэ». */
+  title: varchar("title", { length: 40 }),
+  subtitle: varchar("subtitle", { length: 80 }),
+  tagline: varchar("tagline", { length: 200 }),
+  description: text("description"),
+  /** `TopicGroup[]` — `null` бол кодын бүлгүүд хэвээр. */
+  groups: jsonb("groups").$type<{ title: string | null; topics: string[] }[]>(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+// ---------------------------------------------------------------------------
 // Мөрийн төрлүүд — route болон компонентууд эндээс лавлана
 // ---------------------------------------------------------------------------
 
 export type UserRow = typeof users.$inferSelect;
 export type DeviceRow = typeof devices.$inferSelect;
 export type AppConfigRow = typeof appConfig.$inferSelect;
+export type SchoolTextRow = typeof schoolTexts.$inferSelect;
 export type LessonProgressRow = typeof lessonProgress.$inferSelect;
 export type PathChestRow = typeof pathChests.$inferSelect;
 export type ChessQueueRow = typeof chessQueue.$inferSelect;

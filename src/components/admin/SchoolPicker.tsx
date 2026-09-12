@@ -2,14 +2,14 @@
 
 import { Check } from "lucide-react";
 
-import { SCHOOLS } from "@/lib/tactiq/schools";
+import { useSchools } from "@/context/SchoolsContext";
 
 /**
  * Курсын СУРГУУЛИУДЫГ олноор сонгоно (Mind, Codely, …).
  *
  * ⚠ СОНГОСОН ДАРААЛАЛ ХАДГАЛАГДАНА — эхэнд сонгосон нь ҮНДСЭН сургууль
  * (`courses.school`: гэрчилгээ, ур чадвар). Тиймээс шинэ сонголтыг
- * жагсаалтын ТӨГСГӨЛД нэмнэ, `SCHOOLS`-ийн дарааллаар эрэмбэлэхгүй.
+ * жагсаалтын ТӨГСГӨЛД нэмнэ, сургуулийн дарааллаар эрэмбэлэхгүй.
  *
  * Select биш чагт: сургууль зургаахан, бүгд нэг харцаар харагдах нь
  * олон сонголттой select-ээс (Ctrl+дарах) хамаагүй ойлгомжтой.
@@ -21,6 +21,8 @@ export function SchoolPicker({
   value: string[];
   onChange: (next: string[]) => void;
 }) {
+  const schools = useSchools();
+
   const toggle = (slug: string) =>
     onChange(value.includes(slug) ? value.filter((item) => item !== slug) : [...value, slug]);
 
@@ -31,7 +33,7 @@ export function SchoolPicker({
       </legend>
 
       <div className="flex flex-wrap gap-2">
-        {SCHOOLS.map((school) => {
+        {schools.map((school) => {
           const index = value.indexOf(school.slug);
           const selected = index !== -1;
 

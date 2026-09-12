@@ -14,6 +14,10 @@ import { getRedis } from "@/lib/redis";
  * засах route-ууд бичих (устгах) үед хамтдаа ашиглана. */
 export const COURSES_CATALOG_CACHE_KEY = "courses:catalog";
 
+/** Сургуулийн текстийн засвар — `lib/api/schools.ts` уншиж, админы
+ * `/api/admin/schools/[slug]` бичих үед устгана. */
+export const SCHOOLS_TEXT_CACHE_KEY = "schools:texts";
+
 type MemoryEntry = { value: unknown; expiresAt: number };
 
 const memoryCache = new Map<string, MemoryEntry>();

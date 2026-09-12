@@ -7,7 +7,7 @@ import { Icon } from "@/components/tactiq/Icon";
 import { ErrorNote, Skeleton } from "@/components/tactiq/ui";
 import { useApiData } from "@/hooks/useApiData";
 import { colorStyles } from "@/lib/tactiq/theme";
-import { findSchool } from "@/lib/tactiq/schools";
+import { useSchool } from "@/context/SchoolsContext";
 
 import type { Skill } from "@/lib/api/skills";
 
@@ -77,7 +77,7 @@ function formatDuration(seconds: number): string {
 
 function SkillRow({ skill }: { skill: Skill }) {
   const styles = colorStyles(skill.color);
-  const school = findSchool(skill.school);
+  const school = useSchool(skill.school);
 
   return (
     <div className="flex items-center gap-3">

@@ -1,5 +1,6 @@
 import AdminShell from "@/components/admin/AdminShell";
 import Protected from "@/components/tactiq/Protected";
+import { SchoolsProvider } from "@/context/SchoolsContext";
 
 /**
  * Хяналтын самбарын хүрээ.
@@ -26,7 +27,9 @@ export default function AdminLayout({
    */
   return (
     <Protected allowedRoles={["teacher", "admin", "super"]}>
-      <AdminShell>{children}</AdminShell>
+      <SchoolsProvider>
+        <AdminShell>{children}</AdminShell>
+      </SchoolsProvider>
     </Protected>
   );
 }

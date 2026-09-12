@@ -2,8 +2,10 @@ import Link from "next/link";
 import { Apple, ArrowRight, Flame, Play, TrendingUp, User, Zap } from "lucide-react";
 
 import { Logo, LogoMark } from "@/components/tactiq/Mascot";
+import { getSchools } from "@/lib/api/schools";
+
+import type { School } from "@/lib/tactiq/schools";
 import { BRAND_NAME, BRAND_TAGLINE_PARTS } from "@/lib/brand";
-import { SCHOOLS } from "@/lib/tactiq/schools";
 
 /**
  * Нийтийн вэбсайтын хүрээ.
@@ -19,11 +21,28 @@ import { SCHOOLS } from "@/lib/tactiq/schools";
  * байсан толгой нь харанхуй хэвээр үлдэж, цагаан бичвэр нь уншигдана.
  * Тиймээс sticky байх нь аюулгүй — гүйлгэсэн ч "Эхлэх" товч гарт байна.
  */
-export default function SiteLayout({
+/**
+ * Сургуулийн текстийг санд уншдаг болсон тул хуудас нь цэвэр статик биш —
+ * ISR-ээр 5 минут кэшлэнэ.
+ *
+ * ⚠ `force-dynamic` БИШ: маркетингийн нүүр хуудас нь хамгийн их ачаалалтай,
+ * хамгийн бага өөрчлөгддөг хуудас. Хүсэлт бүрд сан цохих нь ямар ч
+ * өгөөжгүй — админ нэрийг сольсны дараа 5 минутын дотор гарна.
+ */
+export const revalidate = 300;
+
+export default async function SiteLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  /*
+   * Сургуулийн нэрийг админ засаж болдог тул кодын жагсаалтыг шууд БИШ,
+   * нийлүүлсэн хувилбарыг уншина. `revalidate` (доор) нь энэ асуулгыг
+   * хүсэлт бүрд ажиллуулахгүй — хуудас кэшлэгдсэн хэвээр.
+   */
+  const schools = await getSchools();
+
   return (
     /*
      * Нийтийн сайт нь ГЭРЭЛТ ГОРИМД Ч харанхуй. Энэ бол зориудын шийдвэр:
@@ -75,7 +94,7 @@ export default function SiteLayout({
 
       <main className="flex-1">{children}</main>
 
-      <SiteFooter />
+      <SiteFooter schools={schools} />
     </div>
   );
 }
@@ -88,7 +107,7 @@ export default function SiteLayout({
  * дэлгүүрийн тэмдэг тавьж, хаашаа ч хүрэхгүй холбоос өгвөл хэрэглэгчийг
  * төөрөгдүүлнэ. Апп нийтлэгдмэгц эдгээрийг жинхэнэ холбоос болгоно.
  */
-function SiteFooter() {
+function SiteFooter({ schools }: { schools: School[] }) {
   return (
     <footer className="border-t border-white/10 bg-ink-950 text-white">
       <div className="mx-auto max-w-6xl px-4 py-14">
@@ -108,7 +127,7 @@ function SiteFooter() {
 
           <div className="grid gap-8 sm:grid-cols-3">
             <FooterColumn title="Курсууд">
-              {SCHOOLS.map((school) => (
+              {schools.map((school) => (
                 <li key={school.slug}>
                   <a
                     href="#schools"

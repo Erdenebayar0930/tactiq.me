@@ -1,5 +1,6 @@
 import AppShell from "@/components/tactiq/AppShell";
 import Protected from "@/components/tactiq/Protected";
+import { SchoolsProvider } from "@/context/SchoolsContext";
 
 /**
  * Хэрэглэгчийн апп-ын хүрээ.
@@ -18,7 +19,13 @@ export default function AppLayout({
 }) {
   return (
     <Protected>
-      <AppShell>{children}</AppShell>
+      {/* Сургуулийн нэрийг админ засаж болдог — клиент дэлгэцүүд эндээс уншина.
+          ⚠ Маркетингийн (`(site)`) хэсэгт ЭНЭ провайдер БАЙХГҮЙ: тэр хуудсууд
+          сервер тал дээр `getSchools()`-оор зөв текстээ аль хэдийн авдаг тул
+          нэмэлт хүсэлт нь дэмий байна. */}
+      <SchoolsProvider>
+        <AppShell>{children}</AppShell>
+      </SchoolsProvider>
     </Protected>
   );
 }

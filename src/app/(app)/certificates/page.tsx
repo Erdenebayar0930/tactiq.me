@@ -7,7 +7,7 @@ import { Icon } from "@/components/tactiq/Icon";
 import { ErrorNote, Skeleton } from "@/components/tactiq/ui";
 import { useApiData } from "@/hooks/useApiData";
 import { colorStyles } from "@/lib/tactiq/theme";
-import { findSchool } from "@/lib/tactiq/schools";
+import { useSchool } from "@/context/SchoolsContext";
 
 import type { Certificate, CertificatesView } from "@/lib/api/certificates";
 
@@ -133,7 +133,7 @@ function CertificateCard({
   premium: boolean;
 }) {
   const styles = colorStyles(certificate.color);
-  const school = findSchool(certificate.school);
+  const school = useSchool(certificate.school);
 
   return (
     <section className="surface overflow-hidden p-0" data-certificate={certificate.courseSlug}>

@@ -11,6 +11,7 @@ import {
   lessonProgress,
   users,
 } from "@/lib/db/schema";
+import { getSchools } from "@/lib/api/schools";
 import { courseSchools } from "@/lib/db/courses";
 import { addDays, daysBetween, startOfWeek, today } from "@/lib/tactiq/day";
 import {
@@ -538,11 +539,13 @@ export async function leagueOptions(uid: string): Promise<LeagueOption[]> {
 
   const tierByKey = new Map(standings.map((row) => [row.key, row.tier]));
   const joined = new Set(joinedRows.map((row) => row.key));
+  // Сургуулийн нэрийг админ засаж болдог тул нийлүүлсэн жагсаалтыг уншина.
+  const schools = await getSchools();
 
   return [...keys]
     .map((key) => ({
       key,
-      title: leagueTitle(key),
+      title: leagueTitle(key, schools),
       tier: clampTier(tierByKey.get(key) ?? 0),
       joined: joined.has(key),
     }))
