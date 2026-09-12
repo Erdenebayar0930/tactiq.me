@@ -80,8 +80,20 @@ type Unit = {
   lessons: { title: string; xp: number; items: Spec[] }[];
 };
 
-/** Хүндрэлийн хичээл тус бүрд хэдэн хөлөг вэ. */
-const PER_LESSON = 20;
+/**
+ * Хүндрэл бүрийн хөлгийг хэд хэдэн ХИЧЭЭЛД хуваана.
+ *
+ * ⚠ 20 хөлгийг НЭГ хичээлд хийвэл тэр нь платформ дээрх хамгийн урт
+ * хичээл болж, нэг суултад 20 судоку бодох шаардлага гарна. Мөн замын
+ * зураг (`lib/tactiq/path.ts`) нь ХИЧЭЭЛ тутамд нэг цэг зурдаг тул урт
+ * хичээл нь замыг УРТ БИШ, харин ХООСОН болгоно — ахиц харагдахаа болино.
+ *
+ * ⚠ 5 × 3 хүндрэл = нэгж тутам 15 хичээл. `CHEST_EVERY` нь 3 тул
+ * (`path.ts`) хайрцаг нь 15-д ТЭГШ хуваагдаж, нэгж бүрд 5 хайрцаг
+ * тэнцүү зайтай гарна. Эдгээр тоог өөрчлөх бол тэр хуваагдалтыг санаарай.
+ */
+const LESSONS_PER_LEVEL = 5;
+const PER_LESSON = 4;
 
 /**
  * Хөлөг бүрийн ӨВӨРМӨЦ seed.
@@ -94,6 +106,9 @@ const PER_LESSON = 20;
 function seedFor(size: SudokuSize, levelIndex: number, index: number): number {
   return size * 10_000 + levelIndex * 1_000 + index;
 }
+
+/** Хүндрэл тус бүрийн нийт хөлөг — сурагчид «12/20» гэж харагдана. */
+const TOTAL_PER_LEVEL = LESSONS_PER_LEVEL * PER_LESSON;
 
 const LEVELS: { level: Level; label: string }[] = [
   { level: "easy", label: "хөнгөн" },
@@ -181,22 +196,30 @@ function sizeUnit(
   return {
     title,
     color,
-    lessons: LEVELS.map(({ level, label }, levelIndex) => ({
-      title: `${size}×${size} ${label}`,
-      xp: xp[levelIndex],
-      items: Array.from({ length: PER_LESSON }, (_, index): Spec => {
-        const tips = TIPS[size][level];
+    /*
+     * Хүндрэл бүр → `LESSONS_PER_LEVEL` хичээл. Дугаарлалт нь ХҮНДРЭЛ
+     * дамнасан (1/20 … 20/20) — сурагч 5 хичээлийг НЭГ үргэлжилсэн
+     * дасгал гэж харах ёстой, хичээл тус бүрд 1/4-ээс дахин эхлэхгүй.
+     */
+    lessons: LEVELS.flatMap(({ level, label }, levelIndex) =>
+      Array.from({ length: LESSONS_PER_LEVEL }, (_, lessonIndex) => ({
+        title: `${size}×${size} ${label} ${lessonIndex + 1}`,
+        xp: xp[levelIndex],
+        items: Array.from({ length: PER_LESSON }, (_, slot): Spec => {
+          const index = lessonIndex * PER_LESSON + slot;
+          const tips = TIPS[size][level];
 
-        return {
-          kind: "sudoku",
-          prompt: `${size}×${size} ${label} — ${index + 1}/${PER_LESSON}`,
-          size,
-          level,
-          seed: seedFor(size, levelIndex, index),
-          explanation: tips[index % tips.length],
-        };
-      }),
-    })),
+          return {
+            kind: "sudoku",
+            prompt: `${size}×${size} ${label} — ${index + 1}/${TOTAL_PER_LEVEL}`,
+            size,
+            level,
+            seed: seedFor(size, levelIndex, index),
+            explanation: tips[index % tips.length],
+          };
+        }),
+      }))
+    ),
   };
 }
 
@@ -282,9 +305,14 @@ const UNITS: Unit[] = [
       },
     ],
   },
-  sizeUnit(4, "4×4 — хөнгөнөөс хүнд", "emerald", [40, 45, 50]),
-  sizeUnit(6, "6×6 — хайрцаг дөрвөлжин биш", "amber", [45, 50, 55]),
-  sizeUnit(9, "9×9 — жинхэнэ судоку", "violet", [50, 55, 60]),
+  /*
+   * ⚠ XP нь одоо платформын ХЭВИЙН хязгаарт (10-25) буцлаа: хичээл бүр
+   * 4 дасгалтай тул бусад курсийн хичээлтэй жишиж болохуйц болов. Хуучин
+   * 40-60 нь 20 дасгалтай НЭГ хичээлд зориулагдсан байсан.
+   */
+  sizeUnit(4, "4×4 — хөнгөнөөс хүнд", "emerald", [10, 12, 15]),
+  sizeUnit(6, "6×6 — хайрцаг дөрвөлжин биш", "amber", [12, 15, 18]),
+  sizeUnit(9, "9×9 — жинхэнэ судоку", "violet", [15, 18, 20]),
 ];
 
 /** Дасгалын хөлгийг бэлдэж, ЗААВАЛ эргүүлж шалгана. */
@@ -398,6 +426,7 @@ async function main() {
     let addedExercises = 0;
     let replacedLessons = 0;
     let removedExercises = 0;
+    let removedLessons = 0;
 
     for (const [unitIndex, unit] of built.entries()) {
       const [existingUnit] = await db
@@ -428,6 +457,29 @@ async function main() {
         .select({ id: lessons.id, title: lessons.title, sortOrder: lessons.sortOrder })
         .from(lessons)
         .where(eq(lessons.unitId, unitId));
+
+      /*
+       * ⚠ `--force` үед ХӨТӨЛБӨРТ БАЙХГҮЙ хичээлийг устгана. Эс бөгөөс
+       * бүтэц өөрчлөгдөх бүрд (жишээ нь «4×4 хөнгөн» → «4×4 хөнгөн 1…5»)
+       * хуучин хичээл замд өнчин үлдэж, сурагч хоёр хувилбарыг зэрэг
+       * харна.
+       *
+       * ⚠ Хичээл устгахад түүний `lesson_progress` мөр ӨНЧИН болно (тэр
+       * багана нь гадаад түлхүүр БИШ) — XP аль хэдийн олгогдсон тул
+       * хэрэглэгч юу ч алдахгүй, зөвхөн замын тэмдэглэгээ шинэ хичээл
+       * рүү шилжинэ. Тиймээс устгахаас өмнө нэрсийг ЛОГЛОНО.
+       */
+      if (force) {
+        const wanted = new Set(unit.lessons.map((lesson) => lesson.title));
+        const stale = existingLessons.filter((row) => !wanted.has(row.title));
+
+        for (const row of stale) {
+          // `exercises` нь `lessons`-оос CASCADE тул дасгал автоматаар устна.
+          await db.delete(lessons).where(eq(lessons.id, row.id));
+          removedLessons += 1;
+          console.log(`  − хоцрогдсон хичээл устав: ${unit.title} / ${row.title}`);
+        }
+      }
       const existingByTitle = new Map(existingLessons.map((row) => [row.title, row]));
       let lessonOrder = existingLessons.reduce((max, row) => Math.max(max, row.sortOrder + 1), 0);
 
@@ -494,7 +546,7 @@ async function main() {
       }
     }
 
-    if (addedLessons === 0 && replacedLessons === 0) {
+    if (addedLessons === 0 && replacedLessons === 0 && removedLessons === 0) {
       console.log(
         "Бүх хичээл аль хэдийн байна — юу ч өөрчлөөгүй.\n" +
           "Дасгалыг ШИНЭЧЛЭХ бол: npm run seed:sudoku -- <email> --force"
@@ -505,6 +557,7 @@ async function main() {
       if (replacedLessons > 0) {
         parts.push(`${replacedLessons} хичээлийн дасгал шинэчлэгдлээ (${removedExercises} устав)`);
       }
+      if (removedLessons > 0) parts.push(`${removedLessons} хоцрогдсон хичээл устав`);
       console.log(
         `✅ "Судоку" — ${parts.join(", ")}. Нийт ${addedExercises} дасгал бичигдлээ.\n` +
           `Засах: /admin/courses/${COURSE_SLUG}`
