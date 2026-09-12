@@ -179,6 +179,7 @@ export type ExerciseTypeName =
   | "net-puzzle"
   | "slide-puzzle"
   | "sudoku"
+  | "matchstick"
   | "memory-game"
   | "code-maze"
   | "go-move"
@@ -191,6 +192,9 @@ export type ExerciseTypeName =
  * `choice` нь ҮРГЭЛЖ зөвшөөрөгдөнө — ямар ч сэдэвт асуулт тавьж болно.
  */
 export function allowedExerciseTypes(slug: string | null | undefined): ExerciseTypeName[] {
+  // Таягны оньсогын курс — тэгшитгэл засах + тоолох асуултууд.
+  if (slug === "matchstick") return ["choice", "matchstick"];
+
   if (KIDS_COURSES.has(slug ?? "")) {
     return ["choice", "memory-game", "slide-puzzle", "code-maze"];
   }

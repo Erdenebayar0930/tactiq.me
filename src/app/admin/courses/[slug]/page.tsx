@@ -49,6 +49,14 @@ import {
   MEMORY_PRESETS,
 } from "@/lib/puzzles/memory";
 import {
+  countSolutions,
+  decodeMatchstick,
+  encodeMatchstick,
+  evaluate as evaluateMatchstick,
+  fromText as matchstickFromText,
+  toText as matchstickToText,
+} from "@/lib/puzzles/matchstick";
+import {
   decodeSudoku,
   encodeSudoku,
   generateSudoku,
@@ -114,6 +122,7 @@ type ExerciseType =
   | "net-puzzle"
   | "slide-puzzle"
   | "sudoku"
+  | "matchstick"
   | "memory-game"
   | "code-maze"
   | "go-move"
@@ -834,6 +843,7 @@ const EXERCISE_TYPE_LABELS: Record<ExerciseType, string> = {
   "net-puzzle": "Сүлжээний оньсого",
   "slide-puzzle": "Гулсдаг оньсого",
   sudoku: "Судоку",
+  matchstick: "Таягны оньсого",
   "memory-game": "Санах ойн тоглоом",
   "code-maze": "Код угсрах (лабиринт)",
   "go-move": "Го — чулуу тавих",
@@ -969,6 +979,17 @@ function ExerciseForm({
        */
       if (!decodeSudoku(grid)) {
         setError("Судоку үүсгээгүй эсвэл буруу байна — «Шинэ судоку» дарна уу.");
+        return;
+      }
+      payload = { type, prompt: prompt.trim(), grid, explanation: explanation.trim() };
+    } else if (type === "matchstick") {
+      /*
+       * `decodeMatchstick` нь тэгшитгэл БУРУУ байх, БӨГӨӨД нэг таягаар
+       * шийдэгдэх хоёуланг шалгана. Аль нэг нь зөрвөл сурагч гацах тул
+       * багшид ЯГ юу нь болоогүйг хэлнэ.
+       */
+      if (!decodeMatchstick(grid)) {
+        setError("Тэгшитгэл буруу — доорх шалгалтыг уншина уу.");
         return;
       }
       payload = { type, prompt: prompt.trim(), grid, explanation: explanation.trim() };
@@ -1188,6 +1209,8 @@ function ExerciseForm({
         <SlidePuzzleEditor grid={grid} onChange={setGrid} />
       ) : type === "sudoku" ? (
         <SudokuEditor grid={grid} onChange={setGrid} />
+      ) : type === "matchstick" ? (
+        <MatchstickEditor grid={grid} onChange={setGrid} />
       ) : type === "go-move" ? (
         <GoMoveEditor grid={grid} solution={solution} onChange={setGrid} onSolution={setSolution} />
       ) : type === "net-puzzle" ? (
@@ -1718,6 +1741,78 @@ function SlidePuzzleEditor({
  * Үүсгэгч нь нүд хасах бүрдээ «ганц шийдэлтэй хэвээр юу» гэдгийг шалгадаг
  * (`lib/puzzles/sudoku.ts`).
  */
+/** Редакторын шалгалтын нэг мөр. ⚠ Компонент дотор БИШ, гадна — рендэр
+ * тутамд шинэ компонент үүсгэвэл төлөв тань эргэж тавигдана. */
+function MatchstickCheck({ ok, label }: { ok: boolean; label: string }) {
+  return (
+    <li className={ok ? "text-emerald-600 dark:text-emerald-400" : "text-gray-500"}>
+      {ok ? "✓" : "•"} {label}
+    </li>
+  );
+}
+
+/**
+ * «Таягны оньсого» редактор — багш ТЭГШИТГЭЛИЙГ текстээр бичнэ («6+4=4»).
+ *
+ * ⚠ ЯАГААД ТАЯГ ЗУРААД БАЙХГҮЙ ВЭ: таяг нэг бүрийг дарж асаах/унтраах
+ * редактор нь багшид 7 сегмент × нүд бүрээр цохих ажил болно. Харин
+ * тэгшитгэлийг бичих нь хормын зуур, бөгөөд ҮР ДҮН нь ижил — дүрс нь
+ * тооноос автоматаар гарна.
+ *
+ * ⚠ Шалгалтыг ШУУД харуулна: оньсого нь (1) уншигдах, (2) БУРУУ,
+ * (3) ЯГ НЭГ таягаар шийдэгдэх гурван нөхцлийг зэрэг хангах ёстой.
+ * Эдгээрийг хадгалахаас өмнө харуулахгүй бол багш яагаад хадгалагдахгүй
+ * байгааг таах шаардлагатай болно.
+ */
+function MatchstickEditor({
+  grid,
+  onChange,
+}: {
+  grid: string;
+  onChange: (next: string) => void;
+}) {
+  const current = decodeMatchstick(grid);
+  const [text, setText] = useState(() => {
+    if (current) return matchstickToText(current) ?? "";
+    const loose = grid.startsWith("matchstick:") ? null : grid;
+    return loose ?? "";
+  });
+
+  const parsed = matchstickFromText(text.trim());
+  const readable = parsed !== null;
+  const isFalse = parsed ? evaluateMatchstick(parsed) === false : false;
+  const solutions = parsed && isFalse ? countSolutions(parsed) : 0;
+
+  const apply = (next: string) => {
+    setText(next);
+    const puzzle = matchstickFromText(next.trim());
+    onChange(puzzle ? encodeMatchstick(puzzle) : "");
+  };
+
+  return (
+    <div className="space-y-2">
+      <TextField
+        label="Тэгшитгэл"
+        value={text}
+        onChange={apply}
+        maxLength={9}
+        placeholder="6+4=4"
+        hint="Зөвхөн 0-9 тоо ба + − = тэмдэг. Дүрс нь эндээс автоматаар гарна."
+      />
+      <ul className="space-y-0.5 text-xs">
+        <MatchstickCheck ok={readable} label="Тэмдэгтүүд зөв (0-9, +, −, =)" />
+        <MatchstickCheck ok={isFalse} label="Тэгшитгэл БУРУУ (зөв бол шийдэх юм үлдэхгүй)" />
+        <MatchstickCheck ok={solutions === 1} label={`Нэг таягаар шийдэгдэх арга: ${solutions}`} />
+      </ul>
+      {solutions > 1 && (
+        <p className="text-xs text-amber-600 dark:text-amber-400">
+          Хоёр ба олон шийдэлтэй бол сурагч зөв бодсон ч буруу гэж хэлэгдэж магадгүй.
+        </p>
+      )}
+    </div>
+  );
+}
+
 function SudokuEditor({
   grid,
   onChange,

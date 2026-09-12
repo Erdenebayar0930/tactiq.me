@@ -13,6 +13,7 @@ import {
   play,
 } from "@/lib/go/position";
 import { decodeMemory, encodeMemory } from "@/lib/puzzles/memory";
+import { decodeMatchstick, encodeMatchstick } from "@/lib/puzzles/matchstick";
 import { decodeSudoku, encodeSudoku } from "@/lib/puzzles/sudoku";
 import { decodeMaze, encodeMaze } from "@/lib/code/maze";
 import { Draughts } from "@/lib/draughts/engine";
@@ -332,6 +333,17 @@ function validateSudoku(rawGrid: unknown): { grid: string } | null {
   return sudoku ? { grid: encodeSudoku(sudoku) } : null;
 }
 
+/**
+ * ⚠ `decodeMatchstick` нь оньсого БУРУУ тэгшитгэл эсэх, БӨГӨӨД нэг таяг
+ * зөөж шийдэгдэх эсэхийг ч шалгадаг. Аль хэдийн зөв тэгшитгэл бол сурагч
+ * юу ч хийхгүйгээр гацна; шийдэлгүй бол мөнхөд оролдоно.
+ */
+function validateMatchstick(rawGrid: unknown): { grid: string } | null {
+  if (typeof rawGrid !== "string") return null;
+  const puzzle = decodeMatchstick(rawGrid);
+  return puzzle ? { grid: encodeMatchstick(puzzle) } : null;
+}
+
 function validateNetPuzzle(rawGrid: unknown): { grid: string } | null {
   if (typeof rawGrid !== "string") return null;
 
@@ -395,6 +407,7 @@ export type ExerciseType =
   | "net-puzzle"
   | "slide-puzzle"
   | "sudoku"
+  | "matchstick"
   | "memory-game"
   | "code-maze"
   | "go-move"
@@ -410,6 +423,7 @@ export function parseExerciseType(value: unknown): ExerciseType {
     value === "net-puzzle" ||
     value === "slide-puzzle" ||
     value === "sudoku" ||
+    value === "matchstick" ||
     value === "memory-game" ||
     value === "code-maze" ||
     value === "go-move" ||
@@ -484,6 +498,7 @@ export function validateExerciseFields(body: Record<string, unknown>): ExerciseF
     type === "net-puzzle" ||
     type === "slide-puzzle" ||
     type === "sudoku" ||
+    type === "matchstick" ||
     type === "code-maze" ||
     type === "memory-game"
   ) {
@@ -494,9 +509,11 @@ export function validateExerciseFields(body: Record<string, unknown>): ExerciseF
           ? validateSlidePuzzle(body.grid)
           : type === "sudoku"
             ? validateSudoku(body.grid)
-            : type === "memory-game"
-              ? validateMemory(body.grid)
-              : validateCodeMaze(body.grid);
+            : type === "matchstick"
+              ? validateMatchstick(body.grid)
+              : type === "memory-game"
+                ? validateMemory(body.grid)
+                : validateCodeMaze(body.grid);
     if (!validated) return null;
     return {
       type,

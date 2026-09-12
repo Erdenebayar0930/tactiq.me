@@ -22,6 +22,7 @@ export type ExerciseType =
   | "net-puzzle"
   | "slide-puzzle"
   | "sudoku"
+  | "matchstick"
   | "memory-game"
   | "code-maze"
   | "go-move"
