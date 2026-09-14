@@ -33,13 +33,32 @@
  */
 
 /** Хадгалах хэлбэр: "matchstick:<нүд>|<нүд>|…" */
-export const MATCHSTICK_RE = /^matchstick:(d[01]{7}|o[01]{3})(\|(d[01]{7}|o[01]{3}))*$/;
+export const MATCHSTICK_RE = /^matchstick:(d[01]{7}|o[01]{3,5})(\|(d[01]{7}|o[01]{3,5}))*$/;
+
+/**
+ * ⚠ ХУУЧИН ХЭЛБЭРИЙН НИЙЦ. Анх тэмдэг нь ГУРВАН сандалтай байсан
+ * (`o011`); «×» нэмэхэд хоёр хилбэр сандал нэмэгдэж ТАВ болсон.
+ * Хуучин мөрүүдийг татгалзвал санд аль хэдийн хадгалагдсан дасгал бүр
+ * «буруу тохируулагдсан» болж, сурагч хоосон карт харна. Тиймээс
+ * богино маскийг тэгээр гүйцээж уншина — хуучин утгууд («=»=110,
+ * «−»=010, «+»=011) шинэ таван сандалд ЯГ тэр хэвээр буудаг.
+ */
+function padOperatorMask(mask: string): string {
+  return mask.padEnd(OPERATOR_SLOTS.length, "0");
+}
 
 /** Тооны сегментүүд — индекс нь a,b,c,d,e,f,g. */
 export const DIGIT_SLOTS = ["a", "b", "c", "d", "e", "f", "g"] as const;
 
-/** Тэмдгийн сандлууд — дээд хэвтээ, дунд хэвтээ, босоо. */
-export const OPERATOR_SLOTS = ["t", "m", "v"] as const;
+/**
+ * Тэмдгийн сандлууд — дээд хэвтээ, дунд хэвтээ, босоо, хоёр ХИЛБЭР.
+ *
+ * ⚠ Хилбэрүүд нь ЗӨВХӨН «×»-д хэрэглэгдэнэ. Тэднийг нэмсэн шалтгаан:
+ * зөвхөн «+ − =» гурвыг дэмжихэд бодлогууд хоорондоо АДИЛХАН АРГАТАЙ
+ * болдог — үржих тэмдэг нь тэгшитгэлийн орон зайг олон дахин тэлж,
+ * «2×4=8» мэтийн огт өөр төрлийн оньсого боломжтой болгоно.
+ */
+export const OPERATOR_SLOTS = ["t", "m", "v", "x1", "x2"] as const;
 
 /** Тоо → сегментийн маск (a…g). Калькулятор дүрс. */
 const DIGIT_MASKS: Record<number, string> = {
@@ -55,11 +74,12 @@ const DIGIT_MASKS: Record<number, string> = {
   9: "1111011",
 };
 
-/** Тэмдэг → сандлын маск (t,m,v). */
+/** Тэмдэг → сандлын маск (t, m, v, x1, x2). */
 const OPERATOR_MASKS: Record<string, string> = {
-  "=": "110",
-  "-": "010",
-  "+": "011",
+  "=": "11000",
+  "-": "01000",
+  "+": "01100",
+  "*": "00011",
 };
 
 const DIGIT_BY_MASK = new Map<string, number>(
@@ -78,7 +98,7 @@ export type Matchstick = { cells: Cell[] };
 
 /** Нүдний сандлын тоо. */
 export function slotCount(cell: Cell): number {
-  return cell.kind === "digit" ? 7 : 3;
+  return cell.kind === "digit" ? 7 : 5;
 }
 
 /** Нүд ойлгомжтой дүрс болж уншигдаж байна уу. */
@@ -127,7 +147,7 @@ export function decodeMatchstick(raw: string | null | undefined): Matchstick | n
     .map((chunk) =>
       chunk[0] === "d"
         ? ({ kind: "digit", mask: chunk.slice(1) } as Cell)
-        : ({ kind: "operator", mask: chunk.slice(1) } as Cell)
+        : ({ kind: "operator", mask: padOperatorMask(chunk.slice(1)) } as Cell)
     );
 
   const puzzle: Matchstick = { cells };
@@ -189,7 +209,7 @@ function evalSide(side: string): number | null {
       current += char;
       continue;
     }
-    if (char !== "+" && char !== "-") return null;
+    if (char !== "+" && char !== "-" && char !== "*") return null;
     // Тэмдэг тооны ДАРАА л байна («+3» гэх мэт тэргүүн тэмдэг зөвшөөрөхгүй).
     if (!pushNumber()) return null;
     ops.push(char);
@@ -197,9 +217,26 @@ function evalSide(side: string): number | null {
 
   if (!pushNumber()) return null;
 
-  let total = numbers[0];
+  /*
+   * ⚠ ҮРЖИХ нь ЭХЭЛЖ бодогдоно. Зүүнээс баруун дараалан бодвол «2+3×4»
+   * нь 20 болж, сурагчийн сургууль дээр сурсан дүрэмтэй зөрнө — тэр үед
+   * оньсого нь математик биш, манай кодын дүрмийг таах болно.
+   */
+  const collapsed: number[] = [numbers[0]];
+  const addSub: string[] = [];
+
   for (let i = 0; i < ops.length; i += 1) {
-    total = ops[i] === "+" ? total + numbers[i + 1] : total - numbers[i + 1];
+    if (ops[i] === "*") {
+      collapsed[collapsed.length - 1] *= numbers[i + 1];
+    } else {
+      addSub.push(ops[i]);
+      collapsed.push(numbers[i + 1]);
+    }
+  }
+
+  let total = collapsed[0];
+  for (let i = 0; i < addSub.length; i += 1) {
+    total = addSub[i] === "+" ? total + collapsed[i + 1] : total - collapsed[i + 1];
   }
   return total;
 }
@@ -285,7 +322,14 @@ export const CELL_H = 86;
 export const STICK = 8;
 export const CELL_GAP = 10;
 
-export type Rect = { x: number; y: number; w: number; h: number };
+export type Rect = {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  /** Төвөө тойрсон эргэлт (градус) — «×»-ийн хилбэр таягуудад. */
+  rotate?: number;
+};
 
 /** Тооны сегмент бүрийн байрлал — индекс нь a,b,c,d,e,f,g. */
 function digitRects(): Rect[] {
@@ -319,10 +363,20 @@ function operatorRects(): Rect[] {
   const m = (CELL_H - STICK) / 2 + 6;
   const t = m - 20;
 
+  /*
+   * «×»-ийн хоёр хилбэр нь босоо таягтай ИЖИЛ урттай, ±45° эргүүлсэн —
+   * эс бөгөөс «×» нь «+»-ээс жижиг, өөр жинтэй харагдана.
+   */
+  const cross = STICK + 28;
+  const cx = (OP_W - STICK) / 2;
+  const cy = m - 14;
+
   return [
     { x: 0, y: t, w: OP_W, h: STICK }, // t
     { x: 0, y: m, w: OP_W, h: STICK }, // m
-    { x: (OP_W - STICK) / 2, y: m - 14, w: STICK, h: STICK + 28 }, // v
+    { x: cx, y: cy, w: STICK, h: cross }, // v
+    { x: cx, y: cy, w: STICK, h: cross, rotate: 45 }, // x1
+    { x: cx, y: cy, w: STICK, h: cross, rotate: -45 }, // x2
   ];
 }
 

@@ -101,7 +101,11 @@ export default function MatchstickExercise({
     setMoved(false);
   };
 
-  const reading = toText(board);
+  /*
+   * ⚠ Дотооддоо үржихийг «*» гэж хадгална (JS-ийн тооцооллын тэмдэгтэй
+   * ижил), харин ХАРУУЛАХДАА «×» — сурагч сургууль дээр түүнийг хардаг.
+   */
+  const reading = toText(board)?.replaceAll("*", "×") ?? null;
 
   return (
     <div className="surface space-y-4 p-5">
@@ -133,6 +137,11 @@ export default function MatchstickExercise({
                         width={rect.w}
                         height={rect.h}
                         rx={STICK / 2}
+                        transform={
+                          rect.rotate
+                            ? `rotate(${rect.rotate} ${rect.x + rect.w / 2} ${rect.y + rect.h / 2})`
+                            : undefined
+                        }
                         className={`transition-colors ${
                           isPicked
                             ? "fill-brand-500"
@@ -154,6 +163,11 @@ export default function MatchstickExercise({
                       width={rect.w}
                       height={rect.h}
                       rx={STICK / 2}
+                      transform={
+                        rect.rotate
+                          ? `rotate(${rect.rotate} ${rect.x + rect.w / 2} ${rect.y + rect.h / 2})`
+                          : undefined
+                      }
                       className="cursor-pointer fill-brand-500/25 transition-colors hover:fill-brand-500/60"
                       onClick={() => tapEmpty({ cell: cellIndex, slot: slotIndex })}
                     />

@@ -67,6 +67,14 @@ type Candidate = {
   solution: string;
   puzzle: Matchstick;
   tier: Tier;
+  /**
+   * АРГЫН гарын үсэг — «аль дүрс юу болж хувирав».
+   *
+   * ⚠ ЭНЭ НЬ ОЛОН ЯНЗ БАЙДЛЫН ТҮЛХҮҮР. «6+1=1», «6+2=2», «6+3=3» гурав
+   * нь өөр тэгшитгэл ч сурагчийн хийх зүйл ЯГ ИЖИЛ: зургааг тэг болгох.
+   * Гарын үсэг нь гурвуулаад «6>0» гарах тул сонголтод хязгаарлаж болно.
+   */
+  technique: string;
 };
 
 // ---------------------------------------------------------------------------
@@ -76,10 +84,16 @@ type Candidate = {
 function trueEquations(): string[] {
   const out = new Set<string>();
 
+  /*
+   * ⚠ ҮРЖИХ («*») нь ЗААВАЛ байх ёстой. Зөвхөн «+ −» хоёроор үүсгэвэл
+   * бодлогууд хоорондоо АДИЛХАН АРГАТАЙ болно: нэг зөв тэгшитгэлээс
+   * гарах нүүдлүүд цөөн тул «зургааг тэг болгох» мэт арга хэдэн арван
+   * оньсогод давтагдана. Үржих нь орон зайг олон дахин тэлнэ.
+   */
   for (let a = 0; a <= 20; a += 1) {
     for (let b = 0; b <= 20; b += 1) {
-      for (const op of ["+", "-"] as const) {
-        const c = op === "+" ? a + b : a - b;
+      for (const op of ["+", "-", "*"] as const) {
+        const c = op === "+" ? a + b : op === "-" ? a - b : a * b;
         if (c < 0 || c > 99) continue;
 
         const text = `${a}${op}${b}=${c}`;
@@ -133,6 +147,33 @@ function goodQuality(solution: string): boolean {
   return nonZero >= 2;
 }
 
+/** Оньсогоос шийдэл рүү шилжихэд ӨӨРЧЛӨГДСӨН дүрснүүд — «6>0», «5>3,1>7». */
+function techniqueOf(from: string, to: string): string {
+  const parts: string[] = [];
+  for (let i = 0; i < from.length && i < to.length; i += 1) {
+    if (from[i] !== to[i]) parts.push(`${from[i]}>${to[i]}`);
+  }
+  return parts.join(",");
+}
+
+/**
+ * Тогтвортой хэш — сонголтын дарааллыг ХОЛИХОД.
+ *
+ * ⚠ RNG БИШ: скриптийг дахин ажиллуулахад ЯГ ижил 200 оньсого гарах
+ * ёстой (`--force` агуулгыг дэмий солихгүй). Гэхдээ ЦАГААН ТОЛГОЙН
+ * дараалал нь «0…», «1…», «10…», «11…» -ийг эхэнд цуглуулж, сонголтыг
+ * жижиг тоонуудаар дүүргэдэг байсан тул текстээс хамаарсан хэшээр
+ * эрэмбэлнэ.
+ */
+function stableHash(text: string): number {
+  let hash = 2166136261;
+  for (let i = 0; i < text.length; i += 1) {
+    hash ^= text.charCodeAt(i);
+    hash = Math.imul(hash, 16777619) >>> 0;
+  }
+  return hash;
+}
+
 function buildCandidates(): Candidate[] {
   const seen = new Map<string, Candidate>();
 
@@ -162,6 +203,7 @@ function buildCandidates(): Candidate[] {
           // ⚠ Сурагчийн нүүдэл нь бидний хийсний ЭСРЭГ тал — тиймээс
           // `to`-гоос `from` руу. Хүндрэлийг сурагчийн нүүдлээр хэмжинэ.
           tier: classify(candidate, { from: to, to: from }, text),
+          technique: techniqueOf(text, equation),
         });
       }
     }
@@ -183,15 +225,19 @@ function buildCandidates(): Candidate[] {
  */
 function pick(candidates: Candidate[]): Record<Tier, Candidate[]> {
   const byTier: Record<Tier, Candidate[]> = { easy: [], medium: [], hard: [] };
-  const usedSolutions: Record<Tier, Set<string>> = {
-    easy: new Set(),
-    medium: new Set(),
-    hard: new Set(),
+  const usedSolutions: Record<Tier, Map<string, number>> = {
+    easy: new Map(),
+    medium: new Map(),
+    hard: new Map(),
   };
 
-  const sorted = [...candidates].sort((a, b) =>
-    a.solution === b.solution ? a.text.localeCompare(b.text) : a.solution.localeCompare(b.solution)
-  );
+  /*
+   * ⚠ ЦАГААН ТОЛГОЙН дарааллаар БИШ. Тэр нь «0…», «1…», «10…», «11…»
+   * -ийг эхэнд цуглуулж, 200-гийн 114 нь «1»-ээр эхэлдэг болгож байв.
+   * Тогтвортой хэшээр холивол бүх хэмжээ тэнцүү боломжтой болно, гэхдээ
+   * үр дүн нь давтагдах хэвээр (RNG биш).
+   */
+  const sorted = [...candidates].sort((a, b) => stableHash(a.text) - stableHash(b.text));
 
   /*
    * ⚠ 200 нь 3-д тэгш хуваагдахгүй тул `ceil` хэрэглэвэл 201 гарна.
@@ -205,21 +251,53 @@ function pick(candidates: Candidate[]): Record<Tier, Candidate[]> {
     hard: base,
   };
 
-  // Эхлээд шийдэл нь ӨВӨРМӨЦ оньсогуудаар дүүргэнэ.
-  for (const candidate of sorted) {
-    const bucket = byTier[candidate.tier];
-    if (bucket.length >= quota[candidate.tier]) continue;
-    if (usedSolutions[candidate.tier].has(candidate.solution)) continue;
-    usedSolutions[candidate.tier].add(candidate.solution);
-    bucket.push(candidate);
-  }
+  /*
+   * ⚠ АРГЫН хязгаар нь «бодлогууд хоорондоо адилхан» гэдгийн ГОЛ засвар.
+   * Нэг арга (жишээ нь «зургааг тэг болгох») олон арван оньсогод
+   * тохиолддог тул хязгаарлахгүй бол сурагч эхний хэдийг бодоод
+   * үлдсэнийг нь ХАРАЛГҮЙ таана.
+   */
+  const usedTechniques: Record<Tier, Map<string, number>> = {
+    easy: new Map(),
+    medium: new Map(),
+    hard: new Map(),
+  };
 
-  // Хүрэлцэхгүй бол шийдэл давтагдахыг зөвшөөрч нөхнө.
-  for (const candidate of sorted) {
-    const bucket = byTier[candidate.tier];
-    if (bucket.length >= quota[candidate.tier]) continue;
-    if (bucket.some((item) => item.text === candidate.text)) continue;
-    bucket.push(candidate);
+  /** Нэг дамжлага — өгөгдсөн хязгаарууд дотор дүүргэнэ. */
+  const fill = (solutionCap: number, techniqueCap: number) => {
+    for (const candidate of sorted) {
+      const tier = candidate.tier;
+      const bucket = byTier[tier];
+      if (bucket.length >= quota[tier]) continue;
+      if (bucket.some((item) => item.text === candidate.text)) continue;
+
+      const solutionUses = usedSolutions[tier].get(candidate.solution) ?? 0;
+      if (solutionUses >= solutionCap) continue;
+
+      const techniqueUses = usedTechniques[tier].get(candidate.technique) ?? 0;
+      if (techniqueUses >= techniqueCap) continue;
+
+      usedSolutions[tier].set(candidate.solution, solutionUses + 1);
+      usedTechniques[tier].set(candidate.technique, techniqueUses + 1);
+      bucket.push(candidate);
+    }
+  };
+
+  /*
+   * ⚠ Хязгаарыг АЛХАМ АЛХМААР сулруулж, квот дүүрмэгц ЗОГСОНО.
+   *
+   * Урьд нь сүүлийн дамжлага «хязгааргүй» байсан — тэр нь нэг арга 12
+   * удаа давтагдахад хүргэж, бодлогууд «адилхан аргатай» болж байв.
+   * Одоо хамгийн БАГА боломжит хязгаараар зогсдог тул давталт зөвхөн
+   * үнэхээр шаардлагатай хэмжээгээр л гарна.
+   */
+  for (let cap = 1; cap <= 8; cap += 1) {
+    fill(cap === 1 ? 1 : cap - 1, cap);
+
+    const filled = (["easy", "medium", "hard"] as const).every(
+      (tier) => byTier[tier].length >= quota[tier]
+    );
+    if (filled) break;
   }
 
   return byTier;
@@ -299,7 +377,7 @@ const TIER_COLOR: Record<Tier, string> = { easy: "emerald", medium: "amber", har
 const TIER_HINT: Record<Tier, string> = {
   easy: "Нэг тоог ажигла — таяг тэр тооны дотор зөөгдөнө.",
   medium: "Таяг нэг тооноос НӨГӨӨ тоо руу шилжиж болно.",
-  hard: "Тэмдгийг ч мартаж болохгүй: «+»-ийн босоог авбал «−» болно, «−»-д нэмбэл «=».",
+  hard: "Тэмдгийг ч мартаж болохгүй: «+»-ийн босоог авбал «−», «−»-д нэмбэл «=». «×» нь хоёр хилбэр таягтай.",
 };
 
 function buildUnits(picked: Record<Tier, Candidate[]>): Unit[] {
@@ -327,7 +405,7 @@ function buildUnits(picked: Record<Tier, Candidate[]>): Unit[] {
             kind: "matchstick" as const,
             grid: encodeMatchstick(candidate.puzzle),
             prompt: "Нэг таяг зөөж тэгшитгэлийг зөв болго.",
-            explanation: `Шийдэл: ${candidate.solution}. ${TIER_HINT[tier]}`,
+            explanation: `Шийдэл: ${candidate.solution.replaceAll("*", "×")}. ${TIER_HINT[tier]}`,
           },
         ],
       })),
