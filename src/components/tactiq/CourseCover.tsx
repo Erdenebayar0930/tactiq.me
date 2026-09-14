@@ -40,7 +40,12 @@ import type { ColorKey } from "@/lib/tactiq/theme";
  * зураг бэлдэнэ үү.
  */
 const COVER_IMAGES: Record<string, string> = {
-  // Жишээ: chess: "/images/covers/chess.webp",
+  chess: "/images/covers/chess.webp",
+  checkers: "/images/covers/checkers.webp",
+  sudoku: "/images/covers/sudoku.webp",
+  tangram: "/images/covers/tangram.webp",
+  memory: "/images/covers/memory.webp",
+  puzzle: "/images/covers/puzzle.webp",
 };
 
 /** Ковер бүрийн налуу дэвсгэрийн хоёр өнгө (эхлэл → төгсгөл). */
