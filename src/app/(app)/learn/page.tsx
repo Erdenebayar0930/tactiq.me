@@ -30,6 +30,14 @@ import type { CourseWithUnits, LessonSummary, Unit } from "@/lib/tactiq/courses"
 /** Курсын дашборд — Duolingo маягийн долгионт зам (нэвтэрсэн үндсэн дэлгэц). */
 export default function LearnPage() {
   const user = useCurrentUser();
+  const { isGuest } = useUser();
+
+  /*
+   * ⚠ ЗОЧИН нь курс сонгоогүй (сонгох газар нь ч байхгүй) тул
+   * `activeCourseSlug` нь үргэлж хоосон. Түүнд ТУРШИЛТЫН зам харагдана —
+   * нийтийн `/api/trial` route нь нэг курсын эхний хичээлүүдийг л өгдөг.
+   */
+  if (isGuest) return <CoursePath courseSlug={null} />;
 
   if (!user.activeCourseSlug) return <NoCourseYet />;
 
@@ -53,18 +61,40 @@ function NoCourseYet() {
   );
 }
 
-function CoursePath({ courseSlug }: { courseSlug: string }) {
+/**
+ * @param courseSlug Курсын slug, эсвэл `null` — ЗОЧНЫ туршилтын зам
+ *   (`/api/trial`). `null` нь «курс сонгоогүй» ГЭСЭН УТГАГҮЙ: тэр
+ *   тохиолдлыг дуудагч нь `NoCourseYet`-ээр шийддэг.
+ */
+function CoursePath({ courseSlug }: { courseSlug: string | null }) {
   const {
     data: courseData,
     loading: courseLoading,
     error: courseError,
     code: courseErrorCode,
-  } = useApiData<{ course: CourseWithUnits }>(`/api/courses/${encodeURIComponent(courseSlug)}`);
-  const [completed, setCompleted] = useState<Set<string> | null>(null);
+  } = useApiData<{ course: CourseWithUnits }>(
+    courseSlug === null ? "/api/trial" : `/api/courses/${encodeURIComponent(courseSlug)}`
+  );
+  /*
+   * ⚠ ЗОЧИНД ЯВЦ БАЙХГҮЙ тул ЭХЛЭЛДЭЭ Л хоосон олонлогоор эхэлнэ —
+   * эффект дотор `setCompleted` дуудвал нэмэлт рендер үүсэх бөгөөд
+   * `react-hooks/set-state-in-effect` дүрэм үүнийг зөвөөр хориглодог.
+   */
+  const [completed, setCompleted] = useState<Set<string> | null>(() =>
+    courseSlug === null ? new Set() : null
+  );
   const [claimed, setClaimed] = useState<Set<string>>(() => new Set());
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    /*
+     * ⚠ ЗОЧИНД ЯВЦ БАЙХГҮЙ: `/api/learn/progress` нь нэвтрэлт шаарддаг тул
+     * дуудвал 401 болж, зам нь алдааны мэдэгдэлтэй гарна. Эхний утга нь
+     * аль хэдийн хоосон олонлог — эхний хичээл нээлттэй, бусад нь
+     * түгжээтэй харагдана, яг шинэ сурагчийнхтай адил.
+     */
+    if (courseSlug === null) return;
+
     let cancelled = false;
 
     apiFetch<{ completedLessonIds: string[]; claimedChests?: string[] }>("/api/learn/progress")

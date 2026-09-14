@@ -639,8 +639,13 @@ function StatCounters({ user }: { user: PublicUser }) {
  * session-д хангалттай — `useApiData` нь `/api/courses`-ийг кэшлэнэ.
  */
 function useActiveCourse(): Course | null {
-  const { user } = useUser();
-  const { data } = useApiData<{ courses: Course[] }>(user ? "/api/courses" : null);
+  const { user, isGuest } = useUser();
+  /*
+   * ⚠ ЗОЧИНД ТАТАХГҮЙ: `/api/courses` нь нэвтрэлт шаарддаг тул зочны
+   * нэрийн өмнөөс дуудвал хуудас бүр дээр 401 үүснэ. Зочинд идэвхтэй
+   * курс гэж байхгүй ч учраас хариу нь хэрэг ч болохгүй.
+   */
+  const { data } = useApiData<{ courses: Course[] }>(user && !isGuest ? "/api/courses" : null);
 
   if (!user?.activeCourseSlug) return null;
   return data?.courses.find((entry) => entry.slug === user.activeCourseSlug) ?? null;

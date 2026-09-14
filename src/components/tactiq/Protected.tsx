@@ -1,11 +1,12 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
-import { Laptop, Trash2 } from "lucide-react";
+import { Laptop, LogIn, Sparkles, Trash2 } from "lucide-react";
 
-import { useUser } from "@/context/UserContext";
+import { GuestUserProvider, useUser } from "@/context/UserContext";
 import { apiFetch } from "@/lib/apiClient";
 import { MAX_DEVICES } from "@/lib/deviceLimit";
 import { repairProfile } from "@/lib/users";
@@ -43,9 +44,26 @@ export default function Protected({
 }) {
   const { user, status, error, needsRegistration, deviceLimit, refresh } = useUser();
   const router = useRouter();
+  const pathname = usePathname();
+
+  /*
+   * ЗОЧНЫ ГОРИМ — нэвтрээгүй хүнийг нэвтрэх хуудас руу ШУУД ХӨӨХГҮЙ.
+   *
+   * ⚠ Хоосон нэвтрэх хуудас нь «энэ юу хийдэг вэ?» гэдгийг огт харуулдаггүй
+   * тул хүн тэндээс л буцдаг. Оронд нь аппыг цэс, зам, эхний хичээлүүдтэй
+   * нь харуулж, дуусах мөчид нь бүртгүүлэхийг санал болгоно.
+   *
+   * ⚠ Зөвхөн `/learn` зочинд нээлттэй: бусад хэсэг нь хувийн өгөгдөлтэй
+   * (найз, дэлгүүр, профайл) бөгөөд тэдний API нь зочинд 401 буцаана.
+   * Тиймээс тэдгээр хуудсанд агуулгын оронд бүртгэлийн урилга гарна —
+   * цэс нь ХЭВЭЭР харагдана.
+   */
+  const guestAllowed = pathname === "/learn" || pathname.startsWith("/learn/");
 
   useEffect(() => {
-    if (status === "signed-out") {
+    // ⚠ `requireAdmin`/`allowedRoles` хэсэгт зочин байж болохгүй — тэднийг
+    // хуучнаараа нэвтрэх хуудас руу шилжүүлнэ.
+    if (status === "signed-out" && (requireAdmin || allowedRoles)) {
       // Нэвтэрсний дараа ЯГ ЭНЭ хуудас руу буцаана (`?next=`). Найзын
       // урилга (`/play/invite/<code>`) шиг ГАДНААС ирсэн холбоосыг
       // нэвтрэлт "залгидаг" байсан — хэрэглэгч нэвтрээд профайл дээрээ
@@ -59,9 +77,19 @@ export default function Protected({
       // орохгүй байхын тулд түүхэнд мөр үлдээхгүй.
       router.replace(`/login?next=${encodeURIComponent(next)}`);
     }
-  }, [status, router]);
+  }, [status, router, requireAdmin, allowedRoles]);
 
-  if (status === "loading" || status === "signed-out") {
+  if (status === "signed-out") {
+    if (requireAdmin || allowedRoles) return <LoadingScreen />;
+
+    return (
+      <GuestUserProvider>
+        {guestAllowed ? children : <GuestLocked pathname={pathname} />}
+      </GuestUserProvider>
+    );
+  }
+
+  if (status === "loading") {
     return <LoadingScreen />;
   }
 
@@ -120,6 +148,49 @@ export default function Protected({
   }
 
   return <>{children}</>;
+}
+
+/**
+ * Зочинд хаалттай хэсэг.
+ *
+ * ⚠ Энэ нь «алдаа» БИШ, урилга: хүн цэсээ тойрч үзээд юу байгааг олж
+ * мэдсэн — одоо бүртгүүлэх шалтгаан нь тодорхой болсон мөч.
+ */
+function GuestLocked({ pathname }: { pathname: string }) {
+  return (
+    <div className="mx-auto flex max-w-md flex-col items-center gap-4 p-8 text-center">
+      <Mascot mood="cheer" className="size-28" />
+      <h1 className="text-xl font-bold text-gray-900 dark:text-white">
+        {t("Энэ хэсэг бүртгэлтэй хүнд нээлттэй")}
+      </h1>
+      <p className="text-sm text-gray-500 dark:text-gray-400">
+        Бүртгүүлбэл оноо, дараалал, найзууд, дэлгүүр бүгд нээгдэнэ. Одоохондоо
+        эхний хичээлүүдийг үнэгүй туршиж үзээрэй.
+      </p>
+      <div className="flex flex-wrap items-center justify-center gap-2">
+        <Link
+          href={`/register?next=${encodeURIComponent(pathname)}`}
+          className="inline-flex items-center gap-2 rounded-xl bg-brand-500 px-5 py-2.5 font-semibold text-white hover:bg-brand-600"
+        >
+          <Sparkles className="size-4" aria-hidden />
+          {t("Бүртгүүлэх")}
+        </Link>
+        <Link
+          href="/learn"
+          className="rounded-xl px-4 py-2.5 text-sm font-semibold text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-white/5"
+        >
+          {t("Хичээл үзэх")}
+        </Link>
+        <Link
+          href={`/login?next=${encodeURIComponent(pathname)}`}
+          className="inline-flex items-center gap-1.5 rounded-xl px-4 py-2.5 text-sm font-semibold text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-white/5"
+        >
+          <LogIn className="size-4" aria-hidden />
+          {t("Нэвтрэх")}
+        </Link>
+      </div>
+    </div>
+  );
 }
 
 function LoadingScreen() {

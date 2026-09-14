@@ -16,6 +16,8 @@ import { setSfxEnabled } from "@/lib/audio/sfx";
 import { auth } from "@/lib/firebase";
 import { syncSessionCookie } from "@/lib/sessionSync";
 
+import { GUEST_USER } from "@/lib/tactiq/guest";
+
 import type { PublicUser } from "@/lib/api/publicUser";
 
 /**
@@ -42,6 +44,14 @@ export type ClientDeviceInfo = {
 type UserContextValue = {
   user: PublicUser | null;
   status: Status;
+  /**
+   * Нэвтрээгүй ЗОЧИН эсэх.
+   *
+   * ⚠ Энэ үед `user` нь ХИЙСВЭР профайл (`lib/tactiq/guest.ts`) — сангаас
+   * ирээгүй. Сервер рүү хүсэлт илгээдэг дэлгэц бүр үүнийг шалгах ёстой:
+   * зочны нэрийн өмнөөс хийсэн дуудлага 401-ээр унана.
+   */
+  isGuest: boolean;
   error: string | null;
   /** Firebase дээр нэвтэрсэн боловч профайл нь үүсээгүй (бүртгэл дуусаагүй) */
   needsRegistration: boolean;
@@ -170,6 +180,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     () => ({
       user,
       status,
+      isGuest: false,
       error,
       needsRegistration,
       deviceLimit,
@@ -177,6 +188,34 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
       apply,
     }),
     [user, status, error, needsRegistration, deviceLimit, load, apply]
+  );
+
+  return <UserContext.Provider value={value}>{children}</UserContext.Provider>;
+}
+
+/**
+ * ЗОЧНЫ ПРОВАЙДЕР — нэвтрээгүй үед аппыг харуулах.
+ *
+ * ⚠ `UserProvider`-ийн ДОТОР үүрлэнэ: `useUser` нь хамгийн ойрын
+ * провайдерыг уншдаг тул доорх бүх дэлгэц хийсвэр профайлыг хардаг
+ * бөгөөд нэг ч дэлгэцийг «зочин уу?» гэж тусад нь өөрчлөх шаардлагагүй.
+ *
+ * ⚠ `refresh`/`apply` нь ЮУ Ч ХИЙХГҮЙ: зочинд сервер дээр хадгалах зүйл
+ * байхгүй. Чимээгүй алдаа гаргахаас ажиллахгүй байх нь дээр.
+ */
+export function GuestUserProvider({ children }: { children: React.ReactNode }) {
+  const value = useMemo<UserContextValue>(
+    () => ({
+      user: GUEST_USER,
+      status: "ready",
+      isGuest: true,
+      error: null,
+      needsRegistration: false,
+      deviceLimit: null,
+      refresh: async () => {},
+      apply: () => {},
+    }),
+    []
   );
 
   return <UserContext.Provider value={value}>{children}</UserContext.Provider>;

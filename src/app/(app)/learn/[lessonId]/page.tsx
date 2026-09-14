@@ -127,10 +127,18 @@ type Apply = (patch: Partial<PublicUser>) => void;
  */
 export default function LessonPlayerPage() {
   const params = useParams<{ lessonId: string }>();
+  const { user, apply, isGuest } = useUser();
+  /*
+   * ⚠ ЗОЧИН нь `/api/lessons/...`-д хүрэхгүй (401). Түүнд зориулсан
+   * нийтийн route нь ЗӨВХӨН туршилтын хичээлүүдийг өгдөг — бусдыг нь
+   * 404-өөр татгалзана, тиймээс энд хаяг солиход төлбөртэй агуулга
+   * задрахгүй.
+   */
   const { data, loading, error } = useApiData<{ lesson: Lesson }>(
-    `/api/lessons/${encodeURIComponent(params.lessonId)}`
+    isGuest
+      ? `/api/trial/lessons/${encodeURIComponent(params.lessonId)}`
+      : `/api/lessons/${encodeURIComponent(params.lessonId)}`
   );
-  const { user, apply } = useUser();
 
   if (loading) {
     return (
@@ -198,7 +206,7 @@ type LessonResult = {
 
 function Player({ lesson, apply }: { lesson: Lesson; apply: Apply }) {
   const router = useRouter();
-  const { user } = useUser();
+  const { user, isGuest } = useUser();
   const [index, setIndex] = useState(0);
   const [feedback, setFeedback] = useState<"correct" | "wrong" | null>(null);
   /**
@@ -212,6 +220,8 @@ function Player({ lesson, apply }: { lesson: Lesson; apply: Apply }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<LessonResult | null>(null);
+  /** Зочин хичээлээ дуусгасан — бүртгэлийн дэлгэц гарна. */
+  const [guestDone, setGuestDone] = useState(false);
 
   /*
    * Хичээл эхэлсэн мөч — зарцуулсан хугацаа хэмжихэд.
@@ -282,6 +292,18 @@ function Player({ lesson, apply }: { lesson: Lesson; apply: Apply }) {
       return;
     }
 
+    /*
+     * ⚠ ЗОЧИН нь хичээлээ дуусгахад САНД ЮУ Ч БИЧИХГҮЙ: оноо, дараалал,
+     * бэлгийн хайрцаг бүгд хэрэглэгчид наалддаг. Оронд нь яг энэ мөчид —
+     * дасгалаа дуусгаад ялсан мэдрэмжтэй байхад нь — бүртгүүлэхийг санал
+     * болгоно.
+     */
+    if (isGuest) {
+      sfx.complete();
+      setGuestDone(true);
+      return;
+    }
+
     setBusy(true);
     setError(null);
     try {
@@ -320,6 +342,7 @@ function Player({ lesson, apply }: { lesson: Lesson; apply: Apply }) {
     }
   };
 
+  if (guestDone) return <GuestCompletionScreen lesson={lesson} />;
   if (result) return <CompletionScreen lesson={lesson} result={result} />;
 
   return (
@@ -565,6 +588,48 @@ function ChoiceExercise({
           )}
         </div>
       )}
+    </div>
+  );
+}
+
+/**
+ * ЗОЧИН хичээлээ дуусгасан мөч.
+ *
+ * ⚠ Оноо ХАРУУЛАХГҮЙ: зочны оноо хаана ч хадгалагдахгүй тул тоо үзүүлбэл
+ * худал амлалт болно. Оронд нь «хадгалагдахгүй» гэдгийг шулуухан хэлээд
+ * бүртгүүлэх нэг товч өгнө — яг энэ мөчид сонирхол нь оргил дээрээ байна.
+ */
+function GuestCompletionScreen({ lesson }: { lesson: Lesson }) {
+  return (
+    <div className="relative mx-auto flex max-w-md flex-col items-center gap-4 p-8 text-center">
+      <Confetti />
+      <Mascot mood="cheer" className="size-28" />
+      <h1 className="text-xl font-bold text-gray-900 dark:text-white">{t("Хичээл дууслаа!")}</h1>
+      <p className="text-sm text-gray-500 dark:text-gray-400">{lesson.title}</p>
+
+      <p className="rounded-xl bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-800 dark:bg-amber-500/15 dark:text-amber-200">
+        Онооо хадгалахын тулд бүртгүүлээрэй. Бүртгүүлбэл ахиц, дараалал,
+        бэлгийн хайрцаг, гэрчилгээ бүгд нээгдэнэ.
+      </p>
+
+      <Link
+        href={`/register?next=${encodeURIComponent("/learn")}`}
+        className="w-full rounded-xl bg-brand-500 px-5 py-3 font-semibold text-white hover:bg-brand-600"
+      >
+        {t("Бүртгүүлэх")}
+      </Link>
+      <Link
+        href={`/login?next=${encodeURIComponent("/learn")}`}
+        className="text-sm font-semibold text-gray-500 underline hover:text-gray-700 dark:hover:text-gray-300"
+      >
+        {t("Бүртгэлтэй юу? Нэвтрэх")}
+      </Link>
+      <Link
+        href="/learn"
+        className="text-sm text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+      >
+        {t("Замд буцах")}
+      </Link>
     </div>
   );
 }
