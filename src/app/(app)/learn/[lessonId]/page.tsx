@@ -499,12 +499,30 @@ function ChoiceExercise({
     onAnswer(true);
   };
 
+  const options = exercise.options ?? [];
+
+  /*
+   * ТОМ ХАВТАН — сонголтууд нь БҮГД богино (эможи, үсэг, 1-2 тэмдэгт) үед.
+   *
+   * ⚠ Бага насны (4-6) дасгалууд нь зураг, үсгийг сонгуулдаг. Тэднийг
+   * энгийн урт мөрөн товч дээр жижиг бичвэрээр үзүүлбэл юу ч харагдахгүй
+   * — уншиж чаддаггүй хүүхэд тэмдгийг нь ТАНИХ ёстой. Тиймээс богино
+   * шошготой үед хоёр баганат том хавтан болгоно.
+   *
+   * ⚠ Хэмжилт нь `length` БИШ, тэмдэгтийн тоогоор: эможи нь UTF-16-д
+   * хоёр нэгж эзэлдэг тул `"🐶".length === 2` бөгөөд урт бичвэрээс
+   * ялгагдахгүй болно.
+   */
+  const isGlyphGrid =
+    options.length > 0 &&
+    options.every((option) => [...option.label.replace(/️/g, "")].length <= 2);
+
   return (
     <div className="surface space-y-4 p-5">
       <p className="text-lg font-bold text-gray-900 dark:text-white">{exercise.prompt}</p>
 
-      <div className="space-y-2">
-        {(exercise.options ?? []).map((option) => {
+      <div className={isGlyphGrid ? "grid grid-cols-2 gap-3" : "space-y-2"}>
+        {options.map((option) => {
           const isSelected = selected === option.id;
           const isRuledOut = ruledOut.includes(option.id);
 
@@ -522,7 +540,11 @@ function ChoiceExercise({
               type="button"
               disabled={feedback !== null || isRuledOut}
               onClick={() => choose(option.id)}
-              className={`w-full rounded-xl border-2 px-4 py-3 text-left font-medium text-gray-800 transition-colors disabled:cursor-default dark:text-gray-100 ${tone}`}
+              className={`w-full rounded-xl border-2 transition-colors disabled:cursor-default text-gray-800 dark:text-gray-100 ${
+                isGlyphGrid
+                  ? "aspect-[3/2] text-5xl leading-none grid place-items-center"
+                  : "px-4 py-3 text-left font-medium"
+              } ${tone}`}
             >
               {option.label}
             </button>

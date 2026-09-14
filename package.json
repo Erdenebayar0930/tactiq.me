@@ -21,6 +21,7 @@
     "seed:memory": "tsx --env-file=.env.local scripts/seed-memory-course.ts",
     "seed:puzzle": "tsx --env-file=.env.local scripts/seed-puzzle-course.ts",
     "seed:kids47": "tsx --env-file=.env.local scripts/seed-kids47-course.ts",
+    "seed:kids46": "tsx --env-file=.env.local scripts/seed-kids46-courses.ts",
     "seed:kids710": "tsx --env-file=.env.local scripts/seed-kids710-courses.ts",
     "audit:puzzles": "tsx --env-file=.env.local scripts/audit-puzzles.ts",
     "seed:networks": "tsx --env-file=.env.local scripts/seed-networks-course.ts",
