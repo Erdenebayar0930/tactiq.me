@@ -7,6 +7,7 @@ import { useRef, useState } from "react";
 import { PartyPopper, X } from "lucide-react";
 
 import { useUser } from "@/context/UserContext";
+import { PathCharacter, characterSetForCourse } from "@/components/tactiq/PathCharacter";
 import { apiFetch, ApiError } from "@/lib/apiClient";
 import { sfx } from "@/lib/audio/sfx";
 import { useApiData } from "@/hooks/useApiData";
@@ -366,17 +367,47 @@ function Player({ lesson, apply }: { lesson: Lesson; apply: Apply }) {
 
       </div>
 
-      <ExerciseCard
-        // `key`-ээр дасгал бүрд (мөн ДАХИН ОРОЛДЛОГО бүрд) ШИНЭЭР mount
-        // хийлгэнэ — доторх сонголт/хөлгийн төлөв (`ChoiceExercise`-ийн
-        // `selected`, `BoardMoveExercise`-ийн `Chess` instance) гараар
-        // цэвэрлэх шаардлагагүй болно.
-        key={`${exercise.id}:${attempt}`}
-        exercise={exercise}
-        feedback={feedback}
-        onAnswer={(correct) => choose(correct)}
-        onMistake={mistake}
-      />
+      {/*
+        ДҮР — дасгалын хайрцгийн дээгүүр «тонгойж» харна.
+
+        ⚠ Хайрцагны ДОТОР биш: дасгал бүр өөрийн зохион байгуулалттай
+        (хөлөг, тор, хөзөр) тул доторх дүр нь агуулгыг түлхэж, жижиг
+        дэлгэц дээр хөлгийг шахна.
+
+        ⚠ `absolute`, `-mb-*` БИШ: эцэг нь `space-y-5` тул сөрөг доод захыг
+        дараагийн элементийн `margin-top` нь идэж, дүр нь бараг наалддаггүй
+        байв. Үнэмлэхүй байрлал нь урсгалд огт оролцохгүй.
+
+        ⚠ Дүр нь ДАСГАЛ БҮРД солигдоно (`index`) — урагшилж байгаа мэдрэмж
+        төрүүлнэ. `PathCharacter` нь `aria-hidden` тул дэлгэц уншигчид
+        давхар чимээ гарахгүй.
+      */}
+      <div className="relative">
+        <PathCharacter
+          index={index}
+          set={characterSetForCourse(user?.activeCourseSlug ?? "")}
+          /*
+           * ⚠ Өндөр ба дээш цухуйлт хоёрыг ХАМТ тохируулна: дүр нь
+           * хайрцгаас 48px дээш гарна, түүний дээр явцын мөр + 20px завсар
+           * (нийт ~56px) байгаа тул мөргөлдөхгүй. Өндрийг нэмбэл цухуйлтыг
+           * БИШ, харин доод хэсэг нь хайрцаг руу гүнзгий орно.
+           */
+          height={84}
+          className="pointer-events-none absolute -top-12 right-3 z-10 drop-shadow-md sm:right-6"
+        />
+
+        <ExerciseCard
+          // `key`-ээр дасгал бүрд (мөн ДАХИН ОРОЛДЛОГО бүрд) ШИНЭЭР mount
+          // хийлгэнэ — доторх сонголт/хөлгийн төлөв (`ChoiceExercise`-ийн
+          // `selected`, `BoardMoveExercise`-ийн `Chess` instance) гараар
+          // цэвэрлэх шаардлагагүй болно.
+          key={`${exercise.id}:${attempt}`}
+          exercise={exercise}
+          feedback={feedback}
+          onAnswer={(correct) => choose(correct)}
+          onMistake={mistake}
+        />
+      </div>
 
       {error && <p className="text-sm text-rose-600 dark:text-rose-400">{error}</p>}
 
