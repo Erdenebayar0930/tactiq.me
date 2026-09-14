@@ -1,10 +1,10 @@
 /**
- * «🧠 Memory» курс — Mind сургуульд ЗУРГААН хичээл.
+ * «Санах ой» курс — Mind сургуульд ЗУРГААН СЭДЭВ, тус бүр дотроо дасгалтай.
  *
  * Ажиллуулах:
  *   npm run seed:memory -- <багшийн-эсвэл-админы-имэйл> [--force]
  *
- * ХИЧЭЭЛҮҮД ба тэдгээрийн механик:
+ * СЭДВҮҮД ба тэдгээрийн механик:
  *   1. Memory Cards    — хөзөр эргүүлж хос олох      (`memory-game`)
  *   2. Sequence Memory — асалтын ДАРААЛАЛ сэргээх    (`recall:sequence`)
  *   3. Pattern Memory  — асалтын ХЭВ МАЯГ сэргээх    (`recall:pattern`)
@@ -12,10 +12,16 @@
  *   5. Visual Memory   — том талбар дээрх хэв маяг   (`recall:pattern`)
  *   6. Match Pairs     — илүү олон хостой хөзөр      (`memory-game`)
  *
- * ⚠ Хичээл 3 ба 5 ИЖИЛ механиктай ч ЯЛГААТАЙ: «Pattern» нь 3×3, цөөн
- * нүдтэй (хэв маягийг ойлгох), «Visual» нь 5×5, олон нүдтэй (багтаамжийг
- * сунгах). Тусдаа механик зохиох нь илүүц байсан — ялгаа нь ЭНД,
- * тохиргоонд л байна.
+ * ⚠ Хичээл бүр ЯГ НЭГ дасгалтай (судоку, таягны курсийн адил). Замын
+ * зураг (`lib/tactiq/path.ts`) нь ХИЧЭЭЛ тутамд нэг цэг зурдаг тул олон
+ * дасгалтай цөөн хичээл нь замыг урт БИШ, харин ХООСОН болгодог.
+ *
+ * ⚠ Сэдэв тус бүр 9 хичээлтэй: `CHEST_EVERY` нь 3 тул шагналын хайрцаг
+ * тэгш хуваагдаж, сэдэв бүрд 3 хайрцаг тэнцүү зайтай гарна.
+ *
+ * ⚠ Хичээл 3 ба 5 ИЖИЛ механиктай ч ЯЛГААТАЙ: «Pattern» нь 3×3 (хэв
+ * маягийг ойлгох), «Visual» нь 4×4-6×6 (багтаамжийг сунгах). Тусдаа
+ * механик зохиох нь илүүц байсан — ялгаа нь ЭНД, тохиргоонд л байна.
  *
  * ⚠ ДАСГАЛ БҮР санд бичигдэхээс ӨМНӨ эргэж уншигдаж, өөрийн хариугаараа
  * зөв гэж тооцогдож байгааг батална.
@@ -53,34 +59,39 @@ if (!connectionString) {
 }
 
 const COURSE_SLUG = "memory";
+/** Сэдэв бүрийн хичээлийн тоо — `CHEST_EVERY` (3)-д тэгш хуваагдана. */
+const PER_UNIT = 9;
 
-/** Тогтвортой үүсгэгч — дахин ажиллуулахад ИЖИЛ агуулга гарна. */
+/** Тогтвортой үүсгэгч — дахин ажиллуулахад ИЖИЛ агуулга гарна (RNG биш). */
 function makeRng(seed: number) {
   let state = seed >>> 0;
   return () => ((state = (state * 1664525 + 1013904223) >>> 0) / 4294967296);
 }
 
-type Item =
-  | { kind: "memory"; grid: string; prompt: string }
-  | { kind: "recall"; grid: string; prompt: string };
+type Exercise = { type: "memory-game" | "recall"; grid: string; prompt: string };
+type Lesson = { title: string; xp: number; exercise: Exercise };
+type Unit = { title: string; color: string; explanation: string; lessons: Lesson[] };
 
-type LessonSpec = { title: string; xp: number; items: Item[]; explanation: string };
-
-/** Хөзрийн зүйлс — эможи нь хүүхдэд ТАНИГДАХУЙЦ байх ёстой. */
+/**
+ * Хөзрийн зүйлс — эможи нь хүүхдэд ТАНИГДАХУЙЦ байх ёстой.
+ *
+ * ⚠ Багц бүр 10 зүйлтэй: `MEMORY_MAX_PAIRS` нь 10 тул хамгийн хүнд
+ * дасгалд ч хүрэлцэнэ.
+ */
 const CARD_SETS: string[][] = [
-  ["🍎", "🐰", "⭐", "🎵", "🚗", "🌳", "🐟", "🌙"],
-  ["🐶", "🐱", "🐼", "🦊", "🐸", "🐝", "🦋", "🐢"],
-  ["⚽", "🏀", "🎾", "🏐", "🎲", "🎯", "🎸", "🥁"],
+  ["🍎", "🐰", "⭐", "🎵", "🚗", "🌳", "🐟", "🌙", "🍋", "🎈"],
+  ["🐶", "🐱", "🐼", "🦊", "🐸", "🐝", "🦋", "🐢", "🐧", "🦁"],
+  ["⚽", "🏀", "🎾", "🏐", "🎲", "🎯", "🎸", "🥁", "🎺", "🏓"],
 ];
 
-function memoryItem(pairs: number, setIndex: number, label: string): Item {
+function memoryExercise(pairs: number, setIndex: number, prompt: string): Exercise {
   const items = CARD_SETS[setIndex % CARD_SETS.length].slice(0, pairs);
   const grid = encodeMemory({ pairs, items });
   if (!decodeMemory(grid)) throw new Error(`Хөзрийн багц буруу: ${grid}`);
-  return { kind: "memory", grid, prompt: label };
+  return { type: "memory-game", grid, prompt };
 }
 
-function recallItem(recall: Recall, prompt: string): Item {
+function recallExercise(recall: Recall, prompt: string): Exercise {
   const grid = encodeRecall(recall);
   const back = decodeRecall(grid);
   if (!back) throw new Error(`Дасгал уншигдсангүй: ${grid}`);
@@ -90,86 +101,122 @@ function recallItem(recall: Recall, prompt: string): Item {
   const answer = back.mode === "digits" ? back.digits : back.cells;
   if (!isCorrect(back, answer)) throw new Error(`Дасгал өөрийн хариугаар унав: ${grid}`);
 
-  return { kind: "recall", grid, prompt };
+  return { type: "recall", grid, prompt };
 }
 
-function buildLessons(): LessonSpec[] {
+/** Хичээлийн XP — сэдэв дотор хүндрэл ахих тусам өснө. */
+function xpFor(index: number, base: number): number {
+  return base + Math.floor(index / 3) * 2;
+}
+
+function buildUnits(): Unit[] {
   const rng = makeRng(20260914);
+
+  /** Memory Cards — 3 хосоос 7 хүртэл. */
+  const cardPairs = [3, 3, 4, 4, 5, 5, 6, 6, 7];
+  /** Match Pairs — 5 хосоос 10 хүртэл (илүү хүнд үргэлжлэл). */
+  const matchPairs = [5, 6, 6, 7, 7, 8, 8, 9, 10];
+  /** Sequence — уртыг аажим сунгана. */
+  const seqLengths = [3, 3, 4, 4, 5, 5, 6, 6, 7];
+  /** Pattern — 3×3 талбар, нүдний тоо ахина (дээд тал нь 8). */
+  const patternCounts = [3, 3, 4, 4, 5, 5, 6, 6, 7];
+  /** Number — 3 цифрээс 8 хүртэл. */
+  const digitLengths = [3, 4, 4, 5, 5, 6, 6, 7, 8];
+  /** Visual — талбар ТОМРОНО: 4×4 → 5×5 → 6×6. */
+  const visual: { size: number; count: number }[] = [
+    { size: 4, count: 4 },
+    { size: 4, count: 5 },
+    { size: 4, count: 6 },
+    { size: 5, count: 5 },
+    { size: 5, count: 6 },
+    { size: 5, count: 7 },
+    { size: 6, count: 7 },
+    { size: 6, count: 8 },
+    { size: 6, count: 9 },
+  ];
 
   return [
     {
       title: "Memory Cards",
-      xp: 15,
+      color: "sky",
       explanation: "Нээсэн хөзрийнхөө БАЙРЛАЛЫГ сана — зөвхөн зургийг нь биш.",
-      items: [
-        memoryItem(3, 0, "Ижил хосуудыг ол."),
-        memoryItem(4, 1, "Дөрвөн хос — байрлалыг нь сана."),
-        memoryItem(5, 2, "Таван хос."),
-      ],
+      lessons: cardPairs.map((pairs, index) => ({
+        title: `Хөзөр ${index + 1}`,
+        xp: xpFor(index, 8),
+        exercise: memoryExercise(pairs, index, `${pairs} хос — ижил зургуудыг ол.`),
+      })),
     },
     {
       title: "Sequence Memory",
-      xp: 18,
+      color: "emerald",
       explanation:
         "Дарааллыг бүхэлд нь биш, ХЭСЭГЛЭН сана (2-3 нүдээр) — тархи урт " +
         "дарааллыг богино бүлгүүдээр илүү сайн барьдаг.",
-      items: [3, 4, 5, 6].map((count) =>
-        recallItem(
-          { mode: "sequence", size: 3, cells: makeCells(3, count, rng) },
-          `${count} нүд асна — ижил дарааллаар нь дар.`
-        )
-      ),
+      lessons: seqLengths.map((count, index) => ({
+        title: `Дараалал ${index + 1}`,
+        xp: xpFor(index, 8),
+        exercise: recallExercise(
+          { mode: "sequence", size: index < 6 ? 3 : 4, cells: makeCells(index < 6 ? 3 : 4, count, rng) },
+          `${count} нүд асна — ижил ДАРААЛЛААР нь дар.`
+        ),
+      })),
     },
     {
       title: "Pattern Memory",
-      xp: 18,
+      color: "amber",
       explanation:
         "Нүд бүрийг тусад нь биш, ДҮРС болгож хар — «гурвалжин», «шулуун» " +
         "гэж нэрлэвэл санахад хамаагүй хялбар.",
-      items: [3, 4, 5, 6].map((count) =>
-        recallItem(
+      lessons: patternCounts.map((count, index) => ({
+        title: `Хэв маяг ${index + 1}`,
+        xp: xpFor(index, 8),
+        exercise: recallExercise(
           { mode: "pattern", size: 3, cells: makeCells(3, count, rng) },
           `${count} нүд зэрэг асна — тэдгээрийг дар (дараалал хамаагүй).`
-        )
-      ),
+        ),
+      })),
     },
     {
       title: "Number Memory",
-      xp: 18,
+      color: "rose",
       explanation:
         "Цифрүүдийг 2-3-аар нь бүлэглэж сана: «58 29 3» гэж уншвал таван " +
         "цифр биш, гурван зүйл цээжлэх болно.",
-      items: [4, 5, 6, 7].map((length) =>
-        recallItem(
+      lessons: digitLengths.map((length, index) => ({
+        title: `Тоо ${index + 1}`,
+        xp: xpFor(index, 8),
+        exercise: recallExercise(
           { mode: "digits", digits: makeDigits(length, rng) },
           `${length} оронтой тоо — санаад бич.`
-        )
-      ),
+        ),
+      })),
     },
     {
       title: "Visual Memory",
-      xp: 20,
+      color: "indigo",
       explanation:
         "Том талбарт бүх нүдийг нэг дор барих боломжгүй — талбарыг оюун " +
         "дотроо хэсэгт хувааж, хэсэг тус бүрээр сана.",
-      items: [4, 5, 6, 7].map((count, index) =>
-        recallItem(
-          { mode: "pattern", size: index < 2 ? 4 : 5, cells: makeCells(index < 2 ? 4 : 5, count, rng) },
-          `${count} нүд асна — бүгдийг нь ол.`
-        )
-      ),
+      lessons: visual.map(({ size, count }, index) => ({
+        title: `Харааны ${index + 1}`,
+        xp: xpFor(index, 10),
+        exercise: recallExercise(
+          { mode: "pattern", size, cells: makeCells(size, count, rng) },
+          `${size}×${size} талбарт ${count} нүд асна — бүгдийг нь ол.`
+        ),
+      })),
     },
     {
       title: "Match Pairs",
-      xp: 22,
+      color: "violet",
       explanation:
         "Олон хостой үед ЭХЛЭЭД бүх хөзрийг дараалан нээж байрлалыг нь " +
         "цээжил, дараа нь хосуудыг цуглуул.",
-      items: [
-        memoryItem(6, 1, "Зургаан хос."),
-        memoryItem(7, 2, "Долоон хос."),
-        memoryItem(8, 0, "Найман хос — хамгийн хүнд."),
-      ],
+      lessons: matchPairs.map((pairs, index) => ({
+        title: `Хос олох ${index + 1}`,
+        xp: xpFor(index, 10),
+        exercise: memoryExercise(pairs, index + 1, `${pairs} хос — байрлалыг нь сана.`),
+      })),
     },
   ];
 }
@@ -177,9 +224,16 @@ function buildLessons(): LessonSpec[] {
 async function main() {
   console.log("Дасгалуудыг үүсгэж шалгаж байна…");
 
-  const specs = buildLessons();
-  const total = specs.reduce((sum, lesson) => sum + lesson.items.length, 0);
-  console.log(`✓ ${specs.length} хичээл, ${total} дасгал — бүгд шалгалтад тэнцлээ`);
+  const unitSpecs = buildUnits();
+  const total = unitSpecs.reduce((sum, unit) => sum + unit.lessons.length, 0);
+
+  for (const unit of unitSpecs) {
+    if (unit.lessons.length !== PER_UNIT) {
+      throw new Error(`«${unit.title}» сэдэвт ${unit.lessons.length} хичээл — ${PER_UNIT} байх ёстой`);
+    }
+  }
+
+  console.log(`✓ ${unitSpecs.length} сэдэв × ${PER_UNIT} хичээл = ${total} дасгал, бүгд тэнцлээ`);
 
   const pool = createDbPool(connectionString!, 1);
   const db = drizzle(pool);
@@ -209,11 +263,11 @@ async function main() {
         title: "Санах ой",
         titleEn: "Memory",
         description:
-          "Хөзрийн хос, дараалал, хэв маяг, тоо — санах ойн зургаан " +
-          "төрлийн дасгал. Тархиа өдөр бүр сургана.",
+          "Хөзрийн хос, дараалал, хэв маяг, тоо — санах ойн зургаан сэдэв. " +
+          "Сэдэв бүр хөнгөнөөс хүнд рүү шатална.",
         descriptionEn:
-          "Card pairs, sequences, patterns and numbers — six kinds of memory " +
-          "training in one course.",
+          "Card pairs, sequences, patterns and numbers — six memory topics, " +
+          "each stepping up from easy to hard.",
         icon: "brain",
         color: "teal",
         // `lib/tactiq/schools.ts` → "mind" сургууль.
@@ -229,91 +283,119 @@ async function main() {
         .where(eq(courses.slug, COURSE_SLUG));
     }
 
-    const UNIT_TITLE = "Санах ой";
+    /*
+     * ⚠ `--force` үед ХӨТӨЛБӨРТ БАЙХГҮЙ сэдвийг устгана. Бүтэц өөрчлөгдөх
+     * бүрд (жишээ нь нэг сэдэв → зургаан сэдэв) хуучин нь замд өнчин
+     * үлдэж, сурагч хоёр хувилбарыг зэрэг харахаас сэргийлнэ.
+     */
+    let removedUnits = 0;
+    if (force) {
+      const wanted = new Set(unitSpecs.map((unit) => unit.title));
+      const existingUnits = await db
+        .select({ id: units.id, title: units.title })
+        .from(units)
+        .where(eq(units.courseSlug, COURSE_SLUG));
 
-    const [existingUnit] = await db
-      .select({ id: units.id })
-      .from(units)
-      .where(and(eq(units.courseSlug, COURSE_SLUG), eq(units.title, UNIT_TITLE)))
-      .limit(1);
-
-    let unitId: string;
-    if (existingUnit) {
-      unitId = existingUnit.id;
-    } else {
-      const [created] = await db
-        .insert(units)
-        .values({
-          courseSlug: COURSE_SLUG,
-          title: UNIT_TITLE,
-          color: "teal",
-          sortOrder: 0,
-          createdBy: owner.uid,
-        })
-        .returning({ id: units.id });
-      unitId = created.id;
+      for (const row of existingUnits.filter((unit) => !wanted.has(unit.title))) {
+        // `lessons`/`exercises` нь CASCADE тул хамт устана.
+        await db.delete(units).where(eq(units.id, row.id));
+        removedUnits += 1;
+        console.log(`  − хоцрогдсон сэдэв устав: ${row.title}`);
+      }
     }
 
-    const existing = await db
-      .select({ id: lessons.id, title: lessons.title })
-      .from(lessons)
-      .where(eq(lessons.unitId, unitId));
-    const byTitle = new Map(existing.map((row) => [row.title, row]));
-
-    let added = 0;
-    let replaced = 0;
+    let addedLessons = 0;
+    let replacedLessons = 0;
     let written = 0;
 
-    for (const [index, spec] of specs.entries()) {
-      const found = byTitle.get(spec.title);
-      if (found && !force) continue;
+    for (const [unitIndex, spec] of unitSpecs.entries()) {
+      const [existingUnit] = await db
+        .select({ id: units.id })
+        .from(units)
+        .where(and(eq(units.courseSlug, COURSE_SLUG), eq(units.title, spec.title)))
+        .limit(1);
 
-      let lessonId: string;
-
-      if (found) {
-        lessonId = found.id;
-        // ⚠ Хичээлийг ХАДГАЛНА (явц нь хичээлийн түвшинд) — дасгалыг сольно.
-        await db.update(lessons).set({ xpReward: spec.xp }).where(eq(lessons.id, lessonId));
-        await db.delete(exercises).where(eq(exercises.lessonId, lessonId));
-        replaced += 1;
+      let unitId: string;
+      if (existingUnit) {
+        unitId = existingUnit.id;
       } else {
-        lessonId = crypto.randomUUID();
-        await db.insert(lessons).values({
-          id: lessonId,
-          unitId,
-          title: spec.title,
-          xpReward: spec.xp,
-          sortOrder: index,
-          createdBy: owner.uid,
-        });
-        added += 1;
+        const [created] = await db
+          .insert(units)
+          .values({
+            courseSlug: COURSE_SLUG,
+            title: spec.title,
+            color: spec.color,
+            sortOrder: unitIndex,
+            createdBy: owner.uid,
+          })
+          .returning({ id: units.id });
+        unitId = created.id;
       }
 
-      for (const [order, item] of spec.items.entries()) {
+      const existingLessons = await db
+        .select({ id: lessons.id, title: lessons.title, sortOrder: lessons.sortOrder })
+        .from(lessons)
+        .where(eq(lessons.unitId, unitId));
+      const byTitle = new Map(existingLessons.map((row) => [row.title, row]));
+      let order = existingLessons.reduce((max, row) => Math.max(max, row.sortOrder + 1), 0);
+
+      if (force) {
+        const wanted = new Set(spec.lessons.map((lesson) => lesson.title));
+        for (const row of existingLessons.filter((lesson) => !wanted.has(lesson.title))) {
+          await db.delete(lessons).where(eq(lessons.id, row.id));
+        }
+      }
+
+      for (const lesson of spec.lessons) {
+        const found = byTitle.get(lesson.title);
+        if (found && !force) continue;
+
+        let lessonId: string;
+
+        if (found) {
+          lessonId = found.id;
+          // ⚠ Хичээлийг ХАДГАЛНА (явц нь хичээлийн түвшинд) — дасгалыг сольно.
+          await db.update(lessons).set({ xpReward: lesson.xp }).where(eq(lessons.id, lessonId));
+          await db.delete(exercises).where(eq(exercises.lessonId, lessonId));
+          replacedLessons += 1;
+        } else {
+          lessonId = crypto.randomUUID();
+          await db.insert(lessons).values({
+            id: lessonId,
+            unitId,
+            title: lesson.title,
+            xpReward: lesson.xp,
+            sortOrder: order++,
+            createdBy: owner.uid,
+          });
+          addedLessons += 1;
+        }
+
         await db.insert(exercises).values({
           lessonId,
-          type: item.kind === "memory" ? "memory-game" : "recall",
-          prompt: item.prompt,
+          type: lesson.exercise.type,
+          prompt: lesson.exercise.prompt,
           options: null,
           correctOptionId: null,
-          grid: item.grid,
+          grid: lesson.exercise.grid,
           explanation: spec.explanation,
-          sortOrder: order,
+          sortOrder: 0,
           createdBy: owner.uid,
         });
         written += 1;
       }
     }
 
-    if (added === 0 && replaced === 0) {
+    if (addedLessons === 0 && replacedLessons === 0 && removedUnits === 0) {
       console.log(
         "Бүх хичээл аль хэдийн байна — юу ч өөрчлөөгүй.\n" +
           "Шинэчлэх бол: npm run seed:memory -- <email> --force"
       );
     } else {
       const parts: string[] = [];
-      if (added > 0) parts.push(`${added} хичээл нэмэгдлээ`);
-      if (replaced > 0) parts.push(`${replaced} хичээл шинэчлэгдлээ`);
+      if (addedLessons > 0) parts.push(`${addedLessons} хичээл нэмэгдлээ`);
+      if (replacedLessons > 0) parts.push(`${replacedLessons} хичээл шинэчлэгдлээ`);
+      if (removedUnits > 0) parts.push(`${removedUnits} хоцрогдсон сэдэв устав`);
       console.log(
         `✅ "Санах ой" — ${parts.join(", ")}. Нийт ${written} дасгал бичигдлээ.\n` +
           `Засах: /admin/courses/${COURSE_SLUG}`
