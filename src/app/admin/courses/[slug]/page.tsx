@@ -136,6 +136,8 @@ type ExerciseType =
   | "nonogram"
   | "series"
   | "word"
+  | "kids"
+  | "arrows"
   | "memory-game"
   | "code-maze"
   | "go-move"
@@ -862,6 +864,8 @@ const EXERCISE_TYPE_LABELS: Record<ExerciseType, string> = {
   nonogram: "Нонограм",
   series: "Эгнээний таавар",
   word: "Үгийн таавар",
+  kids: "Бага насны дасгал",
+  arrows: "Сумаар зам",
   "memory-game": "Санах ойн тоглоом",
   "code-maze": "Код угсрах (лабиринт)",
   "go-move": "Го — чулуу тавих",

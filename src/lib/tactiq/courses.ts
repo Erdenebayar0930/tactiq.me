@@ -28,6 +28,8 @@ export type ExerciseType =
   | "nonogram"
   | "series"
   | "word"
+  | "kids"
+  | "arrows"
   | "memory-game"
   | "code-maze"
   | "go-move"

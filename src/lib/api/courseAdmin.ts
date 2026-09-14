@@ -17,6 +17,8 @@ import { decodeMatchstick, encodeMatchstick } from "@/lib/puzzles/matchstick";
 import { decodeNonogram, encodeNonogram } from "@/lib/puzzles/nonogram";
 import { decodeRecall, encodeRecall } from "@/lib/puzzles/recall";
 import { decodeSeries, encodeSeries } from "@/lib/puzzles/series";
+import { decodeArrows, encodeArrows } from "@/lib/puzzles/arrows";
+import { decodeKids, encodeKids } from "@/lib/puzzles/kids";
 import { decodeWord, encodeWord } from "@/lib/puzzles/word";
 import { decodeTangram, encodeTangram } from "@/lib/puzzles/tangram";
 import { decodeSudoku, encodeSudoku } from "@/lib/puzzles/sudoku";
@@ -396,6 +398,28 @@ function validateWord(rawGrid: unknown): { grid: string } | null {
   return puzzle ? { grid: encodeWord(puzzle) } : null;
 }
 
+/**
+ * ⚠ `decodeKids` нь хариу ГАНЦ байх эсэхийг шалгана — хоёр дүрс ижил
+ * хэмжээтэй бол «хамгийн том» нь хоёр хариутай болж, хүүхэд зөв дарсан ч
+ * буруу гэж хэлэгдэнэ.
+ */
+function validateKids(rawGrid: unknown): { grid: string } | null {
+  if (typeof rawGrid !== "string") return null;
+  const kids = decodeKids(rawGrid);
+  return kids ? { grid: encodeKids(kids) } : null;
+}
+
+/**
+ * ⚠ `decodeArrows` нь эхлэлээс зорилго руу ЗАМ БАЙГАА эсэхийг хайлтаар
+ * шалгана — хана нь зорилгыг таслаад байвал хүүхэд хэчнээн оролдсон ч
+ * хүрэхгүй.
+ */
+function validateArrows(rawGrid: unknown): { grid: string } | null {
+  if (typeof rawGrid !== "string") return null;
+  const maze = decodeArrows(rawGrid);
+  return maze ? { grid: encodeArrows(maze) } : null;
+}
+
 function validateNetPuzzle(rawGrid: unknown): { grid: string } | null {
   if (typeof rawGrid !== "string") return null;
 
@@ -465,6 +489,8 @@ export type ExerciseType =
   | "nonogram"
   | "series"
   | "word"
+  | "kids"
+  | "arrows"
   | "memory-game"
   | "code-maze"
   | "go-move"
@@ -486,6 +512,8 @@ export function parseExerciseType(value: unknown): ExerciseType {
     value === "nonogram" ||
     value === "series" ||
     value === "word" ||
+    value === "kids" ||
+    value === "arrows" ||
     value === "memory-game" ||
     value === "code-maze" ||
     value === "go-move" ||
@@ -566,6 +594,8 @@ export function validateExerciseFields(body: Record<string, unknown>): ExerciseF
     type === "nonogram" ||
     type === "series" ||
     type === "word" ||
+    type === "kids" ||
+    type === "arrows" ||
     type === "code-maze" ||
     type === "memory-game"
   ) {
@@ -588,6 +618,10 @@ export function validateExerciseFields(body: Record<string, unknown>): ExerciseF
                       ? validateSeries(body.grid)
                       : type === "word"
                         ? validateWord(body.grid)
+                        : type === "kids"
+                          ? validateKids(body.grid)
+                          : type === "arrows"
+                            ? validateArrows(body.grid)
               : type === "memory-game"
                 ? validateMemory(body.grid)
                 : validateCodeMaze(body.grid);

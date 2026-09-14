@@ -32,6 +32,8 @@ export type ExerciseType =
   | "nonogram"
   | "series"
   | "word"
+  | "kids"
+  | "arrows"
   | "memory-game"
   | "code-maze"
   | "go-move"
@@ -268,6 +270,8 @@ function toExerciseData(row: typeof exercises.$inferSelect): ExerciseData {
       row.type === "nonogram" ||
       row.type === "series" ||
       row.type === "word" ||
+      row.type === "kids" ||
+      row.type === "arrows" ||
       row.type === "code-maze" ||
       row.type === "go-move" ||
       row.type === "memory-game"

@@ -20,6 +20,7 @@
     "seed:tangram": "tsx --env-file=.env.local scripts/seed-tangram-course.ts",
     "seed:memory": "tsx --env-file=.env.local scripts/seed-memory-course.ts",
     "seed:puzzle": "tsx --env-file=.env.local scripts/seed-puzzle-course.ts",
+    "seed:kids47": "tsx --env-file=.env.local scripts/seed-kids47-course.ts",
     "audit:puzzles": "tsx --env-file=.env.local scripts/audit-puzzles.ts",
     "seed:networks": "tsx --env-file=.env.local scripts/seed-networks-course.ts",
     "seed:puzzlepack": "tsx --env-file=.env.local scripts/seed-puzzles-course.ts",

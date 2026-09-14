@@ -85,6 +85,14 @@ const WordExercise = dynamic(
   () => import("@/components/lesson/WordExercise"),
   { loading: () => <ExerciseBoardSkeleton /> }
 );
+const KidsExercise = dynamic(
+  () => import("@/components/lesson/KidsExercise"),
+  { loading: () => <ExerciseBoardSkeleton /> }
+);
+const ArrowsExercise = dynamic(
+  () => import("@/components/lesson/ArrowsExercise"),
+  { loading: () => <ExerciseBoardSkeleton /> }
+);
 const GoMoveExercise = dynamic(
   () => import("@/components/lesson/GoMoveExercise"),
   { loading: () => <ExerciseBoardSkeleton /> }
@@ -438,6 +446,12 @@ function ExerciseCard({
   }
   if (exercise.type === "word") {
     return <WordExercise exercise={exercise} feedback={feedback} onAnswer={onAnswer} />;
+  }
+  if (exercise.type === "kids") {
+    return <KidsExercise exercise={exercise} feedback={feedback} onAnswer={onAnswer} />;
+  }
+  if (exercise.type === "arrows") {
+    return <ArrowsExercise exercise={exercise} feedback={feedback} onAnswer={onAnswer} />;
   }
   if (exercise.type === "go-move") {
     return <GoMoveExercise exercise={exercise} feedback={feedback} onAnswer={onAnswer} onMistake={onMistake} />;
