@@ -215,8 +215,13 @@ export function InvoiceCard({
                         <Landmark className="size-5" aria-hidden />
                       </span>
                     )}
+                    {/*
+                      ⚠ `description` нь МОНГОЛ нэр («qPay хэтэвч»), `name` нь
+                      англи («qPay wallet»). Хэрэглэгч өөрийн банкаа монгол
+                      нэрээр нь хайдаг тул байвал түүнийг харуулна.
+                    */}
                     <span className="text-[10px] font-semibold leading-tight text-gray-700 dark:text-gray-200">
-                      {bank.name}
+                      {bank.description || bank.name}
                     </span>
                   </a>
                 </li>

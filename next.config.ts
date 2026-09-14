@@ -169,7 +169,13 @@ const csp = [
   `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""} https://www.gstatic.com https://apis.google.com`,
   // Tailwind-ийн runtime style болон Next-ийн inline critical CSS
   "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' data: blob: https://*.googleapis.com https://*.gstatic.com",
+  /*
+   * ⚠ `https://*.qpay.mn` — ТӨЛБӨРИЙН дэлгэц дээрх банкны тэмдгүүд.
+   * QPay нь нэхэмжлэл бүрд банкны лого-г өөрийн S3 (`s3.qpay.mn`) дээрээс
+   * өгдөг. Энд зөвшөөрөхгүй бол хөтөч тэднийг ЧИМЭЭГҮЙ хааж, хэрэглэгч
+   * эвдэрсэн зургийн хайрцаг л хардаг — консолоос өөр газар алдаа гарахгүй.
+   */
+  "img-src 'self' data: blob: https://*.googleapis.com https://*.gstatic.com https://*.qpay.mn",
   "font-src 'self' data:",
   // Дев дээр HMR нь ws:// ашиглана
   `connect-src 'self'${isDev ? " ws: http://localhost:*" : ""} https://*.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com https://*.firebaseapp.com`,
