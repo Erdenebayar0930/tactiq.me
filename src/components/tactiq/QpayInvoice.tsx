@@ -259,10 +259,17 @@ export function InvoiceCard({
                     className="flex flex-col items-center gap-1 rounded-xl p-2 text-center hover:bg-gray-100 dark:hover:bg-white/5"
                   >
                     {bank.logo ? (
-                      /* Тэмдэг нь QPay-ийн серверээс ирдэг — домэйн нь
-                         тогтмол биш тул `next/image` оновчлолгүйгээр. */
+                      /* Тэмдгийг МАНАЙ домэйнөөр дамжуулна (`/api/qpay-logo`):
+                         гуравдагч домэйн нь CSP, service worker хоёуланд нь
+                         саад болдог. `next/image` БИШ — хаяг нь нэхэмжлэл
+                         бүрд өөр тул оновчлох боломжгүй. */
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img src={bank.logo} alt="" aria-hidden className="size-10 rounded-lg" />
+                      <img
+                        src={`/api/qpay-logo?url=${encodeURIComponent(bank.logo)}`}
+                        alt=""
+                        aria-hidden
+                        className="size-10 rounded-lg"
+                      />
                     ) : (
                       <span className="grid size-10 place-items-center rounded-lg bg-gray-100 text-gray-400 dark:bg-white/10">
                         <Landmark className="size-5" aria-hidden />
