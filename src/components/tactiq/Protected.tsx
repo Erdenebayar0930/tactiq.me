@@ -58,7 +58,8 @@ export default function Protected({
    * Тиймээс тэдгээр хуудсанд агуулгын оронд бүртгэлийн урилга гарна —
    * цэс нь ХЭВЭЭР харагдана.
    */
-  const guestAllowed = pathname === "/learn" || pathname.startsWith("/learn/");
+  const guestAllowed =
+    pathname === "/learn" || pathname.startsWith("/learn/") || pathname === "/courses";
 
   useEffect(() => {
     // ⚠ `requireAdmin`/`allowedRoles` хэсэгт зочин байж болохгүй — тэднийг

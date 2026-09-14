@@ -37,14 +37,22 @@ export async function GET() {
       return NextResponse.json({ error: "Туршилтын курс алга." }, { status: 404 });
     }
 
-    const [first] = course.units;
+    /*
+     * ⚠ БҮТЭН БҮТЭЦ буцаана, зөвхөн нээлттэй хичээлүүдийг БИШ.
+     *
+     * Зочин курс дотор юу байгааг ХАРАХ ёстой — түгжээтэй хичээлүүд нь
+     * бүртгүүлэх шалтгаан нь өөрөө. Тайрч хаявал «гурван хичээлтэй жижиг
+     * курс» мэт харагдана.
+     *
+     * ⚠ Гэхдээ энэ нь зөвхөн ГАРЧИГ, ТОО. Дасгалын АГУУЛГА нь
+     * `/api/trial/lessons/[id]`-аар л гардаг бөгөөд тэр нь `trialLessonIds`
+     * дотор байхгүй бүхнийг татгалздаг.
+     */
+    const trialLessonIds = course.units[0].lessons
+      .slice(0, TRIAL_LESSON_COUNT)
+      .map((lesson) => lesson.id);
 
-    return NextResponse.json({
-      course: {
-        ...course,
-        units: [{ ...first, lessons: first.lessons.slice(0, TRIAL_LESSON_COUNT) }],
-      },
-    });
+    return NextResponse.json({ course, trialLessonIds });
   } catch (error) {
     return serverError(error, "Туршилтын курс татахад алдаа гарлаа");
   }

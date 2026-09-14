@@ -72,7 +72,7 @@ function CoursePath({ courseSlug }: { courseSlug: string | null }) {
     loading: courseLoading,
     error: courseError,
     code: courseErrorCode,
-  } = useApiData<{ course: CourseWithUnits }>(
+  } = useApiData<{ course: CourseWithUnits; trialLessonIds?: string[] }>(
     courseSlug === null ? "/api/trial" : `/api/courses/${encodeURIComponent(courseSlug)}`
   );
   /*
@@ -175,6 +175,17 @@ function CoursePath({ courseSlug }: { courseSlug: string | null }) {
 
   const styles = colorStyles(course.color);
 
+  /*
+   * ЗОЧИНД НЭЭЛТТЭЙ хичээлүүд.
+   *
+   * ⚠ `null` бол ЭНГИЙН дүрэм (өмнөх хичээлүүдээ дуусгасан эсэх). Олонлог
+   * байвал ЗӨВХӨН тэдгээр л нээлттэй: зочин явц хуримтлуулдаггүй тул
+   * «өмнөхөө дуусгавал нээгдэнэ» гэсэн дүрэм түүнд хэрэглэгдэхгүй.
+   */
+  const trialLessonIds = courseData?.trialLessonIds
+    ? new Set(courseData.trialLessonIds)
+    : null;
+
   return (
     <div className="space-y-6">
       <div className={`surface flex items-center gap-4 p-5 ${styles.softBg}`}>
@@ -213,6 +224,7 @@ function CoursePath({ courseSlug }: { courseSlug: string | null }) {
             .slice(0, index)
             .reduce((sum, previous) => sum + previous.lessons.length, 0)}
           courseSlug={course.slug}
+          trialLessonIds={trialLessonIds}
           completed={completed}
           claimed={claimed}
           onClaimed={(key) => setClaimed((current) => new Set(current).add(key))}
@@ -241,6 +253,7 @@ function UnitPath({
   index,
   lessonOffset,
   courseSlug,
+  trialLessonIds,
   completed,
   claimed,
   onClaimed,
@@ -252,6 +265,8 @@ function UnitPath({
   lessonOffset: number;
   /** Замын дүрийн багцыг сонгоно (даам → даамын дүрүүд). */
   courseSlug: string;
+  /** Зочинд нээлттэй хичээлүүд, эсвэл `null` — энгийн дүрэм. */
+  trialLessonIds: Set<string> | null;
   completed: Set<string>;
   claimed: Set<string>;
   onClaimed: (key: string) => void;
@@ -283,11 +298,19 @@ function UnitPath({
    * Зам дээр нэг л бөмбөлөг байна: сурагч дэлгэцээ нээмэгц хаанаас
    * үргэлжлүүлэхээ эрэлгүй хардаг.
    */
+  /**
+   * Хичээл НЭЭЛТТЭЙ эсэх.
+   *
+   * ⚠ Зочны үед жагсаалтаар шийднэ: явц байхгүй тул «өмнөхөө дуусга»
+   * гэсэн дүрэм нь эхний хичээлээс цааш хэзээ ч нээгдэхгүй болно.
+   */
+  const unlocked = (lessonId: string) =>
+    trialLessonIds
+      ? trialLessonIds.has(lessonId)
+      : isLessonUnlocked(lessonId, unitLessonIds, completed);
+
   const activeLessonId =
-    unit.lessons.find(
-      (lesson) =>
-        !completed.has(lesson.id) && isLessonUnlocked(lesson.id, unitLessonIds, completed)
-    )?.id ?? null;
+    unit.lessons.find((lesson) => !completed.has(lesson.id) && unlocked(lesson.id))?.id ?? null;
 
   return (
     <section className="space-y-1">
@@ -400,7 +423,7 @@ function UnitPath({
               courseSlug={courseSlug}
               isLast={isLast}
               isCompleted={completed.has(lesson.id)}
-              isUnlocked={isLessonUnlocked(lesson.id, unitLessonIds, completed)}
+              isUnlocked={unlocked(lesson.id)}
               isActive={lesson.id === activeLessonId}
             />
           );

@@ -25,20 +25,29 @@ import type { School } from "@/lib/tactiq/schools";
  * (`/api/courses/stats`) — хатуу бичсэн тоо байхгүй.
  */
 export default function CoursesPage() {
-  const { user, apply } = useUser();
+  const { user, apply, isGuest } = useUser();
   const router = useRouter();
   const schools = useSchools();
   const [busySlug, setBusySlug] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const { data, loading, error: loadError } = useApiData<{ courses: Course[] }>("/api/courses");
+  /*
+   * ⚠ ЗОЧИН нь нийтийн жагсаалтаас уншина: `/api/courses` нь нэвтрэлт
+   * шаарддаг тул зочны нэрийн өмнөөс дуудвал «Нэвтэрсэн байх
+   * шаардлагатай» гэсэн алдаа л гарна.
+   */
+  const { data, loading, error: loadError } = useApiData<{ courses: Course[] }>(
+    isGuest ? "/api/trial/courses" : "/api/courses"
+  );
   /*
    * Хувийн мэдээлэл — ТУСДАА хүсэлтүүд. `/api/courses` нь хувийн бус тул
    * кэшлэгддэг; хэрэглэгч тус бүрийн явц, хугацааг тэнд оруулбал кэш ашиггүй болно.
+   *
+   * ⚠ Зочинд явц, хугацаа гэж БАЙХГҮЙ — хүсэлт нь 401 л буцаана.
    */
-  const statsData = useApiData<{ courses: CourseStat[] }>("/api/courses/stats");
+  const statsData = useApiData<{ courses: CourseStat[] }>(isGuest ? null : "/api/courses/stats");
   const timeData = useApiData<{ courses: { courseSlug: string; seconds: number }[] }>(
-    "/api/courses/time"
+    isGuest ? null : "/api/courses/time"
   );
 
   const statsBySlug = new Map((statsData.data?.courses ?? []).map((row) => [row.courseSlug, row]));
@@ -49,6 +58,16 @@ export default function CoursesPage() {
 
   const select = async (slug: string) => {
     if (busySlug) return;
+
+    /*
+     * ⚠ ЗОЧИН курс СОНГОХГҮЙ: сонголт нь хэрэглэгчийн мөрөнд хадгалагддаг.
+     * Түүнийг бүртгэлийн хуудас руу аваачна — курс сонгох гэсэн санаа нь
+     * бүртгүүлэх хамгийн байгалийн мөч.
+     */
+    if (isGuest) {
+      router.push(`/register?next=${encodeURIComponent("/learn")}`);
+      return;
+    }
 
     // Идэвхтэй курс — сонголт өөрчлөхгүй, шууд үргэлжлүүлнэ.
     if (slug === user?.activeCourseSlug) {
