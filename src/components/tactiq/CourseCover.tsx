@@ -35,9 +35,10 @@ import type { ColorKey } from "@/lib/tactiq/theme";
  * ҮНЭХЭЭР байх ёстой: Next.js-ийн `Image` нь байхгүй файлыг чимээгүй
  * алгасдаггүй, 404 зурна.
  *
- * ⚠ ХЭМЖЭЭ: ковер нь 320×160 харьцаатай. Өөр харьцаатай зураг өгвөл
- * `object-cover` нь ТАЙРНА — дүрийн толгой тасрахаас сэргийлж 2:1-д ойр
- * зураг бэлдэнэ үү.
+ * ⚠ ХЭМЖЭЭ: 400×160 (2.5:1). Коверын хайрцаг нь `h-32` бөгөөд картын
+ * өргөнөөр сунадаг тул ойролцоогоор 2.5:1. Үүнээс НАРИЙН зураг өгвөл
+ * `object-cover` нь хажуу талыг ТАЙРНА — баннер дээрх гарчиг, тайлбар
+ * алдагдана.
  */
 const COVER_IMAGES: Record<string, string> = {
   chess: "/images/covers/chess.webp",
@@ -46,6 +47,7 @@ const COVER_IMAGES: Record<string, string> = {
   tangram: "/images/covers/tangram.webp",
   memory: "/images/covers/memory.webp",
   puzzle: "/images/covers/puzzle.webp",
+  "kids-coding": "/images/covers/kids-coding.webp",
 };
 
 /** Ковер бүрийн налуу дэвсгэрийн хоёр өнгө (эхлэл → төгсгөл). */
