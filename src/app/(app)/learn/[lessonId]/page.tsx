@@ -368,45 +368,49 @@ function Player({ lesson, apply }: { lesson: Lesson; apply: Apply }) {
       </div>
 
       {/*
-        ДҮР — дасгалын хайрцгийн дээгүүр «тонгойж» харна.
+        ДҮР — дасгалын хайрцгийн ДЭЭР, түүний ГАДНА.
 
-        ⚠ Хайрцагны ДОТОР биш: дасгал бүр өөрийн зохион байгуулалттай
-        (хөлөг, тор, хөзөр) тул доторх дүр нь агуулгыг түлхэж, жижиг
-        дэлгэц дээр хөлгийг шахна.
+        ⚠ Хайрцаг дээр давхарлаж БОЛОХГҮЙ: асуултын бичвэр нь хайрцгийн
+        дээд мөрийг бүтнээр эзэлдэг бөгөөд урт асуулт баруун зах хүртэл
+        мөрлөнө — давхарласан дүр түүнийг халхална. Дасгалын төрөл бүр
+        өөрийн бичвэрээ өөрөө зурдаг тул «баруун талд зай үлдээ» гэж нэг
+        дор зохицуулах ч боломжгүй.
 
-        ⚠ `absolute`, `-mb-*` БИШ: эцэг нь `space-y-5` тул сөрөг доод захыг
-        дараагийн элементийн `margin-top` нь идэж, дүр нь бараг наалддаггүй
-        байв. Үнэмлэхүй байрлал нь урсгалд огт оролцохгүй.
+        ⚠ Тиймээс дүр нь ТУСДАА МӨРӨНД сууна. Доод хэсэг нь `translate-y`
+        -ээр хайрцаг руу бууж, хайрцаг нь `z-10` тул хөл нь араас нь
+        нуугдана — «хайрцгийн ард зогсож байгаа» дүр төрх үлдэж, нэг ч
+        үсэг халхлагдахгүй.
 
-        ⚠ Дүр нь ДАСГАЛ БҮРД солигдоно (`index`) — урагшилж байгаа мэдрэмж
-        төрүүлнэ. `PathCharacter` нь `aria-hidden` тул дэлгэц уншигчид
-        давхар чимээ гарахгүй.
+        ⚠ Хайрцагны ДОТОР ч биш: тэнд тавивал хөлөг, тор, хөзөр зэрэг
+        агуулгыг доош түлхэж, жижиг дэлгэц дээр шахна.
+
+        ⚠ Дүр нь ДАСГАЛ БҮРД солигдоно (`index`). `PathCharacter` нь
+        `aria-hidden` тул дэлгэц уншигчид давхар чимээ гарахгүй.
       */}
-      <div className="relative">
-        <PathCharacter
-          index={index}
-          set={characterSetForCourse(user?.activeCourseSlug ?? "")}
-          /*
-           * ⚠ Өндөр ба дээш цухуйлт хоёрыг ХАМТ тохируулна: дүр нь
-           * хайрцгаас 48px дээш гарна, түүний дээр явцын мөр + 20px завсар
-           * (нийт ~56px) байгаа тул мөргөлдөхгүй. Өндрийг нэмбэл цухуйлтыг
-           * БИШ, харин доод хэсэг нь хайрцаг руу гүнзгий орно.
-           */
-          height={84}
-          className="pointer-events-none absolute -top-12 right-3 z-10 drop-shadow-md sm:right-6"
-        />
+      <div>
+        <div className="flex justify-end pr-4 sm:pr-8">
+          <PathCharacter
+            index={index}
+            set={characterSetForCourse(user?.activeCourseSlug ?? "")}
+            height={72}
+            className="translate-y-4 drop-shadow-md"
+          />
+        </div>
 
-        <ExerciseCard
-          // `key`-ээр дасгал бүрд (мөн ДАХИН ОРОЛДЛОГО бүрд) ШИНЭЭР mount
-          // хийлгэнэ — доторх сонголт/хөлгийн төлөв (`ChoiceExercise`-ийн
-          // `selected`, `BoardMoveExercise`-ийн `Chess` instance) гараар
-          // цэвэрлэх шаардлагагүй болно.
-          key={`${exercise.id}:${attempt}`}
-          exercise={exercise}
-          feedback={feedback}
-          onAnswer={(correct) => choose(correct)}
-          onMistake={mistake}
-        />
+        {/* ⚠ `relative z-10` — дүрийн хөлийг хайрцаг нуух ёстой. */}
+        <div className="relative z-10">
+          <ExerciseCard
+            // `key`-ээр дасгал бүрд (мөн ДАХИН ОРОЛДЛОГО бүрд) ШИНЭЭР mount
+            // хийлгэнэ — доторх сонголт/хөлгийн төлөв (`ChoiceExercise`-ийн
+            // `selected`, `BoardMoveExercise`-ийн `Chess` instance) гараар
+            // цэвэрлэх шаардлагагүй болно.
+            key={`${exercise.id}:${attempt}`}
+            exercise={exercise}
+            feedback={feedback}
+            onAnswer={(correct) => choose(correct)}
+            onMistake={mistake}
+          />
+        </div>
       </div>
 
       {error && <p className="text-sm text-rose-600 dark:text-rose-400">{error}</p>}
