@@ -11,7 +11,6 @@ import {
   PIECE_COLORS,
   PIECE_IDS,
   placedCells,
-  type Figure,
   type PieceId,
   type Placement,
 } from "@/lib/puzzles/tangram";
@@ -19,24 +18,55 @@ import {
 import type { Exercise } from "@/lib/tactiq/courses";
 
 /**
- * "tangram" дасгал — долоон хэсгээр дүрсийг нөхнө.
+ * "tangram" дасгал — долоон хэсгийг ЧИРЖ дүрсийг нөхнө.
  *
  * ⚠ `learn/[lessonId]/page.tsx`-с `next/dynamic`-аар ЛАЗИ ачаалагдана.
  *
- * ЗАГВАРЫН ШИЙДЭЛ — яагаад ЧИРЭХ БИШ, ДАРАХ вэ: SVG дээр чирэх нь гар
- * утсан дээр хуруу гулсахад хуудас өөрөө гүйлгэгдэх, хэсэг санамсаргүй
- * унах зэрэг олон эвгүй тохиолдол үүсгэдэг. Дарж сонгоод дарж тавих нь
- * ижил ажлыг АЛДААГҮЙ гүйцэтгэнэ — тортонд наалддаг тул нарийвчлал ч
- * шаардахгүй.
+ * ЗАГВАРЫН ШИЙДЭЛ — ЧИРНЭ, гэхдээ ТОРТОНД НААЛДАНА. Хэсгийг хаана ч
+ * тавьж болдог байвал «нөхөгдсөн эсэх» нь ойролцоо тооцоо болж, хүүхэд
+ * зөв тавьсан ч «болоогүй» гэж хэлэгдэж мэднэ. Чирэх нь ЗӨВХӨН мэдрэмж
+ * — тавихдаа хамгийн ойрын нүд рүү бүхэлд нь наана.
+ *
+ * ⚠ БҮХ ЗҮЙЛ НЭГ SVG ДОТОР: хөлөг дээр ба доорх САН дахь хэсгүүд ижил
+ * координатын системд байна. Хоёр тусдаа элемент байвал хооронд нь чирэх
+ * үед хулганы байрлалыг хоёр өөр системээс хөрвүүлэх шаардлагатай болж,
+ * гар утсан дээр алдаа ихтэй болдог.
+ *
+ * ⚠ `touch-none`: эс бөгөөс хуруугаар чирэхэд хөлгийн оронд ХУУДАС
+ * гүйлгэгдэнэ.
  *
  * ЗАГВАРЫН ШИЙДЭЛ — хугацаа нь ЗӨВХӨН ХЭМЖИНЭ. Дуусахад дасгал унадаг
- * болговол бага насны сурагч яаран таамаглаж эхэлдэг ба танграмын гол
- * ач холбогдол (тайван орон зайн сэтгэлгээ) алдагдана.
+ * болговол бага насны сурагч яаран таамаглаж, танграмын гол ач
+ * холбогдол (тайван орон зайн сэтгэлгээ) алдагдана.
  */
 
 const SQUARE = 34;
 
-/** Нүдний гурвалжныг SVG цэгүүд болгоно. */
+/**
+ * Сан дахь хэсгүүдийн ХУВААРЬ.
+ *
+ * ⚠ Бүтэн хэмжээгээр байрлуулах боломжгүй: том гурвалжин ганцаараа 4
+ * дөрвөлжин өргөн тул долоон хэсэг нэг мөрөнд 16+ дөрвөлжин эзэлж, SVG
+ * тэр өргөнд тааруулагдахад ХӨЛӨГ өчүүхэн жижиг харагдана. Хагас
+ * хэмжээгээр, хоёр мөрөнд байрлуулбал сан нь хөлгийн өргөнтэй ойролцоо
+ * болно.
+ */
+const TRAY_SCALE = 0.5;
+const TRAY_PER_ROW = 4;
+/** Нэг хэсэгт ногдох өргөн, өндөр — БҮТЭН хэмжээний дөрвөлжингөөр. */
+const TRAY_SLOT_W = 2.3;
+const TRAY_SLOT_H = 1.4;
+
+type Drag = {
+  piece: PieceId;
+  /** Заагчийн цэгээс хэсгийн эх булан хүртэлх зөрүү (дөрвөлжингөөр). */
+  dc: number;
+  dr: number;
+  /** Заагчийн одоогийн байрлал — SVG координат. */
+  x: number;
+  y: number;
+};
+
 function cellPoints(c: number, r: number, d: number): string {
   const cx = (c + 0.5) * SQUARE;
   const cy = (r + 0.5) * SQUARE;
@@ -71,20 +101,18 @@ export default function TangramExercise({
 }) {
   const figure = useMemo(() => decodeTangram(exercise.grid), [exercise.grid]);
 
+  const svgRef = useRef<SVGSVGElement | null>(null);
+  const solvedRef = useRef(false);
+
   const [placements, setPlacements] = useState<Placement[]>([]);
-  const [selected, setSelected] = useState<PieceId | null>(null);
+  const [active, setActive] = useState<PieceId | null>(null);
   const [rotation, setRotation] = useState(0);
   const [flipped, setFlipped] = useState(false);
+  const [drag, setDrag] = useState<Drag | null>(null);
   const [seconds, setSeconds] = useState(0);
 
   const done = feedback !== null;
 
-  /**
-   * ⚠ Цаг нь ЗӨВХӨН ХЭМЖИХ зорилготой тул дууссаны дараа зогсоно —
-   * эс бөгөөс дасгалаа бодож дууссан сурагч дэлгэц дээр цаг үргэлжлэн
-   * явж байгааг харж «би удсан юм болов уу» гэж эргэлзэнэ.
-   */
-  const solvedRef = useRef(false);
   useEffect(() => {
     if (done || solvedRef.current) return;
     const timer = setInterval(() => setSeconds((value) => value + 1), 1000);
@@ -109,14 +137,25 @@ export default function TangramExercise({
     );
   }
 
-  const used = new Set(placements.map((p) => p.piece));
-  const remaining = PIECE_IDS.filter((piece) => !used.has(piece));
+  const boardW = figure.width;
+  const boardH = figure.height;
+  const trayRows = Math.ceil(PIECE_IDS.length / TRAY_PER_ROW);
+  const viewW = Math.max(boardW, TRAY_PER_ROW * TRAY_SLOT_W) * SQUARE;
+  const viewH = (boardH + 0.6 + trayRows * TRAY_SLOT_H) * SQUARE;
 
-  /** Тавьсан хэсгүүдийн эзэлсэн нүднүүд — давхцлыг шалгахад. */
+  const placedBy = new Map(placements.map((p) => [p.piece, p]));
+  const tray = PIECE_IDS.filter((piece) => !placedBy.has(piece) && piece !== drag?.piece);
+
   const occupied = new Map<string, PieceId>();
   for (const placement of placements) {
     for (const x of placedCells(placement)) occupied.set(cellKey(x.c, x.r, x.d), placement.piece);
   }
+
+  /** Сан дахь хэсгийн эх булан — БҮТЭН хэмжээний дөрвөлжингөөр. */
+  const traySlot = (index: number) => ({
+    c: (index % TRAY_PER_ROW) * TRAY_SLOT_W + 0.15,
+    r: boardH + 0.7 + Math.floor(index / TRAY_PER_ROW) * TRAY_SLOT_H,
+  });
 
   const commit = (next: Placement[]) => {
     setPlacements(next);
@@ -126,44 +165,116 @@ export default function TangramExercise({
     }
   };
 
-  const tapSquare = (c: number, r: number) => {
+  /** Дэлгэцийн цэгийг SVG координат руу. */
+  const toSvg = (event: React.PointerEvent): { x: number; y: number } | null => {
+    const svg = svgRef.current;
+    const ctm = svg?.getScreenCTM();
+    if (!svg || !ctm) return null;
+    const point = new DOMPoint(event.clientX, event.clientY).matrixTransform(ctm.inverse());
+    return { x: point.x, y: point.y };
+  };
+
+  /**
+   * @param fromTray Санаас эхэлж байна уу.
+   *
+   * ⚠ Санаас чирэхэд барих цэгийг ЯГ тооцох боломжгүй: сан нь жижигрүүлж
+   * зурагддаг тул тэр цэг хөлгийн масштабт өөр газар унана. Иймд хэсгийг
+   * заагчийн ТӨВД авчирна — урьдчилан таамаглах боломжтой, хуруугаар ч
+   * тав тухтай.
+   */
+  const startDrag = (
+    event: React.PointerEvent,
+    piece: PieceId,
+    originC: number,
+    originR: number,
+    fromTray: boolean
+  ) => {
     if (done) return;
+    const point = toSvg(event);
+    if (!point) return;
 
-    // Тухайн дөрвөлжинд хэсэг байвал түүнийг АВНА (буцааж сан руу).
-    const hit = [0, 1, 2, 3]
-      .map((d) => occupied.get(cellKey(c, r, d)))
-      .find((piece): piece is PieceId => piece !== undefined);
+    /*
+     * ⚠ Capture-ыг ДАРСАН ЭЛЕМЕНТ дээр БИШ, SVG дээр тавина. Чирэх
+     * эхлэхэд тухайн хэсэг санаас (эсвэл хөлгөөс) хасагддаг тул түүний
+     * элемент DOM-оос алга болно — capture тэр дээр байвал хамт алдагдаж,
+     * чирэлт дунд замдаа тасарна. SVG нь үргэлж байрандаа үлдэнэ.
+     */
+    svgRef.current?.setPointerCapture(event.pointerId);
+    setActive(piece);
 
-    if (hit) {
-      commit(placements.filter((p) => p.piece !== hit));
-      setSelected(hit);
-      return;
+    // Хэсгийг хөлгөөс АВНА — чирч байх хугацаанд тэр нүднүүд суларна.
+    if (placedBy.has(piece)) {
+      const existing = placedBy.get(piece)!;
+      setRotation(existing.orientation.rotation);
+      setFlipped(existing.orientation.flipped);
+      setPlacements((current) => current.filter((p) => p.piece !== piece));
     }
 
-    if (!selected) return;
+    let dc: number;
+    let dr: number;
 
-    const candidate: Placement = { piece: selected, c, r, orientation: { rotation, flipped } };
+    if (fromTray) {
+      const cells = orientedCells(piece, { rotation, flipped });
+      dc = (Math.max(...cells.map((x) => x.c)) + 1) / 2;
+      dr = (Math.max(...cells.map((x) => x.r)) + 1) / 2;
+    } else {
+      dc = point.x / SQUARE - originC;
+      dr = point.y / SQUARE - originR;
+    }
+
+    setDrag({ piece, dc, dr, x: point.x, y: point.y });
+  };
+
+  const moveDrag = (event: React.PointerEvent) => {
+    if (!drag) return;
+    const point = toSvg(event);
+    if (point) setDrag({ ...drag, x: point.x, y: point.y });
+  };
+
+  /** Чирэлтийн одоогийн байдлаар наалдах нүд. */
+  const snapTarget = (): Placement | null => {
+    if (!drag) return null;
+    const c = Math.round(drag.x / SQUARE - drag.dc);
+    const r = Math.round(drag.y / SQUARE - drag.dr);
+    const candidate: Placement = {
+      piece: drag.piece,
+      c,
+      r,
+      orientation: { rotation, flipped },
+    };
+
     const cells = placedCells(candidate);
+    if (cells.some((x) => x.c < 0 || x.r < 0 || x.c >= boardW || x.r >= boardH)) return null;
+    if (cells.some((x) => occupied.has(cellKey(x.c, x.r, x.d)))) return null;
 
-    // Хөлгөөс гарах, эсвэл өөр хэсэгтэй давхцах бол ТАВИХГҮЙ.
-    if (cells.some((x) => x.c < 0 || x.r < 0 || x.c >= figure.width || x.r >= figure.height)) return;
-    if (cells.some((x) => occupied.has(cellKey(x.c, x.r, x.d)))) return;
+    return candidate;
+  };
 
-    commit([...placements, candidate]);
-    setSelected(null);
-    setRotation(0);
-    setFlipped(false);
+  const endDrag = (event?: React.PointerEvent) => {
+    if (event && svgRef.current?.hasPointerCapture(event.pointerId)) {
+      svgRef.current.releasePointerCapture(event.pointerId);
+    }
+    if (!drag) return;
+    const target = snapTarget();
+    // ⚠ Тохирохгүй бол ХАЯХГҮЙ, санд буцаана — хүүхэд «хэсэг алга болов»
+    // гэж сандрах ёсгүй.
+    if (target) commit([...placements, target]);
+    setDrag(null);
   };
 
   const reset = () => {
     setPlacements([]);
-    setSelected(null);
+    setDrag(null);
+    setActive(null);
     setRotation(0);
     setFlipped(false);
   };
 
+  const preview = snapTarget();
+  const orientation = { rotation, flipped };
+
   return (
-    <div className="surface space-y-4 p-5">
+    <div className="surface space-y-3 p-5">
       <div className="flex items-center justify-between gap-3">
         <p className="text-lg font-bold text-gray-900 dark:text-white">{exercise.prompt}</p>
         <span className="font-num shrink-0 rounded-lg bg-gray-100 px-2.5 py-1 text-sm font-bold text-gray-700 dark:bg-white/10 dark:text-gray-200">
@@ -171,121 +282,133 @@ export default function TangramExercise({
         </span>
       </div>
 
-      <div className="overflow-x-auto">
-        <svg
-          viewBox={`0 0 ${figure.width * SQUARE} ${figure.height * SQUARE}`}
-          className="mx-auto block h-auto w-full max-w-md touch-manipulation"
-          role="img"
-          aria-label="Нөхөх дүрс"
-        >
-          {/* Нөхөх ёстой талбай — бүдэг дэвсгэр. */}
-          {[...figure.cells].map((key) => {
-            const [c, r, d] = key.split(",").map(Number);
-            return (
-              <polygon
-                key={`t-${key}`}
-                points={cellPoints(c, r, d)}
-                className="fill-gray-300 dark:fill-white/15"
-              />
-            );
-          })}
+      <svg
+        ref={svgRef}
+        viewBox={`-4 -4 ${viewW + 8} ${viewH + 8}`}
+        className="mx-auto block h-auto w-full max-w-lg touch-none select-none"
+        onPointerMove={moveDrag}
+        onPointerUp={endDrag}
+        onPointerCancel={endDrag}
+        role="img"
+        aria-label="Тангрaмын дүрс"
+      >
+        {/* Нөхөх дүрс. */}
+        {[...figure.cells].map((key) => {
+          const [c, r, d] = key.split(",").map(Number);
+          return (
+            <polygon
+              key={`fig-${key}`}
+              points={cellPoints(c, r, d)}
+              className="fill-gray-300 dark:fill-white/15"
+            />
+          );
+        })}
 
-          {/* Тавьсан хэсгүүд. */}
-          {placements.map((placement) =>
-            placedCells(placement).map((x) => (
+        {/* Наалдах байрлалын сүүдэр. */}
+        {preview &&
+          placedCells(preview).map((x) => (
+            <polygon
+              key={`pv-${x.c},${x.r},${x.d}`}
+              points={cellPoints(x.c, x.r, x.d)}
+              fill={PIECE_COLORS[preview.piece]}
+              opacity={0.35}
+            />
+          ))}
+
+        {/* Хөлөг дээрх хэсгүүд. */}
+        {placements.map((placement) => (
+          <g
+            key={`pl-${placement.piece}`}
+            className={done ? "" : "cursor-grab"}
+            onPointerDown={(event) =>
+              startDrag(event, placement.piece, placement.c, placement.r, false)
+            }
+          >
+            {placedCells(placement).map((x) => (
               <polygon
-                key={`p-${placement.piece}-${x.c},${x.r},${x.d}`}
+                key={`${x.c},${x.r},${x.d}`}
                 points={cellPoints(x.c, x.r, x.d)}
                 fill={PIECE_COLORS[placement.piece]}
                 stroke={PIECE_COLORS[placement.piece]}
                 strokeWidth={1}
               />
-            ))
-          )}
-
-          {/* Дарах талбай — дөрвөлжин тутамд нэг. */}
-          {Array.from({ length: figure.height }, (_, r) =>
-            Array.from({ length: figure.width }, (_, c) => (
-              <rect
-                key={`h-${c}-${r}`}
-                x={c * SQUARE}
-                y={r * SQUARE}
-                width={SQUARE}
-                height={SQUARE}
-                fill="transparent"
-                className={done ? "" : "cursor-pointer"}
-                onClick={() => tapSquare(c, r)}
-              />
-            ))
-          )}
-        </svg>
-      </div>
-
-      {/* Сонгосон хэсгийн урьдчилсан харагдац ба эргүүлэх товчнууд. */}
-      {selected && !done && (
-        <div className="flex items-center justify-center gap-3">
-          <svg viewBox="0 0 140 70" className="h-14 w-28" aria-hidden>
-            {orientedCells(selected, { rotation, flipped }).map((x) => (
-              <polygon
-                key={`s-${x.c},${x.r},${x.d}`}
-                points={cellPoints(x.c, x.r, x.d)}
-                fill={PIECE_COLORS[selected]}
-                stroke={PIECE_COLORS[selected]}
-                strokeWidth={1}
-              />
             ))}
-          </svg>
-          <button
-            type="button"
-            onClick={() => setRotation((value) => (value + 1) % 4)}
-            aria-label="Эргүүлэх"
-            className="grid size-11 place-items-center rounded-xl bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-white/10 dark:text-gray-200"
-          >
-            <RotateCw className="size-5" aria-hidden />
-          </button>
-          <button
-            type="button"
-            onClick={() => setFlipped((value) => !value)}
-            aria-label="Толин тусгал"
-            className="grid size-11 place-items-center rounded-xl bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-white/10 dark:text-gray-200"
-          >
-            <FlipHorizontal className="size-5" aria-hidden />
-          </button>
-        </div>
-      )}
+          </g>
+        ))}
 
-      {/* Үлдсэн хэсгүүд. */}
-      <div className="flex flex-wrap items-center justify-center gap-2">
-        {remaining.map((piece) => (
-          <button
-            key={piece}
-            type="button"
-            onClick={() => {
-              setSelected(piece);
-              setRotation(0);
-              setFlipped(false);
-            }}
-            disabled={done}
-            className={`rounded-xl border-2 p-1 transition-colors ${
-              selected === piece
-                ? "border-brand-500 bg-brand-50 dark:bg-brand-500/15"
-                : "border-gray-200 hover:bg-gray-50 dark:border-white/10 dark:hover:bg-white/5"
-            }`}
-          >
-            <svg viewBox="0 0 140 70" className="h-10 w-16" aria-label={piece}>
-              {orientedCells(piece, { rotation: 0, flipped: false }).map((x) => (
+        {/* Сангийн зааг. */}
+        <line
+          x1={0}
+          y1={(boardH + 0.3) * SQUARE}
+          x2={viewW}
+          y2={(boardH + 0.3) * SQUARE}
+          className="stroke-gray-200 dark:stroke-white/10"
+          strokeWidth={2}
+        />
+
+        {/* Сан дахь хэсгүүд. */}
+        {tray.map((piece, index) => {
+          const slot = traySlot(index);
+          return (
+            <g
+              key={`tr-${piece}`}
+              className={done ? "" : "cursor-grab"}
+              transform={`translate(${slot.c * SQUARE} ${slot.r * SQUARE}) scale(${TRAY_SCALE})`}
+              onPointerDown={(event) => startDrag(event, piece, slot.c, slot.r, true)}
+            >
+              {orientedCells(
+                piece,
+                piece === active ? orientation : { rotation: 0, flipped: false }
+              ).map((x) => (
                 <polygon
-                  key={`r-${piece}-${x.c},${x.r},${x.d}`}
+                  key={`${x.c},${x.r},${x.d}`}
                   points={cellPoints(x.c, x.r, x.d)}
                   fill={PIECE_COLORS[piece]}
                   stroke={PIECE_COLORS[piece]}
                   strokeWidth={1}
+                  opacity={piece === active ? 1 : 0.85}
                 />
               ))}
-            </svg>
-          </button>
-        ))}
+            </g>
+          );
+        })}
 
+        {/* Чирэгдэж буй хэсэг — заагчийг дагана. */}
+        {drag &&
+          orientedCells(drag.piece, orientation).map((x) => (
+            <polygon
+              key={`dg-${x.c},${x.r},${x.d}`}
+              points={cellPoints(
+                x.c + drag.x / SQUARE - drag.dc,
+                x.r + drag.y / SQUARE - drag.dr,
+                x.d
+              )}
+              fill={PIECE_COLORS[drag.piece]}
+              opacity={0.9}
+              pointerEvents="none"
+            />
+          ))}
+      </svg>
+
+      <div className="flex flex-wrap items-center justify-center gap-2">
+        <button
+          type="button"
+          onClick={() => setRotation((value) => (value + 1) % 4)}
+          disabled={done || !active}
+          aria-label="Эргүүлэх"
+          className="grid size-11 place-items-center rounded-xl bg-gray-100 text-gray-700 hover:bg-gray-200 disabled:opacity-40 dark:bg-white/10 dark:text-gray-200"
+        >
+          <RotateCw className="size-5" aria-hidden />
+        </button>
+        <button
+          type="button"
+          onClick={() => setFlipped((value) => !value)}
+          disabled={done || !active}
+          aria-label="Толин тусгал"
+          className="grid size-11 place-items-center rounded-xl bg-gray-100 text-gray-700 hover:bg-gray-200 disabled:opacity-40 dark:bg-white/10 dark:text-gray-200"
+        >
+          <FlipHorizontal className="size-5" aria-hidden />
+        </button>
         {placements.length > 0 && !done && (
           <button
             type="button"
@@ -299,11 +422,9 @@ export default function TangramExercise({
       </div>
 
       <p className="text-center text-sm text-gray-500 dark:text-gray-400">
-        {selected
-          ? "Хөлөг дээр дарж тавь. Эргүүлэх, толирдуулах товч дээр байна."
-          : remaining.length === 0
-            ? "Бүх хэсэг тавигдсан — зөв байрлуулбал дуусна."
-            : "Хэсэг сонгоод хөлөг дээр дар. Тавьсан хэсгийг дарвал буцаж авна."}
+        {active
+          ? "Хэсгийг чирээд тавь. Эргүүлэх, толирдуулах товч дээр байна."
+          : "Доорх хэсгийг чирж дүрс рүү тавь. Тавьсан хэсгийг дахин чирж болно."}
       </p>
     </div>
   );
