@@ -14,7 +14,10 @@ import {
 } from "@/lib/go/position";
 import { decodeMemory, encodeMemory } from "@/lib/puzzles/memory";
 import { decodeMatchstick, encodeMatchstick } from "@/lib/puzzles/matchstick";
+import { decodeNonogram, encodeNonogram } from "@/lib/puzzles/nonogram";
 import { decodeRecall, encodeRecall } from "@/lib/puzzles/recall";
+import { decodeSeries, encodeSeries } from "@/lib/puzzles/series";
+import { decodeWord, encodeWord } from "@/lib/puzzles/word";
 import { decodeTangram, encodeTangram } from "@/lib/puzzles/tangram";
 import { decodeSudoku, encodeSudoku } from "@/lib/puzzles/sudoku";
 import { decodeMaze, encodeMaze } from "@/lib/code/maze";
@@ -367,6 +370,32 @@ function validateRecall(rawGrid: unknown): { grid: string } | null {
   return recall ? { grid: encodeRecall(recall) } : null;
 }
 
+/**
+ * ⚠ `decodeNonogram` нь оньсого ГАНЦ шийдэлтэй эсэхийг ХАЙЛТААР шалгана.
+ * Олон шийдэлтэй нонограм нь логикоор биш ТААЖ бодох болж хувирдаг.
+ */
+function validateNonogram(rawGrid: unknown): { grid: string } | null {
+  if (typeof rawGrid !== "string") return null;
+  const puzzle = decodeNonogram(rawGrid);
+  return puzzle ? { grid: encodeNonogram(puzzle) } : null;
+}
+
+/**
+ * ⚠ `decodeSeries` нь индекс эгнээнээс гадуур, `odd` горимд илүүц гишүүн
+ * давтагдсан зэрэг БОДОГДОХГҮЙ тохиолдлуудыг барина.
+ */
+function validateSeries(rawGrid: unknown): { grid: string } | null {
+  if (typeof rawGrid !== "string") return null;
+  const series = decodeSeries(rawGrid);
+  return series ? { grid: encodeSeries(series) } : null;
+}
+
+function validateWord(rawGrid: unknown): { grid: string } | null {
+  if (typeof rawGrid !== "string") return null;
+  const puzzle = decodeWord(rawGrid);
+  return puzzle ? { grid: encodeWord(puzzle) } : null;
+}
+
 function validateNetPuzzle(rawGrid: unknown): { grid: string } | null {
   if (typeof rawGrid !== "string") return null;
 
@@ -433,6 +462,9 @@ export type ExerciseType =
   | "matchstick"
   | "tangram"
   | "recall"
+  | "nonogram"
+  | "series"
+  | "word"
   | "memory-game"
   | "code-maze"
   | "go-move"
@@ -451,6 +483,9 @@ export function parseExerciseType(value: unknown): ExerciseType {
     value === "matchstick" ||
     value === "tangram" ||
     value === "recall" ||
+    value === "nonogram" ||
+    value === "series" ||
+    value === "word" ||
     value === "memory-game" ||
     value === "code-maze" ||
     value === "go-move" ||
@@ -528,6 +563,9 @@ export function validateExerciseFields(body: Record<string, unknown>): ExerciseF
     type === "matchstick" ||
     type === "tangram" ||
     type === "recall" ||
+    type === "nonogram" ||
+    type === "series" ||
+    type === "word" ||
     type === "code-maze" ||
     type === "memory-game"
   ) {
@@ -544,6 +582,12 @@ export function validateExerciseFields(body: Record<string, unknown>): ExerciseF
                 ? validateTangram(body.grid)
                 : type === "recall"
                   ? validateRecall(body.grid)
+                  : type === "nonogram"
+                    ? validateNonogram(body.grid)
+                    : type === "series"
+                      ? validateSeries(body.grid)
+                      : type === "word"
+                        ? validateWord(body.grid)
               : type === "memory-game"
                 ? validateMemory(body.grid)
                 : validateCodeMaze(body.grid);

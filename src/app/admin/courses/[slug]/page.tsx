@@ -133,6 +133,9 @@ type ExerciseType =
   | "matchstick"
   | "tangram"
   | "recall"
+  | "nonogram"
+  | "series"
+  | "word"
   | "memory-game"
   | "code-maze"
   | "go-move"
@@ -856,6 +859,9 @@ const EXERCISE_TYPE_LABELS: Record<ExerciseType, string> = {
   matchstick: "Таягны оньсого",
   tangram: "Тангрaм",
   recall: "Санаж сэргээх",
+  nonogram: "Нонограм",
+  series: "Эгнээний таавар",
+  word: "Үгийн таавар",
   "memory-game": "Санах ойн тоглоом",
   "code-maze": "Код угсрах (лабиринт)",
   "go-move": "Го — чулуу тавих",

@@ -182,6 +182,9 @@ export type ExerciseTypeName =
   | "matchstick"
   | "tangram"
   | "recall"
+  | "nonogram"
+  | "series"
+  | "word"
   | "memory-game"
   | "code-maze"
   | "go-move"
@@ -199,6 +202,21 @@ export function allowedExerciseTypes(slug: string | null | undefined): ExerciseT
   if (slug === "tangram") return ["choice", "tangram"];
   // Санах ойн курс — хөзрийн хос БА санаж сэргээх дасгалууд.
   if (slug === "memory") return ["choice", "memory-game", "recall"];
+  /*
+   * Нэгдсэн «Таавар» курс — олон төрлийн оньсогыг НЭГ курст цуглуулсан
+   * тул зөвшөөрөгдөх төрөл нь ч өргөн.
+   */
+  if (slug === "puzzle") {
+    return [
+      "choice",
+      "matchstick",
+      "tangram",
+      "slide-puzzle",
+      "nonogram",
+      "series",
+      "word",
+    ];
+  }
 
   if (KIDS_COURSES.has(slug ?? "")) {
     return ["choice", "memory-game", "slide-puzzle", "code-maze"];

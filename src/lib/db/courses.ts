@@ -29,6 +29,9 @@ export type ExerciseType =
   | "matchstick"
   | "tangram"
   | "recall"
+  | "nonogram"
+  | "series"
+  | "word"
   | "memory-game"
   | "code-maze"
   | "go-move"
@@ -262,6 +265,9 @@ function toExerciseData(row: typeof exercises.$inferSelect): ExerciseData {
       row.type === "matchstick" ||
       row.type === "tangram" ||
       row.type === "recall" ||
+      row.type === "nonogram" ||
+      row.type === "series" ||
+      row.type === "word" ||
       row.type === "code-maze" ||
       row.type === "go-move" ||
       row.type === "memory-game"

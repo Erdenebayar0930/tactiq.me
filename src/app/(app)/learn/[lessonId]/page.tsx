@@ -73,6 +73,18 @@ const RecallExercise = dynamic(
   () => import("@/components/lesson/RecallExercise"),
   { loading: () => <ExerciseBoardSkeleton /> }
 );
+const NonogramExercise = dynamic(
+  () => import("@/components/lesson/NonogramExercise"),
+  { loading: () => <ExerciseBoardSkeleton /> }
+);
+const SeriesExercise = dynamic(
+  () => import("@/components/lesson/SeriesExercise"),
+  { loading: () => <ExerciseBoardSkeleton /> }
+);
+const WordExercise = dynamic(
+  () => import("@/components/lesson/WordExercise"),
+  { loading: () => <ExerciseBoardSkeleton /> }
+);
 const GoMoveExercise = dynamic(
   () => import("@/components/lesson/GoMoveExercise"),
   { loading: () => <ExerciseBoardSkeleton /> }
@@ -417,6 +429,15 @@ function ExerciseCard({
   }
   if (exercise.type === "recall") {
     return <RecallExercise exercise={exercise} feedback={feedback} onAnswer={onAnswer} />;
+  }
+  if (exercise.type === "nonogram") {
+    return <NonogramExercise exercise={exercise} feedback={feedback} onAnswer={onAnswer} />;
+  }
+  if (exercise.type === "series") {
+    return <SeriesExercise exercise={exercise} feedback={feedback} onAnswer={onAnswer} />;
+  }
+  if (exercise.type === "word") {
+    return <WordExercise exercise={exercise} feedback={feedback} onAnswer={onAnswer} />;
   }
   if (exercise.type === "go-move") {
     return <GoMoveExercise exercise={exercise} feedback={feedback} onAnswer={onAnswer} onMistake={onMistake} />;
