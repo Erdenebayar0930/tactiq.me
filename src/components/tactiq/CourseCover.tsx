@@ -1,3 +1,5 @@
+import Image from "next/image";
+
 import { courseArt } from "@/components/tactiq/CourseArt";
 import { Icon } from "@/components/tactiq/Icon";
 
@@ -19,6 +21,27 @@ import type { ColorKey } from "@/lib/tactiq/theme";
  * текстээр сканнердах тул тийм класс CSS-д огт үүсэхгүй. Тиймээс өнгийг
  * ЯГ ЭНД, hex утгаар хүснэгтэд бичив.
  */
+
+/**
+ * ЗУРАГТ КОВЕР — курсын slug → `public/` доторх зам.
+ *
+ * ⚠ Дээрх тайлбар нь «яагаад зургийн файл БИШ, SVG вэ» гэдгийг
+ * тайлбарладаг ба тэр үндэслэл ХЭВЭЭР: курс бүрт зураг ЗААВАЛ байх
+ * шаардлагагүй, бүртгэлд байхгүй курс нь SVG ковероороо хэвийн
+ * харагдана. Энэ бүртгэл нь зөвхөн ЗУРАГ БЭЛДСЭН курсуудад зориулагдсан
+ * НЭМЭЛТ давхарга.
+ *
+ * ⚠ Зам нь `public/`-ээс эхэлсэн үнэмлэхүй зам байх ёстой, мөн файл нь
+ * ҮНЭХЭЭР байх ёстой: Next.js-ийн `Image` нь байхгүй файлыг чимээгүй
+ * алгасдаггүй, 404 зурна.
+ *
+ * ⚠ ХЭМЖЭЭ: ковер нь 320×160 харьцаатай. Өөр харьцаатай зураг өгвөл
+ * `object-cover` нь ТАЙРНА — дүрийн толгой тасрахаас сэргийлж 2:1-д ойр
+ * зураг бэлдэнэ үү.
+ */
+const COVER_IMAGES: Record<string, string> = {
+  // Жишээ: chess: "/images/covers/chess.webp",
+};
 
 /** Ковер бүрийн налуу дэвсгэрийн хоёр өнгө (эхлэл → төгсгөл). */
 const GRADIENTS: Record<ColorKey, [string, string]> = {
@@ -73,6 +96,27 @@ export function CourseCover({
    * гарсан. Сэдвийн зураг нь тохиргооноос хамаарахгүй.
    */
   const art = courseArt(slug ?? seed);
+  const photo = COVER_IMAGES[slug ?? seed];
+
+  /*
+   * ⚠ ЗУРАГ БАЙВАЛ ТЭР Л ХАНГАЛТТАЙ: налуу дэвсгэр, чимэглэл, SVG зураг
+   * бүгд зурагны ард нуугдах тул тэднийг огт зурахгүй — нэмэлт DOM,
+   * нэмэлт зурах ажил үүсгэхийн хэрэггүй.
+   */
+  if (photo) {
+    return (
+      <div className={`relative overflow-hidden ${className}`}>
+        <Image
+          src={photo}
+          alt=""
+          fill
+          aria-hidden
+          sizes="(max-width: 640px) 100vw, 320px"
+          className="object-cover"
+        />
+      </div>
+    );
+  }
 
   return (
     <div className={`relative overflow-hidden ${className}`}>
