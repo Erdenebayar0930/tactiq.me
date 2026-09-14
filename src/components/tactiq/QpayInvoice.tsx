@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Landmark, Loader2, QrCode } from "lucide-react";
+import { Check, Copy, Landmark, Loader2, QrCode } from "lucide-react";
 
 import { apiFetch } from "@/lib/apiClient";
+import { BANK_ACCOUNTS } from "@/lib/tactiq/bankAccounts";
 
 import type { PublicUser } from "@/lib/api/publicUser";
 
@@ -30,6 +31,44 @@ export type QpayCheckout = {
 };
 
 const money = (amount: number) => `${amount.toLocaleString("mn-MN")}₮`;
+
+/**
+ * Хуулах товч.
+ *
+ * ⚠ Дансны дугаар, гүйлгээний утгыг ГАРААР бичүүлэх нь алдааны эх
+ * үүсвэр: нэг цифр зөрвөл мөнгө хаашаа ч явж болно, утга буруу бол
+ * гүйлгээг хэний болохыг тогтоох аргагүй.
+ *
+ * ⚠ `navigator.clipboard` нь HTTPS (эсвэл localhost) дээр л ажилладаг
+ * бөгөөд хэрэглэгч зөвшөөрөл өгөөгүй бол уначина — тиймээс алдааг нь
+ * залгиж, бичвэрийг нь дэлгэц дээр ИЛ үлдээнэ (гараар сонгож болно).
+ */
+function CopyButton({ value, label }: { value: string; label: string }) {
+  const [copied, setCopied] = useState(false);
+
+  return (
+    <button
+      type="button"
+      onClick={async () => {
+        try {
+          await navigator.clipboard.writeText(value);
+          setCopied(true);
+          setTimeout(() => setCopied(false), 1500);
+        } catch {
+          // Хуулж чадсангүй — утга нь дэлгэц дээр харагдсаар байна.
+        }
+      }}
+      aria-label={`${label} хуулах`}
+      className="grid size-8 shrink-0 place-items-center rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-700 dark:hover:bg-white/10 dark:hover:text-gray-200"
+    >
+      {copied ? (
+        <Check className="size-4 text-emerald-500" aria-hidden />
+      ) : (
+        <Copy className="size-4" aria-hidden />
+      )}
+    </button>
+  );
+}
 
 /**
  * QR ба банкны холбоос. Төлбөр төлөгдсөнийг СЕРВЕРЭЭС асууж мэднэ —
@@ -201,8 +240,22 @@ export function InvoiceCard({
             <ul className="grid max-h-64 grid-cols-3 gap-2 overflow-y-auto pr-1">
               {checkout.bankLinks.map((bank) => (
                 <li key={bank.name}>
+                  {/*
+                    ⚠ ЭНГИЙН `<a>` байх ЁСТОЙ, `next/link` БИШ: холбоос нь
+                    `qpaywallet://`, `khanbank://` гэх мэт АППЫН схем тул
+                    router түүнийг замаар нь тайлбарлаж чадахгүй.
+
+                    ⚠ `target="_blank"` ч тавихгүй: шинэ таб нээгээд тэр нь
+                    хоосон үлдэж, хэрэглэгч буцах товчоо хайна. Апп руу
+                    үсрэхэд одоогийн таб байрандаа үлдэх нь зөв.
+
+                    ⚠ Эдгээр холбоос нь ГАР УТСАН дээр, тухайн банкны апп
+                    суусан үед л ажиллана. Компьютер дээр юу ч болохгүй —
+                    тэнд QR нь зориулалтын зам.
+                  */}
                   <a
                     href={bank.link}
+                    rel="noopener noreferrer"
                     className="flex flex-col items-center gap-1 rounded-xl p-2 text-center hover:bg-gray-100 dark:hover:bg-white/5"
                   >
                     {bank.logo ? (
@@ -230,6 +283,62 @@ export function InvoiceCard({
           )}
         </div>
       </div>
+
+      {/*
+        ДАНСААР ШИЛЖҮҮЛЭХ — QPay ашиглахгүй хүнд зориулсан нөөц зам.
+
+        ⚠ Данс бүртгээгүй бол хэсэг нь ОГТ гарахгүй (`bankAccounts.ts`).
+
+        ⚠ Энэ зам АВТОМАТААР баталгаажихгүй: QPay нь webhook-оор
+        мэдэгддэг тул шууд идэвхждэг, гар шилжүүлгийг харин хүн хянах
+        ёстой. Үүнийг ил хэлэхгүй бол хэрэглэгч төлчихөөд хүлээнэ.
+      */}
+      {BANK_ACCOUNTS.length > 0 && (
+        <div className="rounded-xl border border-gray-200 p-4 text-left dark:border-white/10">
+          <p className="text-sm font-bold text-gray-900 dark:text-white">Дансаар шилжүүлэх</p>
+
+          <ul className="mt-2 space-y-2">
+            {BANK_ACCOUNTS.map((account) => (
+              <li
+                key={`${account.bank}:${account.accountNo}`}
+                className="flex items-center gap-2 rounded-lg bg-gray-50 px-3 py-2 dark:bg-white/5"
+              >
+                <span className="min-w-0 flex-1">
+                  <span className="block text-xs text-gray-500 dark:text-gray-400">
+                    {account.bank} · {account.holder}
+                  </span>
+                  <span className="num block font-semibold text-gray-900 dark:text-white">
+                    {account.accountNo}
+                  </span>
+                </span>
+                <CopyButton value={account.accountNo} label="Дансны дугаар" />
+              </li>
+            ))}
+          </ul>
+
+          {/*
+            ⚠ ГҮЙЛГЭЭНИЙ УТГА нь нэхэмжлэлийн дугаар. Үүнгүйгээр банкны
+            хуулга дээрх гүйлгээ хэний болохыг тогтоох БОЛОМЖГҮЙ.
+          */}
+          <div className="mt-3 flex items-center gap-2 rounded-lg bg-amber-50 px-3 py-2 dark:bg-amber-500/10">
+            <span className="min-w-0 flex-1">
+              <span className="block text-xs font-semibold text-amber-800 dark:text-amber-200">
+                Гүйлгээний утга (заавал)
+              </span>
+              <span className="num block truncate font-semibold text-amber-900 dark:text-amber-100">
+                {checkout.senderInvoiceNo}
+              </span>
+            </span>
+            <CopyButton value={checkout.senderInvoiceNo} label="Гүйлгээний утга" />
+          </div>
+
+          <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+            Дансаар шилжүүлсэн бол багц ШУУД идэвхжихгүй — ажлын цагт
+            шалгаад идэвхжүүлнэ. Шууд идэвхжүүлэх бол дээрх QR эсвэл банкны
+            аппаар төлнө үү.
+          </p>
+        </div>
+      )}
 
       <p className="flex items-center justify-center gap-2 text-sm text-gray-500 dark:text-gray-400">
         <Loader2 className="size-4 animate-spin" aria-hidden />
