@@ -49,6 +49,14 @@ import {
   MEMORY_PRESETS,
 } from "@/lib/puzzles/memory";
 import {
+  decodeTangram,
+  encodeTangram,
+  figureFrom,
+  generatePlacements,
+  PIECE_COLORS as TANGRAM_COLORS,
+  type Figure as TangramFigure,
+} from "@/lib/puzzles/tangram";
+import {
   countSolutions,
   decodeMatchstick,
   encodeMatchstick,
@@ -123,6 +131,7 @@ type ExerciseType =
   | "slide-puzzle"
   | "sudoku"
   | "matchstick"
+  | "tangram"
   | "memory-game"
   | "code-maze"
   | "go-move"
@@ -844,6 +853,7 @@ const EXERCISE_TYPE_LABELS: Record<ExerciseType, string> = {
   "slide-puzzle": "Гулсдаг оньсого",
   sudoku: "Судоку",
   matchstick: "Таягны оньсого",
+  tangram: "Тангрaм",
   "memory-game": "Санах ойн тоглоом",
   "code-maze": "Код угсрах (лабиринт)",
   "go-move": "Го — чулуу тавих",
@@ -979,6 +989,16 @@ function ExerciseForm({
        */
       if (!decodeSudoku(grid)) {
         setError("Судоку үүсгээгүй эсвэл буруу байна — «Шинэ судоку» дарна уу.");
+        return;
+      }
+      payload = { type, prompt: prompt.trim(), grid, explanation: explanation.trim() };
+    } else if (type === "tangram") {
+      /*
+       * `decodeTangram` нь дүрсийн ТАЛБАЙГ шалгана — долоон хэсгийнхтэй
+       * тэнцэхгүй бол сурагч хэзээ ч дуусгаж чадахгүй.
+       */
+      if (!decodeTangram(grid)) {
+        setError("Дүрс үүсгээгүй байна — «Шинэ дүрс» товчийг дарна уу.");
         return;
       }
       payload = { type, prompt: prompt.trim(), grid, explanation: explanation.trim() };
@@ -1209,6 +1229,8 @@ function ExerciseForm({
         <SlidePuzzleEditor grid={grid} onChange={setGrid} />
       ) : type === "sudoku" ? (
         <SudokuEditor grid={grid} onChange={setGrid} />
+      ) : type === "tangram" ? (
+        <TangramEditor grid={grid} onChange={setGrid} />
       ) : type === "matchstick" ? (
         <MatchstickEditor grid={grid} onChange={setGrid} />
       ) : type === "go-move" ? (
@@ -1741,6 +1763,101 @@ function SlidePuzzleEditor({
  * Үүсгэгч нь нүд хасах бүрдээ «ганц шийдэлтэй хэвээр юу» гэдгийг шалгадаг
  * (`lib/puzzles/sudoku.ts`).
  */
+/**
+ * «Тангрaм» редактор — товч дарж ШИНЭ дүрс үүсгэнэ.
+ *
+ * ⚠ ЯАГААД ГАРААР ЗУРУУЛААГҮЙ ВЭ: силуэтийг чөлөөтэй зуруулбал багш
+ * ШИЙДЭГДЭХГҮЙ дүрс амархан үүсгэнэ (долоон хэсэг яг багтах эсэх нь
+ * нүдээр мэдэгдэхгүй). Үүсгэгч нь эсрэгээр — хэсгүүдийг тавиад нэгдлийг
+ * нь авдаг тул гарсан дүрс бүр ЗААВАЛ шийдэгдэнэ.
+ */
+function TangramEditor({
+  grid,
+  onChange,
+}: {
+  grid: string;
+  onChange: (next: string) => void;
+}) {
+  const figure = decodeTangram(grid);
+  const [busy, setBusy] = useState(false);
+
+  /**
+   * @param seed Товшилтын мөч (`event.timeStamp`) — дарах бүрд өөр дүрс.
+   *   Рендэрийн дотор цаг уншихыг React хориглодог тул үйл явдлаас авна.
+   */
+  const generate = (seed: number) => {
+    setBusy(true);
+    for (let attempt = 0; attempt < 40; attempt += 1) {
+      const placements = generatePlacements(Math.floor(seed) + attempt, 6, 5);
+      const next = placements ? figureFrom(placements, 6, 5) : null;
+      if (next) {
+        onChange(encodeTangram(next));
+        break;
+      }
+    }
+    setBusy(false);
+  };
+
+  return (
+    <div className="space-y-2">
+      <TangramPreview figure={figure} />
+      <button
+        type="button"
+        onClick={(event) => generate(event.timeStamp)}
+        disabled={busy}
+        className="rounded-xl bg-brand-500 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-600 disabled:opacity-50"
+      >
+        Шинэ дүрс
+      </button>
+      <p className="text-xs text-gray-500 dark:text-gray-400">
+        Дүрс бүр долоон хэсгээр ЗААВАЛ угсрагдана — үүсгэгч нь шийдлээс нь эхэлдэг.
+      </p>
+    </div>
+  );
+}
+
+/** Дүрсийн жижиг урьдчилсан харагдац. */
+function TangramPreview({ figure }: { figure: TangramFigure | null }) {
+  if (!figure) {
+    return <p className="text-xs text-gray-400">Дүрс алга — «Шинэ дүрс» дарна уу.</p>;
+  }
+
+  const size = 14;
+
+  return (
+    <svg
+      viewBox={`0 0 ${figure.width * size} ${figure.height * size}`}
+      className="h-28 w-auto rounded-lg bg-gray-50 dark:bg-white/5"
+      aria-label="Дүрсийн урьдчилсан харагдац"
+    >
+      {[...figure.cells].map((key) => {
+        const [c, r, d] = key.split(",").map(Number);
+        const cx = (c + 0.5) * size;
+        const cy = (r + 0.5) * size;
+        const x0 = c * size;
+        const y0 = r * size;
+        const x1 = (c + 1) * size;
+        const y1 = (r + 1) * size;
+        const e =
+          d === 0
+            ? [x0, y0, x1, y0]
+            : d === 1
+              ? [x1, y0, x1, y1]
+              : d === 2
+                ? [x1, y1, x0, y1]
+                : [x0, y1, x0, y0];
+        return (
+          <polygon
+            key={key}
+            points={`${e[0]},${e[1]} ${e[2]},${e[3]} ${cx},${cy}`}
+            fill={TANGRAM_COLORS.large2}
+          />
+        );
+      })}
+    </svg>
+  );
+}
+
 /** Редакторын шалгалтын нэг мөр. ⚠ Компонент дотор БИШ, гадна — рендэр
  * тутамд шинэ компонент үүсгэвэл төлөв тань эргэж тавигдана. */
 function MatchstickCheck({ ok, label }: { ok: boolean; label: string }) {

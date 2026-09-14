@@ -65,6 +65,10 @@ const MatchstickExercise = dynamic(
   () => import("@/components/lesson/MatchstickExercise"),
   { loading: () => <ExerciseBoardSkeleton /> }
 );
+const TangramExercise = dynamic(
+  () => import("@/components/lesson/TangramExercise"),
+  { loading: () => <ExerciseBoardSkeleton /> }
+);
 const GoMoveExercise = dynamic(
   () => import("@/components/lesson/GoMoveExercise"),
   { loading: () => <ExerciseBoardSkeleton /> }
@@ -403,6 +407,9 @@ function ExerciseCard({
   }
   if (exercise.type === "matchstick") {
     return <MatchstickExercise exercise={exercise} feedback={feedback} onAnswer={onAnswer} />;
+  }
+  if (exercise.type === "tangram") {
+    return <TangramExercise exercise={exercise} feedback={feedback} onAnswer={onAnswer} />;
   }
   if (exercise.type === "go-move") {
     return <GoMoveExercise exercise={exercise} feedback={feedback} onAnswer={onAnswer} onMistake={onMistake} />;

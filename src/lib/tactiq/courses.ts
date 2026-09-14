@@ -23,6 +23,7 @@ export type ExerciseType =
   | "slide-puzzle"
   | "sudoku"
   | "matchstick"
+  | "tangram"
   | "memory-game"
   | "code-maze"
   | "go-move"

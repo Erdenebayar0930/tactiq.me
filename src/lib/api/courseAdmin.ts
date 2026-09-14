@@ -14,6 +14,7 @@ import {
 } from "@/lib/go/position";
 import { decodeMemory, encodeMemory } from "@/lib/puzzles/memory";
 import { decodeMatchstick, encodeMatchstick } from "@/lib/puzzles/matchstick";
+import { decodeTangram, encodeTangram } from "@/lib/puzzles/tangram";
 import { decodeSudoku, encodeSudoku } from "@/lib/puzzles/sudoku";
 import { decodeMaze, encodeMaze } from "@/lib/code/maze";
 import { Draughts } from "@/lib/draughts/engine";
@@ -344,6 +345,17 @@ function validateMatchstick(rawGrid: unknown): { grid: string } | null {
   return puzzle ? { grid: encodeMatchstick(puzzle) } : null;
 }
 
+/**
+ * ⚠ `decodeTangram` нь дүрсийн ТАЛБАЙГ шалгадаг: долоон хэсгийн нийт
+ * талбайтай тэнцэхгүй дүрс нь ШИЙДЭГДЭХГҮЙ — сурагч хэчнээн оролдсон ч
+ * дуусахгүй.
+ */
+function validateTangram(rawGrid: unknown): { grid: string } | null {
+  if (typeof rawGrid !== "string") return null;
+  const figure = decodeTangram(rawGrid);
+  return figure ? { grid: encodeTangram(figure) } : null;
+}
+
 function validateNetPuzzle(rawGrid: unknown): { grid: string } | null {
   if (typeof rawGrid !== "string") return null;
 
@@ -408,6 +420,7 @@ export type ExerciseType =
   | "slide-puzzle"
   | "sudoku"
   | "matchstick"
+  | "tangram"
   | "memory-game"
   | "code-maze"
   | "go-move"
@@ -424,6 +437,7 @@ export function parseExerciseType(value: unknown): ExerciseType {
     value === "slide-puzzle" ||
     value === "sudoku" ||
     value === "matchstick" ||
+    value === "tangram" ||
     value === "memory-game" ||
     value === "code-maze" ||
     value === "go-move" ||
@@ -499,6 +513,7 @@ export function validateExerciseFields(body: Record<string, unknown>): ExerciseF
     type === "slide-puzzle" ||
     type === "sudoku" ||
     type === "matchstick" ||
+    type === "tangram" ||
     type === "code-maze" ||
     type === "memory-game"
   ) {
@@ -511,6 +526,8 @@ export function validateExerciseFields(body: Record<string, unknown>): ExerciseF
             ? validateSudoku(body.grid)
             : type === "matchstick"
               ? validateMatchstick(body.grid)
+              : type === "tangram"
+                ? validateTangram(body.grid)
               : type === "memory-game"
                 ? validateMemory(body.grid)
                 : validateCodeMaze(body.grid);
