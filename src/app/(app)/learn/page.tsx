@@ -84,6 +84,40 @@ function CoursePath({ courseSlug }: { courseSlug: string }) {
     };
   }, [courseSlug]);
 
+  /*
+   * ХИЧЭЭЛЭЭ ДУУСГААД БУЦАЖ ИРЭХЭД тэр зангилаа руу гүйлгэнэ.
+   *
+   * ⚠ Урт зам дээр (судоку — 60 хичээл) буцаж ирэхэд дээрээсээ эхэлдэг
+   * байсан: сурагч дөнгөж хийсэн газраа олохын тулд хэдэн зуун цэг
+   * гүйлгэдэг байв.
+   *
+   * ⚠ `useSearchParams` БИШ, `window.location`: `useSearchParams` нь
+   * хуудсыг статик рендерээс гаргаж, Suspense хүрээ шаарддаг. Энд
+   * хайлтын мөрийг зөвхөн ЭФФЕКТ дотор л уншина — рендерт огт
+   * оролцохгүй тул хуудсын горимд нөлөөлөхгүй.
+   *
+   * ⚠ `completed` ачаалагдсаны ДАРАА л ажиллана: түүнээс өмнө зам нь
+   * ялгуургаар солигдож, зангилаанууд DOM-д хараахан байхгүй.
+   */
+  useEffect(() => {
+    if (completed === null) return;
+
+    const lessonId = new URLSearchParams(window.location.search).get("lesson");
+    if (!lessonId) return;
+
+    const node = document.getElementById(`lesson-node-${lessonId}`);
+    // Өөр курсын хичээл байж мэднэ — тэр үед юу ч хийхгүй.
+    if (!node) return;
+
+    node.scrollIntoView({ block: "center", behavior: "smooth" });
+
+    /*
+     * Хаягийг цэвэрлэнэ: сурагч хуудсаа сэргээхэд (эсвэл дараа нь буцаж
+     * ирэхэд) дахин тэр цэг рүү үсрэх нь гэнэтийн санагдана.
+     */
+    window.history.replaceState(null, "", window.location.pathname);
+  }, [completed]);
+
   if (courseLoading || completed === null) {
     return (
       <div className="space-y-3">
@@ -475,7 +509,12 @@ function LessonNode({
   );
 
   return (
-    <li className="flex flex-col items-center">
+    /*
+     * ⚠ ID нь ХИЧЭЭЛИЙН ID-аар: хичээлээ дуусгаад буцаж ирэхэд яг энэ
+     * зангилаа руу гүйлгэнэ (`/learn?lesson=<id>`). Индексээр нэрлэвэл
+     * бүлэг нэмэгдэхэд байрлал шилжинэ.
+     */
+    <li id={`lesson-node-${lesson.id}`} className="flex flex-col items-center">
       {showConnector && <PathLine filled={connectorFilled} offset={offset} />}
 
       {/*

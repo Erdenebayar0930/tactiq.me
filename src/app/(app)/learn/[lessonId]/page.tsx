@@ -327,7 +327,8 @@ function Player({ lesson, apply }: { lesson: Lesson; apply: Apply }) {
       <div className="flex items-center gap-3">
         <button
           type="button"
-          onClick={() => router.push("/learn")}
+          // Дундаас нь гарсан ч замын ТЭР цэг дээр буцаж ирнэ.
+          onClick={() => router.push(`/learn?lesson=${encodeURIComponent(lesson.id)}`)}
           className="grid size-9 shrink-0 place-items-center rounded-full text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5"
           aria-label={t("Гарах")}
         >
@@ -576,8 +577,13 @@ function CompletionScreen({
           нэмэгдлээ.
         </p>
       )}
+      {/*
+        ⚠ Замд БУЦААД дөнгөж хийсэн зангилаа дээрээ очно: `?lesson=` -ыг
+        `learn/page.tsx` уншиж тэр цэг рүү гүйлгэнэ. Урт зам дээр
+        (судоку — 60 хичээл) үүнгүйгээр сурагч дээрээсээ эхлэн хайдаг.
+      */}
       <Link
-        href="/learn"
+        href={`/learn?lesson=${encodeURIComponent(lesson.id)}`}
         className="rounded-xl bg-brand-500 px-5 py-2.5 font-semibold text-white hover:bg-brand-600"
       >
         {t("Замд буцах")}
