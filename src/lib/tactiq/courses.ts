@@ -24,6 +24,7 @@ export type ExerciseType =
   | "sudoku"
   | "matchstick"
   | "tangram"
+  | "recall"
   | "memory-game"
   | "code-maze"
   | "go-move"

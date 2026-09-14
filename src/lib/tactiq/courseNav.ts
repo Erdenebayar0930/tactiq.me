@@ -181,6 +181,7 @@ export type ExerciseTypeName =
   | "sudoku"
   | "matchstick"
   | "tangram"
+  | "recall"
   | "memory-game"
   | "code-maze"
   | "go-move"
@@ -196,6 +197,8 @@ export function allowedExerciseTypes(slug: string | null | undefined): ExerciseT
   // Таягны оньсогын курс — тэгшитгэл засах + тоолох асуултууд.
   if (slug === "matchstick") return ["choice", "matchstick"];
   if (slug === "tangram") return ["choice", "tangram"];
+  // Санах ойн курс — хөзрийн хос БА санаж сэргээх дасгалууд.
+  if (slug === "memory") return ["choice", "memory-game", "recall"];
 
   if (KIDS_COURSES.has(slug ?? "")) {
     return ["choice", "memory-game", "slide-puzzle", "code-maze"];

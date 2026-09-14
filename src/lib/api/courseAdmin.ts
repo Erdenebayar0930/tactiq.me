@@ -14,6 +14,7 @@ import {
 } from "@/lib/go/position";
 import { decodeMemory, encodeMemory } from "@/lib/puzzles/memory";
 import { decodeMatchstick, encodeMatchstick } from "@/lib/puzzles/matchstick";
+import { decodeRecall, encodeRecall } from "@/lib/puzzles/recall";
 import { decodeTangram, encodeTangram } from "@/lib/puzzles/tangram";
 import { decodeSudoku, encodeSudoku } from "@/lib/puzzles/sudoku";
 import { decodeMaze, encodeMaze } from "@/lib/code/maze";
@@ -356,6 +357,16 @@ function validateTangram(rawGrid: unknown): { grid: string } | null {
   return figure ? { grid: encodeTangram(figure) } : null;
 }
 
+/**
+ * ⚠ `decodeRecall` нь талбараас гадуурх нүд, давхардал, бүх нүд асах
+ * зэрэг ШИЙДЭГДЭХГҮЙ тохиолдлуудыг ч барина.
+ */
+function validateRecall(rawGrid: unknown): { grid: string } | null {
+  if (typeof rawGrid !== "string") return null;
+  const recall = decodeRecall(rawGrid);
+  return recall ? { grid: encodeRecall(recall) } : null;
+}
+
 function validateNetPuzzle(rawGrid: unknown): { grid: string } | null {
   if (typeof rawGrid !== "string") return null;
 
@@ -421,6 +432,7 @@ export type ExerciseType =
   | "sudoku"
   | "matchstick"
   | "tangram"
+  | "recall"
   | "memory-game"
   | "code-maze"
   | "go-move"
@@ -438,6 +450,7 @@ export function parseExerciseType(value: unknown): ExerciseType {
     value === "sudoku" ||
     value === "matchstick" ||
     value === "tangram" ||
+    value === "recall" ||
     value === "memory-game" ||
     value === "code-maze" ||
     value === "go-move" ||
@@ -514,6 +527,7 @@ export function validateExerciseFields(body: Record<string, unknown>): ExerciseF
     type === "sudoku" ||
     type === "matchstick" ||
     type === "tangram" ||
+    type === "recall" ||
     type === "code-maze" ||
     type === "memory-game"
   ) {
@@ -528,6 +542,8 @@ export function validateExerciseFields(body: Record<string, unknown>): ExerciseF
               ? validateMatchstick(body.grid)
               : type === "tangram"
                 ? validateTangram(body.grid)
+                : type === "recall"
+                  ? validateRecall(body.grid)
               : type === "memory-game"
                 ? validateMemory(body.grid)
                 : validateCodeMaze(body.grid);

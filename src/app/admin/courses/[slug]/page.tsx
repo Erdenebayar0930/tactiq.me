@@ -132,6 +132,7 @@ type ExerciseType =
   | "sudoku"
   | "matchstick"
   | "tangram"
+  | "recall"
   | "memory-game"
   | "code-maze"
   | "go-move"
@@ -854,6 +855,7 @@ const EXERCISE_TYPE_LABELS: Record<ExerciseType, string> = {
   sudoku: "Судоку",
   matchstick: "Таягны оньсого",
   tangram: "Тангрaм",
+  recall: "Санаж сэргээх",
   "memory-game": "Санах ойн тоглоом",
   "code-maze": "Код угсрах (лабиринт)",
   "go-move": "Го — чулуу тавих",

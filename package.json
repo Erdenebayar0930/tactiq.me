@@ -18,6 +18,7 @@
     "seed:sudoku": "tsx --env-file=.env.local scripts/seed-sudoku-course.ts",
     "seed:matchstick": "tsx --env-file=.env.local scripts/seed-matchstick-course.ts",
     "seed:tangram": "tsx --env-file=.env.local scripts/seed-tangram-lesson.ts",
+    "seed:memory": "tsx --env-file=.env.local scripts/seed-memory-course.ts",
     "audit:puzzles": "tsx --env-file=.env.local scripts/audit-puzzles.ts",
     "seed:networks": "tsx --env-file=.env.local scripts/seed-networks-course.ts",
     "seed:puzzlepack": "tsx --env-file=.env.local scripts/seed-puzzles-course.ts",

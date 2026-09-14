@@ -69,6 +69,10 @@ const TangramExercise = dynamic(
   () => import("@/components/lesson/TangramExercise"),
   { loading: () => <ExerciseBoardSkeleton /> }
 );
+const RecallExercise = dynamic(
+  () => import("@/components/lesson/RecallExercise"),
+  { loading: () => <ExerciseBoardSkeleton /> }
+);
 const GoMoveExercise = dynamic(
   () => import("@/components/lesson/GoMoveExercise"),
   { loading: () => <ExerciseBoardSkeleton /> }
@@ -410,6 +414,9 @@ function ExerciseCard({
   }
   if (exercise.type === "tangram") {
     return <TangramExercise exercise={exercise} feedback={feedback} onAnswer={onAnswer} />;
+  }
+  if (exercise.type === "recall") {
+    return <RecallExercise exercise={exercise} feedback={feedback} onAnswer={onAnswer} />;
   }
   if (exercise.type === "go-move") {
     return <GoMoveExercise exercise={exercise} feedback={feedback} onAnswer={onAnswer} onMistake={onMistake} />;
