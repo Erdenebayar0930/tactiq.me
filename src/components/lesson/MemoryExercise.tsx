@@ -12,6 +12,30 @@ import type { Exercise } from "@/lib/tactiq/courses";
 const PEEK_MS = 900;
 
 /**
+ * Хос бүрийн зөөлөн дэвсгэр өнгө.
+ *
+ * ⚠ Классуудыг БҮТНЭЭР бичсэн: Tailwind нь эх кодыг ТЕКСТЭЭР сканнердана
+ * — `` `bg-${name}-100` `` гэж угсарвал CSS-д огт үүсэхгүй
+ * (`lib/tactiq/theme.ts`-ийн адил шалтгаан).
+ *
+ * ⚠ Өнгө нь ХОСЫГ ИЛЧЛЭХГҮЙ: `pairId`-аар сонгодог тул ижил хос ижил
+ * өнгөтэй байх ч, өнгө нь зөвхөн НЭЭГДСЭН хөзөрт харагдана. Хаалттай
+ * хөзрүүд бүгд ижил ар талтай.
+ */
+const FACE_TINTS = [
+  "bg-rose-100 dark:bg-rose-500/25",
+  "bg-amber-100 dark:bg-amber-500/25",
+  "bg-emerald-100 dark:bg-emerald-500/25",
+  "bg-sky-100 dark:bg-sky-500/25",
+  "bg-violet-100 dark:bg-violet-500/25",
+  "bg-teal-100 dark:bg-teal-500/25",
+  "bg-orange-100 dark:bg-orange-500/25",
+  "bg-indigo-100 dark:bg-indigo-500/25",
+  "bg-pink-100 dark:bg-pink-500/25",
+  "bg-lime-100 dark:bg-lime-500/25",
+];
+
+/**
  * "memory-game" дасгал — хөзрүүдийг эргүүлж ижил хосыг олно.
  *
  * ⚠ `learn/[lessonId]/page.tsx`-с `next/dynamic`-аар ЛАЗИ ачаалагдана.
@@ -121,7 +145,7 @@ export default function MemoryExercise({
       </p>
 
       <div
-        className="mx-auto grid w-full max-w-sm gap-2"
+        className="mx-auto grid w-full max-w-sm gap-2.5"
         style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}
       >
         {cards.map((card) => {
@@ -139,18 +163,54 @@ export default function MemoryExercise({
                 ⚠ Хаалттай ба нээлттэй хөзөр ИЖИЛ ХЭМЖЭЭТЭЙ байх ёстой
                 (`aspect-square`) — эс бөгөөс хөзөр эргэх бүрд тор нь
                 үсэрч, сурагчийн цээжилсэн байрлал алдагдана.
+
+                `perspective` нь эргэлтийг хавтгай биш, ГҮНТЭЙ харуулна.
               */
-              className={`grid aspect-square place-items-center rounded-xl text-3xl transition-colors ${
-                isMatched
-                  ? "bg-emerald-100 ring-2 ring-emerald-400 dark:bg-emerald-500/20"
-                  : isOpen
-                    ? "bg-white ring-2 ring-brand-400 dark:bg-gray-100"
-                    : "bg-gradient-to-br from-brand-400 to-brand-600 hover:from-brand-500 hover:to-brand-700"
+              className={`aspect-square [perspective:700px] ${
+                isOpen || feedback ? "" : "transition-transform hover:-translate-y-0.5"
               }`}
             >
-              {/* Хаалттай хөзрийн ард юу байгааг DOM-д ч гаргахгүй —
-                  сониуч сурагч элементийг шалгаад хариуг олох боломжгүй. */}
-              {isOpen ? card.value : ""}
+              <span
+                className="relative block size-full transition-transform duration-300 [transform-style:preserve-3d]"
+                style={{ transform: isOpen ? "rotateY(180deg)" : undefined }}
+              >
+                {/* АР ТАЛ — бүх хөзөрт ИЖИЛ. */}
+                <span
+                  className={`absolute inset-0 grid place-items-center rounded-2xl bg-gradient-to-br from-brand-400 to-brand-600 shadow-md [backface-visibility:hidden] ${
+                    isOpen ? "" : "ring-1 ring-brand-700/20"
+                  }`}
+                >
+                  <span
+                    aria-hidden
+                    className="text-2xl font-black text-white/35 [text-shadow:0_1px_0_rgba(0,0,0,0.15)]"
+                  >
+                    ?
+                  </span>
+                </span>
+
+                {/*
+                  НҮҮР ТАЛ — ⚠ ЗӨВХӨН нээлттэй үед л DOM-д орно. Хаалттай
+                  хөзрийн утгыг урьдчилан зурвал сониуч сурагч элементийг
+                  шалгаад бүх хариуг олно. Тиймээс хаагдах хөдөлгөөний
+                  үеэр ар тал нь эрт харагдана — тэр нь нууцыг хадгалахын
+                  төлөөх ЗОРИУДЫН буулт.
+                */}
+                {isOpen && (
+                  <span
+                    className={`absolute inset-0 grid place-items-center rounded-2xl bg-white shadow-md [backface-visibility:hidden] [transform:rotateY(180deg)] dark:bg-gray-800 ${
+                      isMatched ? "ring-2 ring-emerald-400" : "ring-1 ring-gray-200 dark:ring-white/10"
+                    }`}
+                  >
+                    <span
+                      className={`grid size-[78%] place-items-center rounded-full text-3xl ${
+                        FACE_TINTS[card.pairId % FACE_TINTS.length]
+                      }`}
+                    >
+                      {card.value}
+                    </span>
+                  </span>
+                )}
+              </span>
             </button>
           );
         })}
