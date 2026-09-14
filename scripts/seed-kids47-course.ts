@@ -1,8 +1,17 @@
 /**
- * «Kids 4-7» курс — Mind сургуульд ГУРВАН сэдэв, тус бүр Level 1.
+ * Бага насны (4-7) ГУРВАН КУРС — «Kids 4-6» сургуульд.
+ *
+ * ⚠ СЭДЭВ БҮР НЬ ТУСДАА КУРС: Сэтгэхүй, Тоолол, Анхны Код гурав нь
+ * сургуулийн цэсэнд зэрэгцэж харагдана. Курс бүрийн доторх нэгж нь
+ * «Level 1» — Level 2, 3-ыг хожим нэгж болгож нэмнэ.
  *
  * Ажиллуулах:
  *   npm run seed:kids47 -- <багшийн-эсвэл-админы-имэйл> [--force]
+ *
+ * ⚠ ХУУЧИН нэгдсэн «kids-4-7» курсээс ЗӨӨНӨ (устгаад дахин үүсгэхгүй):
+ * тэр курс дээр сурагчийн явц бий бөгөөд `lesson_progress` нь хичээлийн
+ * ID-аар холбогддог. Нэгжийг нь шинэ курс руу шилжүүлбэл хичээл, дасгал,
+ * явц бүгд бүрэн хэвээр үлдэнэ.
  *
  * СЭДВҮҮД ба хичээлүүд:
  *
@@ -28,7 +37,7 @@
  * Шаардлагатай env (.env.local): DATABASE_URL
  */
 import { drizzle } from "drizzle-orm/node-postgres";
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 
 import { createDbPool, resolveDatabaseUrl } from "../src/lib/db/createPool";
 import { courses, exercises, lessons, units, users } from "../src/lib/db/schema";
@@ -57,9 +66,12 @@ if (!connectionString) {
   process.exit(1);
 }
 
-const COURSE_SLUG = "kids-4-7";
+/** Хуучин нэгдсэн курс — зөөсний дараа устгана. */
+const LEGACY_SLUG = "kids-4-7";
 /** Хичээл тутмын дасгалын тоо. */
 const PER_LESSON = 5;
+/** Курс бүрийн доторх нэгжийн нэр. */
+const LEVEL_UNIT = "Level 1";
 
 function makeRng(seed: number) {
   let state = seed >>> 0;
@@ -75,7 +87,18 @@ function token(rng: () => number): string {
 
 type Built = { type: string; grid: string; prompt: string };
 type LessonSpec = { title: string; xp: number; explanation: string; items: Built[] };
-type UnitSpec = { title: string; color: string; lessons: LessonSpec[] };
+type CourseSpec = {
+  slug: string;
+  title: string;
+  titleEn: string;
+  description: string;
+  descriptionEn: string;
+  icon: string;
+  color: string;
+  /** Хуучин нэгдсэн курс дэх нэгжийн нэр — зөөхөд хэрэглэнэ. */
+  legacyUnit: string;
+  lessons: LessonSpec[];
+};
 
 function kidsItem(kids: Kids, prompt: string): Built {
   const grid = encodeKids(kids);
@@ -103,7 +126,7 @@ function openMaze(cols: number, rows: number, start: number, goal: number): Arro
   return { cols, rows, start, goal, walls: Array(cols * rows).fill(false) };
 }
 
-function buildUnits(): UnitSpec[] {
+function buildCourses(): CourseSpec[] {
   const rng = makeRng(20260916);
 
   // --- Сэтгэхүй ------------------------------------------------------------
@@ -242,8 +265,18 @@ function buildUnits(): UnitSpec[] {
 
   return [
     {
-      title: "Сэтгэхүй · Level 1",
+      slug: "kids-thinking",
+      title: "Сэтгэхүй",
+      titleEn: "Thinking",
+      description:
+        "Том ба жижиг, ижил, илүүц, дараалал — 4-7 насны хүүхдийн анхны " +
+        "логик. Дасгал бүр зургаараа ойлгогдоно.",
+      descriptionEn:
+        "Big and small, same and different, patterns — first logic for ages 4-7. " +
+        "Every task is understood from the picture alone.",
+      icon: "brain",
       color: "sky",
+      legacyUnit: "Сэтгэхүй · Level 1",
       lessons: [
         { title: "Том ба жижиг", xp: 8, explanation: "Хоёр дүрсийг зэрэгцүүлж хар — аль нь илүү их зай эзэлж байна вэ?", items: bigSmall },
         { title: "Ижил зүйлийг ол", xp: 8, explanation: "Эхлээд ХЭЛБЭРИЙГ нь, дараа нь ӨНГИЙГ нь харьцуул.", items: findSame },
@@ -252,8 +285,18 @@ function buildUnits(): UnitSpec[] {
       ],
     },
     {
-      title: "Тоолол · Level 1",
+      slug: "kids-counting",
+      title: "Тоолол",
+      titleEn: "Counting",
+      description:
+        "1-ээс 5 хүртэл тоолох, тоог зурагтай холбох, дараалалд оруулах — " +
+        "тооны анхны ойлголт.",
+      descriptionEn:
+        "Counting to five, matching numbers to pictures and putting them in " +
+        "order — the first sense of number.",
+      icon: "calculator",
       color: "amber",
+      legacyUnit: "Тоолол · Level 1",
       lessons: [
         { title: "1–3 хүртэл тоол", xp: 8, explanation: "Дүрс бүрийг хуруугаараа зааж тоол — алгасахгүй.", items: countTo3 },
         { title: "1–5 хүртэл тоол", xp: 8, explanation: "Зүүнээс баруун тийш дараалан тоол.", items: countTo5 },
@@ -262,8 +305,18 @@ function buildUnits(): UnitSpec[] {
       ],
     },
     {
-      title: "Анхны Код · Level 1",
+      slug: "kids-code",
+      title: "Анхны Код",
+      titleEn: "First Code",
+      description:
+        "Сумаар зам зохиож дүрээ зорилгод хүргэнэ. Эхлээд төлөвлөгөө, " +
+        "дараа нь ажиллуулах — программ гэж юу болохын анхны алхам.",
+      descriptionEn:
+        "Build a path with arrows and run it. Plan first, then execute — " +
+        "the first step towards what a program is.",
+      icon: "blocks",
       color: "emerald",
+      legacyUnit: "Анхны Код · Level 1",
       lessons: [
         { title: "Дээш", xp: 8, explanation: "Дээш сум нь дүрийг НЭГ нүд дээш аваачна.", items: oneWay("U", "Дээш") },
         { title: "Доош", xp: 8, explanation: "Доош сум нь дүрийг НЭГ нүд доош аваачна.", items: oneWay("D", "Доош") },
@@ -279,14 +332,14 @@ function buildUnits(): UnitSpec[] {
 async function main() {
   console.log("Дасгалуудыг үүсгэж шалгаж байна…");
 
-  const unitSpecs = buildUnits();
-  const lessonCount = unitSpecs.reduce((sum, unit) => sum + unit.lessons.length, 0);
-  const exerciseCount = unitSpecs.reduce(
-    (sum, unit) => sum + unit.lessons.reduce((n, lesson) => n + lesson.items.length, 0),
+  const specs = buildCourses();
+  const lessonCount = specs.reduce((sum, course) => sum + course.lessons.length, 0);
+  const exerciseCount = specs.reduce(
+    (sum, course) => sum + course.lessons.reduce((n, lesson) => n + lesson.items.length, 0),
     0
   );
   console.log(
-    `✓ ${unitSpecs.length} сэдэв, ${lessonCount} хичээл, ${exerciseCount} дасгал — бүгд тэнцлээ`
+    `✓ ${specs.length} курс, ${lessonCount} хичээл, ${exerciseCount} дасгал — бүгд тэнцлээ`
   );
 
   const pool = createDbPool(connectionString!, 1);
@@ -305,66 +358,50 @@ async function main() {
       return;
     }
 
-    const [course] = await db
-      .select({ slug: courses.slug, status: courses.status })
-      .from(courses)
-      .where(eq(courses.slug, COURSE_SLUG))
-      .limit(1);
-
-    if (!course) {
-      await db.insert(courses).values({
-        slug: COURSE_SLUG,
-        title: "Kids 4-7",
-        titleEn: "Kids 4-7",
-        description:
-          "Сэтгэхүй, тоолол, анхны код — 4-7 насны хүүхдэд. Дасгал бүр " +
-          "зургаараа ойлгогддог тул уншиж мэдэхгүй ч бие даан хийнэ.",
-        descriptionEn:
-          "Thinking, counting and first coding for ages 4-7. Every task is " +
-          "understood from the picture alone — no reading needed.",
-        icon: "shapes",
-        color: "sky",
-        // `lib/tactiq/schools.ts` → "mind" сургууль.
-        school: "mind",
-        schools: ["mind"],
-        status: "active",
-      });
-      console.log('"Kids 4-7" курс үүслээ.');
-    } else if (course.status !== "active") {
-      await db
-        .update(courses)
-        .set({ status: "active", updatedAt: new Date() })
-        .where(eq(courses.slug, COURSE_SLUG));
-    }
-
     let added = 0;
     let replaced = 0;
+    let moved = 0;
     let written = 0;
 
-    for (const [unitIndex, spec] of unitSpecs.entries()) {
-      const [existingUnit] = await db
-        .select({ id: units.id })
-        .from(units)
-        .where(and(eq(units.courseSlug, COURSE_SLUG), eq(units.title, spec.title)))
+    for (const spec of specs) {
+      // --- Курс --------------------------------------------------------------
+      const [course] = await db
+        .select({ slug: courses.slug, status: courses.status })
+        .from(courses)
+        .where(eq(courses.slug, spec.slug))
         .limit(1);
 
-      let unitId: string;
-      if (existingUnit) {
-        unitId = existingUnit.id;
-      } else {
-        const [created] = await db
-          .insert(units)
-          .values({
-            courseSlug: COURSE_SLUG,
-            title: spec.title,
-            color: spec.color,
-            sortOrder: unitIndex,
-            createdBy: owner.uid,
-          })
-          .returning({ id: units.id });
-        unitId = created.id;
+      if (!course) {
+        await db.insert(courses).values({
+          slug: spec.slug,
+          title: spec.title,
+          titleEn: spec.titleEn,
+          description: spec.description,
+          descriptionEn: spec.descriptionEn,
+          icon: spec.icon,
+          color: spec.color,
+          /*
+           * ⚠ «Kids 4-6» СУРГУУЛЬД (`lib/tactiq/schools.ts`). Сургуулийн
+           * жагсаалтад «Kids 4-7» гэж байхгүй — хамгийн ойр нь энэ.
+           */
+          school: "kids-4-6",
+          schools: ["kids-4-6"],
+          status: "active",
+        });
+        console.log(`  «${spec.title}» курс үүслээ.`);
+      } else if (course.status !== "active") {
+        await db
+          .update(courses)
+          .set({ status: "active", updatedAt: new Date() })
+          .where(eq(courses.slug, spec.slug));
       }
 
+      // --- Нэгж: хуучин курсээс ЗӨӨХ, эсвэл шинээр -------------------------
+      const unitId = await ensureUnit(db, spec, owner.uid, (count) => {
+        moved += count;
+      });
+
+      // --- Хичээлүүд --------------------------------------------------------
       const existingLessons = await db
         .select({ id: lessons.id, title: lessons.title, sortOrder: lessons.sortOrder })
         .from(lessons)
@@ -414,7 +451,22 @@ async function main() {
       }
     }
 
+    // Хуучин нэгдсэн курс хоосон болсон бол устгана.
+    const leftover = await db
+      .select({ id: units.id })
+      .from(units)
+      .where(eq(units.courseSlug, LEGACY_SLUG));
+
+    if (leftover.length === 0) {
+      const removed = await db
+        .delete(courses)
+        .where(eq(courses.slug, LEGACY_SLUG))
+        .returning({ slug: courses.slug });
+      if (removed.length > 0) console.log(`  − хуучин «${LEGACY_SLUG}» курс устлаа`);
+    }
+
     const parts: string[] = [];
+    if (moved > 0) parts.push(`${moved} нэгж зөөгдлөө`);
     if (added > 0) parts.push(`${added} хичээл нэмэгдлээ`);
     if (replaced > 0) parts.push(`${replaced} хичээл шинэчлэгдлээ`);
 
@@ -422,12 +474,74 @@ async function main() {
       parts.length === 0
         ? "Бүх хичээл аль хэдийн байна — юу ч өөрчлөөгүй.\n" +
             "Шинэчлэх бол: npm run seed:kids47 -- <email> --force"
-        : `✅ "Kids 4-7" — ${parts.join(", ")}. Нийт ${written} дасгал бичигдлээ.\n` +
-            `Засах: /admin/courses/${COURSE_SLUG}`
+        : `✅ Kids 4-7 — ${parts.join(", ")}. Нийт ${written} дасгал бичигдлээ.`
     );
   } finally {
     await pool.end();
   }
+}
+
+/**
+ * Курсын «Level 1» нэгжийг олох, эсвэл ХУУЧИН нэгдсэн курсээс ЗӨӨХ.
+ *
+ * ⚠ ЗӨӨХ нь УСТГААД ДАХИН ҮҮСГЭХЭЭС ЗАРЧМЫН ХУВЬД ӨӨР: нэгжийн ID
+ * хэвээр үлдэхэд доторх хичээл, дасгал, БҮХ ЯВЦ хамт дагана.
+ * `lesson_progress` нь хичээлийн ID-аар холбогддог тул шинэ ID үүсгэвэл
+ * сурагчийн хийсэн ажил тасарна.
+ */
+async function ensureUnit(
+  db: ReturnType<typeof drizzle>,
+  spec: CourseSpec,
+  ownerUid: string,
+  onMoved: (count: number) => void
+): Promise<string> {
+  const [existing] = await db
+    .select({ id: units.id })
+    .from(units)
+    .where(and(eq(units.courseSlug, spec.slug), eq(units.title, LEVEL_UNIT)))
+    .limit(1);
+
+  if (existing) return existing.id;
+
+  // Хуучин нэгдсэн курсээс зөөх боломжтой юу?
+  const [legacy] = await db
+    .select({ id: units.id })
+    .from(units)
+    .where(and(eq(units.courseSlug, LEGACY_SLUG), eq(units.title, spec.legacyUnit)))
+    .limit(1);
+
+  if (legacy) {
+    await db
+      .update(units)
+      .set({ courseSlug: spec.slug, title: LEVEL_UNIT, color: spec.color, sortOrder: 0 })
+      .where(eq(units.id, legacy.id));
+
+    /*
+     * ⚠ Явцын `course_slug`-ийг ч шинэчилнэ — эс бөгөөс явц нь хуучин
+     * курс руу заасаар байж, шинэ курсын ахиц дутуу харагдана.
+     */
+    await db.execute(
+      sql`UPDATE lesson_progress SET course_slug = ${spec.slug}
+          WHERE lesson_id IN (SELECT id FROM lessons WHERE unit_id = ${legacy.id})`
+    );
+
+    console.log(`  → «${spec.legacyUnit}» нэгж «${spec.title}» курс руу зөөгдлөө`);
+    onMoved(1);
+    return legacy.id;
+  }
+
+  const [created] = await db
+    .insert(units)
+    .values({
+      courseSlug: spec.slug,
+      title: LEVEL_UNIT,
+      color: spec.color,
+      sortOrder: 0,
+      createdBy: ownerUid,
+    })
+    .returning({ id: units.id });
+
+  return created.id;
 }
 
 void main();

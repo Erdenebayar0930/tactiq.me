@@ -205,7 +205,14 @@ export function allowedExerciseTypes(slug: string | null | undefined): ExerciseT
   // Санах ойн курс — хөзрийн хос БА санаж сэргээх дасгалууд.
   if (slug === "memory") return ["choice", "memory-game", "recall"];
   // Бага насны курс — зургаар ойлгогдох дасгалууд.
-  if (slug === "kids-4-7") return ["choice", "kids", "arrows", "series", "memory-game"];
+  /*
+   * Бага насны (4-7) гурван курс. ⚠ Сэдэв бүр нь ТУСДАА КУРС —
+   * сургуулийн цэсэнд гурвуулаа зэрэгцэж харагдах ёстой.
+   */
+  if (slug === "kids-thinking" || slug === "kids-counting") {
+    return ["choice", "kids", "series", "memory-game"];
+  }
+  if (slug === "kids-code") return ["choice", "arrows"];
   /*
    * Нэгдсэн «Таавар» курс — олон төрлийн оньсогыг НЭГ курст цуглуулсан
    * тул зөвшөөрөгдөх төрөл нь ч өргөн.
