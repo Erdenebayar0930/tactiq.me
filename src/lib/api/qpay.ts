@@ -52,8 +52,14 @@ export type QpayInvoice = {
   invoiceId: string;
   qrText: string;
   qrImageBase64: string | null;
-  /** Банкны аппуудын deep link (QPay "urls" талбар) — товч болгож болно */
-  bankLinks: { name: string; link: string }[];
+  /**
+   * Банкны аппуудын deep link (QPay "urls" талбар).
+   *
+   * ⚠ `logo` нь QPay-ийн сервер дээрх ЖИЖИГ зураг — банкийг НЭРЭЭР нь
+   * бус, ТЭМДГЭЭР нь таних нь хамаагүй хурдан. Байхгүй байж болно тул
+   * дэлгэц нь `null`-ыг дүрсээр нөхөх ёстой.
+   */
+  bankLinks: { name: string; link: string; logo: string | null; description: string | null }[];
   /** `true` бол жинхэнэ QPay рүү ОГТ хандаагүй, зөвхөн локал турших зорилготой */
   mock: boolean;
 };
@@ -130,7 +136,7 @@ export async function createInvoice(params: {
     invoice_id: string;
     qr_text: string;
     qr_image?: string;
-    urls?: { name: string; link: string }[];
+    urls?: { name: string; link: string; logo?: string; description?: string }[];
   };
 
   return {
@@ -138,7 +144,12 @@ export async function createInvoice(params: {
     qrText: data.qr_text,
     qrImageBase64: data.qr_image ?? null,
     bankLinks: Array.isArray(data.urls)
-      ? data.urls.map((u) => ({ name: u.name, link: u.link }))
+      ? data.urls.map((u) => ({
+          name: u.name,
+          link: u.link,
+          logo: u.logo ?? null,
+          description: u.description ?? null,
+        }))
       : [],
     mock: false,
   };

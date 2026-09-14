@@ -1,13 +1,14 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
-import { Check, Loader2, QrCode, Users } from "lucide-react";
+import { useState } from "react";
+import { Check, Users } from "lucide-react";
 
 import { useUser } from "@/context/UserContext";
 import { ErrorNote } from "@/components/tactiq/ui";
 import PaymentOptions from "@/components/tactiq/PaymentOptions";
 import type { PaymentChoices } from "@/components/tactiq/PaymentOptions";
+import { InvoiceCard } from "@/components/tactiq/QpayInvoice";
 import { apiFetch, ApiError } from "@/lib/apiClient";
 import { FAMILY_SEATS, PLANS, perSeatMonthly, savingsPercent } from "@/lib/billing";
 
@@ -28,10 +29,6 @@ import type { PublicUser } from "@/lib/api/publicUser";
  *
  * ⚠ Нэхэмжлэлийн дүнг ЭНД тооцохгүй — серверээс ирсэн дүнг л харуулна.
  */
-
-const POLL_INTERVAL_MS = 3000;
-/** Хэдэн минутын дараа poll зогсоох вэ — QPay нэхэмжлэл мөнхийн биш. */
-const POLL_TIMEOUT_MS = 10 * 60 * 1000;
 
 type Checkout = {
   senderInvoiceNo: string;
@@ -96,7 +93,10 @@ export default function FamilyPlanPurchase() {
           if (updated) apply(updated);
         }}
         onCancel={() => setCheckout(null)}
-        onError={setError}
+        onFailed={() => {
+          setError("Төлбөр баталгаажсангүй. Дахин оролдоно уу.");
+          setCheckout(null);
+        }}
       />
     );
   }
@@ -209,128 +209,6 @@ export default function FamilyPlanPurchase() {
  * онцлох тэмдэг) сүлжсэн. Хоёуланг нэгтгэх нь энэ өөрчлөлтийн хүрээнээс
  * гадуур — гол зорилго нь гэр бүлийн багцыг зөв цэс рүү зөөх явдал.
  */
-function InvoiceCard({
-  checkout,
-  onPaid,
-  onCancel,
-  onError,
-}: {
-  checkout: Checkout;
-  onPaid: (user: PublicUser | null) => void;
-  onCancel: () => void;
-  onError: (message: string) => void;
-}) {
-  const [waited, setWaited] = useState(0);
-  // `onPaid`/`onError` нь эцэг компонент дахин зурагдах бүрд ШИНЭ функц
-  // болдог. Тэднийг effect-ийн хамаарлаас хассан ч хуучин хувилбарыг
-  // дуудахгүйн тулд ref-т хадгална.
-  const callbacks = useRef({ onPaid, onError });
-  // ⚠ Ref-ийг ЗУРАГДАХ ҮЕД БИШ, effect дотор шинэчилнэ.
-  useEffect(() => {
-    callbacks.current = { onPaid, onError };
-  });
-
-  useEffect(() => {
-    let cancelled = false;
-    const startedAt = Date.now();
-
-    const tick = async () => {
-      if (cancelled) return;
-
-      try {
-        const data = await apiFetch<{ status: string; user: PublicUser | null }>(
-          `/api/billing/status?no=${encodeURIComponent(checkout.senderInvoiceNo)}`
-        );
-        if (cancelled) return;
-
-        if (data.status === "paid") {
-          callbacks.current.onPaid(data.user);
-          return;
-        }
-      } catch {
-        // Нэг удаагийн сүлжээний алдаа — poll-ыг зогсоохгүй. Хэрэглэгч
-        // банкны апп руу шилжсэн үед алдаа харуулах нь дэмий түгшүүр.
-      }
-
-      const elapsed = Date.now() - startedAt;
-      setWaited(elapsed);
-      if (elapsed > POLL_TIMEOUT_MS) {
-        callbacks.current.onError("Нэхэмжлэлийн хугацаа дууслаа. Дахин оролдоно уу.");
-        return;
-      }
-
-      timer = setTimeout(() => void tick(), POLL_INTERVAL_MS);
-    };
-
-    let timer = setTimeout(() => void tick(), POLL_INTERVAL_MS);
-
-    return () => {
-      cancelled = true;
-      clearTimeout(timer);
-    };
-  }, [checkout.senderInvoiceNo]);
-
-  return (
-    <div className="surface space-y-4 p-5 text-center">
-      <div>
-        <p className="font-bold text-gray-900 dark:text-white">{checkout.planLabel}</p>
-        <p className="num mt-1 text-2xl font-extrabold text-gray-900 dark:text-white">
-          {money(checkout.amountMnt)}
-        </p>
-      </div>
-
-      {checkout.qrImageBase64 ? (
-        /* QPay-ийн QR нь base64 PNG — `next/image` нь энэ хэлбэрт оновчлол
-           хийж чадахгүй бөгөөд нэхэмжлэл бүрд өөр байдаг. */
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={`data:image/png;base64,${checkout.qrImageBase64}`}
-          alt="Төлбөрийн QR код"
-          className="mx-auto size-56 rounded-xl bg-white p-2"
-        />
-      ) : (
-        <div className="mx-auto flex size-56 flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-gray-300 p-4 dark:border-white/15">
-          <QrCode className="size-10 text-gray-300" aria-hidden />
-          <p className="break-all text-[10px] text-gray-400">{checkout.qrText}</p>
-        </div>
-      )}
-
-      {checkout.mock && (
-        <p className="rounded-xl bg-amber-50 px-3 py-2 text-xs text-amber-700 dark:bg-amber-500/10 dark:text-amber-300">
-          Туршилтын горим: QPay тохируулаагүй тул жинхэнэ төлбөр хийгдэхгүй.
-        </p>
-      )}
-
-      {checkout.bankLinks.length > 0 && (
-        <div className="flex flex-wrap justify-center gap-2">
-          {checkout.bankLinks.map((bank) => (
-            <a
-              key={bank.name}
-              href={bank.link}
-              className="rounded-xl border border-gray-300 px-3 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-100 dark:border-white/15 dark:text-gray-200 dark:hover:bg-white/5"
-            >
-              {bank.name}
-            </a>
-          ))}
-        </div>
-      )}
-
-      <p className="flex items-center justify-center gap-2 text-sm text-gray-500 dark:text-gray-400">
-        <Loader2 className="size-4 animate-spin" aria-hidden />
-        Төлбөрийг хүлээж байна… ({Math.floor(waited / 1000)}с)
-      </p>
-
-      <button
-        type="button"
-        onClick={onCancel}
-        className="text-sm text-gray-500 underline hover:text-gray-700 dark:hover:text-gray-300"
-      >
-        Цуцлах
-      </button>
-    </div>
-  );
-}
-
 function PaidCard() {
   return (
     <div className="surface flex flex-col items-center gap-3 p-8 text-center">

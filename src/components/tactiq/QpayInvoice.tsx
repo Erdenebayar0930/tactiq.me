@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Loader2, QrCode } from "lucide-react";
+import { Landmark, Loader2, QrCode } from "lucide-react";
 
 import { apiFetch } from "@/lib/apiClient";
 
@@ -25,7 +25,7 @@ export type QpayCheckout = {
   planLabel: string;
   qrText: string;
   qrImageBase64: string | null;
-  bankLinks: { name: string; link: string }[];
+  bankLinks: { name: string; link: string; logo?: string | null; description?: string | null }[];
   mock: boolean;
 };
 
@@ -138,22 +138,6 @@ export function InvoiceCard({
         </p>
       </div>
 
-      {checkout.qrImageBase64 ? (
-        /* QPay-ийн QR нь base64 PNG — `next/image` нь энэ хэлбэрт оновчлол
-           хийж чадахгүй бөгөөд нэхэмжлэл бүрд өөр байдаг. */
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={`data:image/png;base64,${checkout.qrImageBase64}`}
-          alt="Төлбөрийн QR код"
-          className="mx-auto size-56 rounded-xl bg-white p-2"
-        />
-      ) : (
-        <div className="mx-auto flex size-56 flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-gray-300 p-4 dark:border-white/15">
-          <QrCode className="size-10 text-gray-300" aria-hidden />
-          <p className="break-all text-[10px] text-gray-400">{checkout.qrText}</p>
-        </div>
-      )}
-
       {checkout.mock && (
         <p className="rounded-xl bg-amber-50 px-3 py-2 text-xs text-amber-700 dark:bg-amber-500/10 dark:text-amber-300">
           Туршилтын горим: QPay тохируулаагүй тул энэ QR ЖИНХЭНЭ БИШ бөгөөд
@@ -162,19 +146,70 @@ export function InvoiceCard({
         </p>
       )}
 
-      {checkout.bankLinks.length > 0 && (
-        <div className="flex flex-wrap justify-center gap-2">
-          {checkout.bankLinks.map((bank) => (
-            <a
-              key={bank.name}
-              href={bank.link}
-              className="rounded-xl border border-gray-300 px-3 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-100 dark:border-white/15 dark:text-gray-200 dark:hover:bg-white/5"
-            >
-              {bank.name}
-            </a>
-          ))}
+      {/*
+        ХОЁР БАГАНА — зүүнд QR, баруунд банкны аппууд.
+
+        ⚠ Гар утсан дээр QR-ыг УНШИХ БОЛОМЖГҮЙ (өөрийн дэлгэцээ зураг авч
+        чадахгүй) тул тэнд банкны аппын холбоос нь ЦОРЫН ГАНЦ зам. Харин
+        компьютер дээр эсрэгээрээ: QR л ажиллана. Тиймээс хоёуланг нь
+        зэрэг үзүүлж, нарийн дэлгэцэн дээр QR нь дээр, банкууд доор нь
+        давхарлана.
+      */}
+      <div className="grid gap-5 sm:grid-cols-2 sm:items-start">
+        <div className="space-y-2">
+          {checkout.qrImageBase64 ? (
+            /* QPay-ийн QR нь base64 PNG — `next/image` нь энэ хэлбэрт оновчлол
+               хийж чадахгүй бөгөөд нэхэмжлэл бүрд өөр байдаг. */
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={`data:image/png;base64,${checkout.qrImageBase64}`}
+              alt="Төлбөрийн QR код"
+              className="mx-auto size-52 rounded-xl bg-white p-2"
+            />
+          ) : (
+            <div className="mx-auto flex size-52 flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-gray-300 p-4 dark:border-white/15">
+              <QrCode className="size-10 text-gray-300" aria-hidden />
+              <p className="break-all text-[10px] text-gray-400">{checkout.qrText}</p>
+            </div>
+          )}
+          <p className="text-xs font-semibold text-gray-500 dark:text-gray-400">QPay төлөх</p>
         </div>
-      )}
+
+        {checkout.bankLinks.length > 0 && (
+          <div className="text-left">
+            <p className="mb-2 text-sm font-bold text-gray-900 dark:text-white">Банкаар төлөх</p>
+            {/*
+              ⚠ Жагсаалт нь 15-20 банктай тул ӨНДРИЙГ ХЯЗГААРЛАНА: эс
+              бөгөөс «Төлбөрөө шалгах» товч дэлгэцээс доош гарч, хэрэглэгч
+              төлсний дараа юу дарахаа олохгүй болно.
+            */}
+            <ul className="grid max-h-64 grid-cols-3 gap-2 overflow-y-auto pr-1">
+              {checkout.bankLinks.map((bank) => (
+                <li key={bank.name}>
+                  <a
+                    href={bank.link}
+                    className="flex flex-col items-center gap-1 rounded-xl p-2 text-center hover:bg-gray-100 dark:hover:bg-white/5"
+                  >
+                    {bank.logo ? (
+                      /* Тэмдэг нь QPay-ийн серверээс ирдэг — домэйн нь
+                         тогтмол биш тул `next/image` оновчлолгүйгээр. */
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={bank.logo} alt="" aria-hidden className="size-10 rounded-lg" />
+                    ) : (
+                      <span className="grid size-10 place-items-center rounded-lg bg-gray-100 text-gray-400 dark:bg-white/10">
+                        <Landmark className="size-5" aria-hidden />
+                      </span>
+                    )}
+                    <span className="text-[10px] font-semibold leading-tight text-gray-700 dark:text-gray-200">
+                      {bank.name}
+                    </span>
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
 
       <p className="flex items-center justify-center gap-2 text-sm text-gray-500 dark:text-gray-400">
         <Loader2 className="size-4 animate-spin" aria-hidden />
@@ -199,9 +234,14 @@ export function InvoiceCard({
             }
           }}
           disabled={checking}
-          className="rounded-xl border-2 border-brand-500 px-4 py-2 text-sm font-semibold text-brand-600 disabled:opacity-50 dark:text-brand-300"
+          /*
+           * ⚠ ГОЛ ҮЙЛДЭЛ: банкны аппаас буцаж ирсэн хүн юу дарахаа
+           * эргэлзэлгүй олох ёстой. Урьд нь хүрээтэй, жижиг байсан тул
+           * «Цуцлах»-тай ижил жинтэй харагддаг байв.
+           */
+          className="w-full rounded-xl bg-brand-500 px-5 py-3 font-semibold text-white hover:bg-brand-600 disabled:opacity-50 sm:w-auto"
         >
-          {checking ? "Шалгаж байна…" : "Төлбөрөө шалгах"}
+          {checking ? "Шалгаж байна…" : "Төлбөр шалгах"}
         </button>
 
         <button
