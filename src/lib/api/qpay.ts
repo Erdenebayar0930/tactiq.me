@@ -19,6 +19,15 @@ const INVOICE_CODE = process.env.QPAY_INVOICE_CODE;
 
 export const qpayConfigured = Boolean(CLIENT_ID && CLIENT_SECRET && INVOICE_CODE);
 
+/**
+ * ТУРШИЛТЫН (sandbox) мерчант руу холбогдсон эсэх.
+ *
+ * ⚠ `mock`-оос ӨӨР: sandbox нь ЖИНХЭНЭ QPay сервер бөгөөд бодит хэлбэрийн
+ * QR, банкны холбоос буцаадаг — зөвхөн мөнгө нь хөдөлдөггүй. Тиймээс
+ * «QPay тохируулаагүй» гэсэн мэдэгдэл энд тохирохгүй.
+ */
+export const qpaySandbox = BASE_URL.includes("sandbox");
+
 type CachedToken = { token: string; expiresAt: number };
 const globalForQpay = globalThis as unknown as { __qpayToken?: CachedToken };
 
@@ -68,6 +77,8 @@ export type QpayInvoice = {
    * хаяг нь харин энгийн https тул хөтөч дээр нээгдэнэ.
    */
   shortUrl: string | null;
+  /** Туршилтын мерчант — жинхэнэ мөнгө хөдлөхгүй. */
+  sandbox: boolean;
   /** `true` бол жинхэнэ QPay рүү ОГТ хандаагүй, зөвхөн локал турших зорилготой */
   mock: boolean;
 };
@@ -98,6 +109,7 @@ export async function createInvoice(params: {
       qrText: `MOCK-QPAY-INVOICE:${params.senderInvoiceNo}:${params.amountMnt}`,
       qrImageBase64: null,
       shortUrl: null,
+      sandbox: false,
       bankLinks: [],
       mock: true,
     };
@@ -153,7 +165,13 @@ export async function createInvoice(params: {
     invoiceId: data.invoice_id,
     qrText: data.qr_text,
     qrImageBase64: data.qr_image ?? null,
-    shortUrl: data.qPay_shortUrl ?? null,
+    /*
+     * ⚠ SANDBOX-д богино холбоосыг ӨГӨХГҮЙ: `sandbox-s.qpay.mn` нь
+     * хуудас нь байрлуулдаггүй тул 404 (nginx) буцаадаг. Үхсэн холбоос
+     * үзүүлэх нь «төлбөрийн систем эвдэрсэн» гэсэн сэтгэгдэл төрүүлнэ.
+     */
+    shortUrl: qpaySandbox ? null : (data.qPay_shortUrl ?? null),
+    sandbox: qpaySandbox,
     bankLinks: Array.isArray(data.urls)
       ? data.urls.map((u) => ({
           name: u.name,

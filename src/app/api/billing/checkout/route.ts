@@ -140,6 +140,7 @@ export async function POST(request: NextRequest) {
       bankLinks: invoice.bankLinks,
       // Компьютер дээр аппын схем ажиллахгүй тул вэб хувилбар нь хэрэгтэй.
       shortUrl: invoice.shortUrl,
+      sandbox: invoice.sandbox,
       mock: invoice.mock,
     });
   } catch (error) {

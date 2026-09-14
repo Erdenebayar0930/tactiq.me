@@ -28,6 +28,7 @@ export type QpayCheckout = {
   qrImageBase64: string | null;
   bankLinks: { name: string; link: string; logo?: string | null; description?: string | null }[];
   shortUrl?: string | null;
+  sandbox?: boolean;
   mock: boolean;
 };
 
@@ -177,6 +178,21 @@ export function InvoiceCard({
           {money(checkout.amountMnt)}
         </p>
       </div>
+
+      {/*
+        ⚠ SANDBOX нь `mock`-оос ӨӨР: QR, банкны холбоос нь ЖИНХЭНЭ
+        хэлбэртэй ирдэг ч мөнгө хөдлөхгүй, богино холбоос нь байрлуулагдаагүй
+        (404). Хоёуланг нь нэг мессежээр дүрслэвэл «яагаад QR нь ажиллаж
+        байгаад төлбөр нь ороогүй юм бэ» гэсэн эргэлзээ үүснэ.
+      */}
+      {checkout.sandbox && !checkout.mock && (
+        <p className="rounded-xl bg-amber-50 px-3 py-2 text-xs text-amber-700 dark:bg-amber-500/10 dark:text-amber-300">
+          Туршилтын (sandbox) мерчант: QR, банкны холбоос жинхэнэ хэлбэртэй ч
+          БОДИТ мөнгө хөдлөхгүй. Бодит горимд `QPAY_BASE_URL`-ыг
+          <span className="font-mono"> merchant.qpay.mn/v2</span> болгож,
+          өөрийн мерчантын түлхүүрээ тохируулна.
+        </p>
+      )}
 
       {checkout.mock && (
         <p className="rounded-xl bg-amber-50 px-3 py-2 text-xs text-amber-700 dark:bg-amber-500/10 dark:text-amber-300">
