@@ -35,19 +35,24 @@ import type { ColorKey } from "@/lib/tactiq/theme";
  * ҮНЭХЭЭР байх ёстой: Next.js-ийн `Image` нь байхгүй файлыг чимээгүй
  * алгасдаггүй, 404 зурна.
  *
+ * ⚠ ЗУРГИЙГ СОЛИХ БОЛ ФАЙЛЫН НЭРИЙГ СОЛИНО (`chess-2.webp` → `chess-3.webp`).
+ * Service worker нь `/images/**`-ийг CacheFirst-ээр 30 хоног барьдаг
+ * (`next.config.ts`), тиймээс ижил нэрээр дарж бичвэл хэрэглэгчид хуучин
+ * зургаа үзсээр байна.
+ *
  * ⚠ ХЭМЖЭЭ: 400×160 (2.5:1). Коверын хайрцаг нь `h-32` бөгөөд картын
  * өргөнөөр сунадаг тул ойролцоогоор 2.5:1. Үүнээс НАРИЙН зураг өгвөл
  * `object-cover` нь хажуу талыг ТАЙРНА — баннер дээрх гарчиг, тайлбар
  * алдагдана.
  */
 const COVER_IMAGES: Record<string, string> = {
-  chess: "/images/covers/chess.webp",
-  checkers: "/images/covers/checkers.webp",
-  sudoku: "/images/covers/sudoku.webp",
-  tangram: "/images/covers/tangram.webp",
-  memory: "/images/covers/memory.webp",
-  puzzle: "/images/covers/puzzle.webp",
-  "kids-coding": "/images/covers/kids-coding.webp",
+  chess: "/images/covers/chess-2.webp",
+  checkers: "/images/covers/checkers-2.webp",
+  sudoku: "/images/covers/sudoku-2.webp",
+  tangram: "/images/covers/tangram-2.webp",
+  memory: "/images/covers/memory-2.webp",
+  puzzle: "/images/covers/puzzle-2.webp",
+  "kids-coding": "/images/covers/kids-coding-2.webp",
 };
 
 /** Ковер бүрийн налуу дэвсгэрийн хоёр өнгө (эхлэл → төгсгөл). */
