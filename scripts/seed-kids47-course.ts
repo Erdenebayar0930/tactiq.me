@@ -42,6 +42,7 @@ import { and, eq, sql } from "drizzle-orm";
 import { createDbPool, resolveDatabaseUrl } from "../src/lib/db/createPool";
 import { courses, exercises, lessons, units, users } from "../src/lib/db/schema";
 import {
+  ARROWS_MAX,
   decodeArrows,
   encodeArrows,
   shortestSteps,
@@ -69,7 +70,32 @@ if (!connectionString) {
 /** Хуучин нэгдсэн курс — зөөсний дараа устгана. */
 const LEGACY_SLUG = "kids-4-7";
 /** Хичээл тутмын дасгалын тоо. */
-const PER_LESSON = 5;
+const PER_LESSON = 10;
+
+/**
+ * ӨВӨРМӨЦ дасгалуудыг цуглуулна.
+ *
+ * ⚠ Үүсгэгчдийн боломж ХЯЗГААРТАЙ: «1-3 хүртэл тоол» гэхэд гурван л хариу
+ * байна, «2 алхам урагш» нь бүр цөөн. Энгийн `Array.from` нь ижил
+ * дасгалыг чимээгүйхэн давтдаг байсан (сумны хичээлүүдэд 5 дасгалаас
+ * зөвхөн 2 нь өвөрмөц байв). Энэ туслах нь `grid` давхардвал дахин
+ * үүсгэж, хүрэлцэхгүй бол ЧАНГА уначихна — дутууг нь чимээгүй өнгөрөөх
+ * нь сурагч дээр л илэрнэ.
+ */
+function uniqueItems(count: number, make: (attempt: number) => Built, label: string): Built[] {
+  const byGrid = new Map<string, Built>();
+
+  for (let attempt = 0; byGrid.size < count && attempt < count * 40; attempt += 1) {
+    const item = make(attempt);
+    if (!byGrid.has(item.grid)) byGrid.set(item.grid, item);
+  }
+
+  if (byGrid.size < count) {
+    throw new Error(`«${label}» — ${count} өвөрмөц дасгал гарсангүй (${byGrid.size}).`);
+  }
+
+  return [...byGrid.values()];
+}
 /** Курс бүрийн доторх нэгжийн нэр. */
 const LEVEL_UNIT = "Level 1";
 
@@ -130,7 +156,7 @@ function buildCourses(): CourseSpec[] {
   const rng = makeRng(20260916);
 
   // --- Сэтгэхүй ------------------------------------------------------------
-  const bigSmall: Built[] = Array.from({ length: PER_LESSON }, () => {
+  const bigSmall = uniqueItems(PER_LESSON, () => {
     const shape = token(rng);
     /*
      * ⚠ Хэмжээнүүд нь ДАВТАГДАХГҮЙ: хоёр дүрс ижил том байвал «хамгийн
@@ -141,9 +167,9 @@ function buildCourses(): CourseSpec[] {
       { mode: "size", shapes: sizes.map(() => shape), sizes },
       "Хамгийн ТОМ нь аль нь вэ?"
     );
-  });
+  }, "Том ба жижиг");
 
-  const findSame: Built[] = Array.from({ length: PER_LESSON }, () => {
+  const findSame = uniqueItems(PER_LESSON, () => {
     const target = token(rng);
     const options = [target];
     while (options.length < 4) {
@@ -152,9 +178,9 @@ function buildCourses(): CourseSpec[] {
     }
     options.sort(() => rng() - 0.5);
     return kidsItem({ mode: "same", target, options }, "Дээрхтэй ИЖИЛ дүрсийг ол.");
-  });
+  }, "Ижил зүйлийг ол");
 
-  const findOdd: Built[] = Array.from({ length: PER_LESSON }, (_, i) => {
+  const findOdd = uniqueItems(PER_LESSON, () => {
     let common = token(rng);
     let odd = token(rng);
     while (odd === common) odd = token(rng);
@@ -162,10 +188,10 @@ function buildCourses(): CourseSpec[] {
     const at = Math.floor(rng() * length);
     const items = Array.from({ length }, (_, index) => (index === at ? odd : common));
     return seriesItem({ mode: "odd", items, index: at }, "Бусдаас ӨӨР нь аль нь вэ?");
-  });
+  }, "Илүүг нь ол");
 
-  const continueSeq: Built[] = Array.from({ length: PER_LESSON }, (_, i) => {
-    const period = i < 3 ? 2 : 3;
+  const continueSeq = uniqueItems(PER_LESSON, (i) => {
+    const period = i % 3 === 2 ? 3 : 2;
     const pool: string[] = [];
     while (pool.length < period) {
       const next = token(rng);
@@ -173,42 +199,42 @@ function buildCourses(): CourseSpec[] {
     }
     const items = Array.from({ length: 6 }, (_, index) => pool[index % period]);
     return seriesItem({ mode: "shape", items, index: items.length - 1 }, "Дараа нь юу ирэх вэ?");
-  });
+  }, "Дарааллыг үргэлжлүүл");
 
   // --- Тоолол --------------------------------------------------------------
-  const countTo3: Built[] = Array.from({ length: PER_LESSON }, () => {
+  const countTo3 = uniqueItems(PER_LESSON, () => {
     const count = 1 + Math.floor(rng() * 3);
     const shape = token(rng);
     return kidsItem(
       { mode: "count", shapes: Array.from({ length: count }, () => shape) },
       "Хэдэн ширхэг байна вэ?"
     );
-  });
+  }, "1–3 хүртэл тоол");
 
-  const countTo5: Built[] = Array.from({ length: PER_LESSON }, () => {
+  const countTo5 = uniqueItems(PER_LESSON, () => {
     const count = 1 + Math.floor(rng() * 5);
     const shape = token(rng);
     return kidsItem(
       { mode: "count", shapes: Array.from({ length: count }, () => shape) },
       "Хэдэн ширхэг байна вэ?"
     );
-  });
+  }, "1–5 хүртэл тоол");
 
   /*
    * «Тоог зурагтай холбо» — тоолох горимын ӨӨР ХЭЛБЭР: энд дүрсүүд нь
    * ХОЛИМОГ тул хүүхэд «ижил зүйлийг» биш, БҮГДИЙГ тоолж сурна.
    */
-  const matchNumber: Built[] = Array.from({ length: PER_LESSON }, () => {
+  const matchNumber = uniqueItems(PER_LESSON, () => {
     const count = 2 + Math.floor(rng() * 4);
     return kidsItem(
       { mode: "count", shapes: Array.from({ length: count }, () => token(rng)) },
       "Зурагт хэдэн зүйл байна — тоог нь дар."
     );
-  });
+  }, "Тоог зурагтай холбо");
 
-  const orderNumbers: Built[] = Array.from({ length: PER_LESSON }, (_, i) => {
-    const size = i < 2 ? 3 : 4;
-    const start = 1 + Math.floor(rng() * 3);
+  const orderNumbers = uniqueItems(PER_LESSON, (i) => {
+    const size = i % 2 === 0 ? 3 : 4;
+    const start = 1 + Math.floor(rng() * 5);
     const numbers = Array.from({ length: size }, (_, index) => start + index);
 
     // Холино — эрэмбэлэгдсэн хэвээр үлдвэл дасгал биш (`decodeKids` татгалзана).
@@ -218,50 +244,111 @@ function buildCourses(): CourseSpec[] {
     }
 
     return kidsItem({ mode: "order", numbers: shuffled }, "Тоонуудыг ЖИЖИГЭЭС ТОМ руу дар.");
-  });
+  }, "Тоонуудыг зөв дараалалд оруул");
 
   // --- Анхны Код -----------------------------------------------------------
-  /** Нэг чиглэлд л явах энгийн даалгавар — эхний дөрвөн хичээлд. */
-  const oneWay = (arrow: Arrow, label: string): Built[] =>
-    Array.from({ length: PER_LESSON }, (_, i) => {
-      const steps = 1 + (i % 3);
-      const span = steps + 1;
-
-      // Хөлгийг чиглэлийн дагуу нарийн (1 өргөн/өндөр) байлгана — андуурах зам үгүй.
-      if (arrow === "U" || arrow === "D") {
-        const rows = span;
-        const start = arrow === "D" ? 0 : rows - 1;
-        const goal = arrow === "D" ? rows - 1 : 0;
-        return arrowsItem(openMaze(1, rows, start, goal), `${label} — тугтай нүд рүү хүр.`);
-      }
-
-      const cols = span;
-      const start = arrow === "R" ? 0 : cols - 1;
-      const goal = arrow === "R" ? cols - 1 : 0;
-      return arrowsItem(openMaze(cols, 1, start, goal), `${label} — тугтай нүд рүү хүр.`);
-    });
-
-  const twoForward: Built[] = Array.from({ length: PER_LESSON }, (_, i) => {
-    // Яг ХОЁР алхам — «2 алхам урагш» гэдгийг бататгана.
-    const horizontal = i % 2 === 0;
-    return arrowsItem(
-      horizontal ? openMaze(3, 1, 0, 2) : openMaze(1, 3, 0, 2),
-      "Яг 2 алхам урагшил."
-    );
-  });
-
-  const reachGoal: Built[] = Array.from({ length: PER_LESSON }, (_, i) => {
-    const size = i < 3 ? 3 : 4;
-    const maze = openMaze(size, size, 0, size * size - 1);
-
-    // Хэдэн хана нэмнэ — зам үлдэх эсэхийг `arrowsItem` шалгана.
-    if (i >= 2) {
-      const middle = Math.floor(size / 2) * size + Math.floor(size / 2);
-      if (middle !== maze.start && middle !== maze.goal) maze.walls[middle] = true;
+  /**
+   * Нэг чиглэлд л явах даалгавар.
+   *
+   * ⚠ Хөлөг нь НАРИЙН (1 өргөн/өндөр): андуурах зам байхгүй тул сумны
+   * утга нь өөрөө ойлгогдоно.
+   *
+   * ⚠ ОЛОН ЯНЗ БАЙДАЛ: коридорын урт БА эхлэлийн байрлал хоёуланг
+   * хувиргана. Зөвхөн уртыг хувиргавал (анхны хувилбар) 5 дасгалаас
+   * гуравхан нь өвөрмөц болж байв.
+   */
+  const oneWay = (arrow: Arrow, label: string): Built[] => {
+    /*
+     * ⚠ БҮХ ХОСЛОЛЫГ ИЛ ТООЧНО. Урт, алхмыг `attempt % n` гэж тооцвол
+     * мөчлөгүүд давхцаж, боломжтой хувилбарын зөвхөн хэсэгт л хүрдэг —
+     * анхны хувилбар яг тэрнээс болж 5-аас гуравхан өвөрмөц гаргаж байв.
+     * ⚠ Урт нь `ARROWS_MAX` (5)-аас хэтрэхгүй.
+     */
+    const combos: { span: number; steps: number }[] = [];
+    for (let span = 2; span <= ARROWS_MAX; span += 1) {
+      for (let steps = 1; steps < span; steps += 1) combos.push({ span, steps });
     }
 
-    return arrowsItem(maze, "Зорилгод хүрэх замаа зохио.");
-  });
+    return uniqueItems(
+      PER_LESSON,
+      (attempt) => {
+        const { span, steps } = combos[attempt % combos.length];
+        const vertical = arrow === "U" || arrow === "D";
+        const forwardish = arrow === "D" || arrow === "R";
+
+        // Эхлэлийг чиглэлийн эсрэг захад тавиад, зорилгыг `steps` алхмын зайд.
+        const start = forwardish ? 0 : span - 1;
+        const goal = forwardish ? start + steps : start - steps;
+
+        return arrowsItem(
+          vertical ? openMaze(1, span, start, goal) : openMaze(span, 1, start, goal),
+          `${label} — тугтай нүд рүү хүр.`
+        );
+      },
+      label
+    );
+  };
+
+  /**
+   * Яг ХОЁР алхам — чиглэл × коридорын урт × эхлэлийн тал.
+   *
+   * ⚠ Хоёр алхам багтахын тулд урт нь дор хаяж 3.
+   */
+  const twoStep: { vertical: boolean; span: number; fromStart: boolean }[] = [];
+  for (let span = 3; span <= ARROWS_MAX; span += 1) {
+    for (const vertical of [false, true]) {
+      for (const fromStart of [true, false]) twoStep.push({ vertical, span, fromStart });
+    }
+  }
+
+  const twoForward = uniqueItems(
+    PER_LESSON,
+    (attempt) => {
+      const { vertical, span, fromStart } = twoStep[attempt % twoStep.length];
+      const start = fromStart ? 0 : span - 1;
+      const goal = fromStart ? 2 : span - 3;
+
+      return arrowsItem(
+        vertical ? openMaze(1, span, start, goal) : openMaze(span, 1, start, goal),
+        "Яг 2 алхам урагшил."
+      );
+    },
+    "2 алхам урагш"
+  );
+
+  /** Зорилгод хүр — хөлгийн хэмжээ, зорилгын булан, ханын байрлал хувирна. */
+  /** Зорилгод хүр — хэмжээ × эхлэл/зорилгын булан × ханын байрлал. */
+  const goalCombos: { size: number; from: number; to: number; wall: number }[] = [];
+  for (const size of [3, 4]) {
+    const corners = [0, size - 1, size * (size - 1), size * size - 1];
+    for (let from = 0; from < corners.length; from += 1) {
+      for (let to = 0; to < corners.length; to += 1) {
+        if (from === to) continue;
+        goalCombos.push({ size, from: corners[from], to: corners[to], wall: -1 });
+      }
+    }
+  }
+
+  const reachGoal = uniqueItems(
+    PER_LESSON,
+    (attempt) => {
+      const combo = goalCombos[attempt % goalCombos.length];
+      const maze = openMaze(combo.size, combo.size, combo.from, combo.to);
+
+      /*
+       * Хагасаас нь эхлэн хана нэмнэ — эхний хэдэн дасгал нээлттэй хөлөг
+       * дээр байж, хүүхэд сумаа эхлээд тайван сурна.
+       * ⚠ Зам үлдсэн эсэхийг `arrowsItem` (`shortestSteps`) шалгана.
+       */
+      if (attempt >= Math.floor(PER_LESSON / 2)) {
+        const wall = (attempt * 5 + 4) % (combo.size * combo.size);
+        if (wall !== maze.start && wall !== maze.goal) maze.walls[wall] = true;
+      }
+
+      return arrowsItem(maze, "Зорилгод хүрэх замаа зохио.");
+    },
+    "Зорилгод хүр"
+  );
 
   return [
     {
