@@ -175,14 +175,29 @@ export function InvoiceCard({
           <p className="text-xs font-semibold text-gray-500 dark:text-gray-400">QPay төлөх</p>
         </div>
 
-        {checkout.bankLinks.length > 0 && (
-          <div className="text-left">
-            <p className="mb-2 text-sm font-bold text-gray-900 dark:text-white">Банкаар төлөх</p>
-            {/*
-              ⚠ Жагсаалт нь 15-20 банктай тул ӨНДРИЙГ ХЯЗГААРЛАНА: эс
-              бөгөөс «Төлбөрөө шалгах» товч дэлгэцээс доош гарч, хэрэглэгч
-              төлсний дараа юу дарахаа олохгүй болно.
-            */}
+        <div className="text-left">
+          <p className="mb-2 text-sm font-bold text-gray-900 dark:text-white">Банкаар төлөх</p>
+
+          {/*
+            ⚠ Жагсаалт ХООСОН байхыг ЧИМЭЭГҮЙ нуухгүй. QPay тохируулаагүй
+            (`mock`) үед банкны холбоос ОГТ ирдэггүй тул баганыг нь бүрмөсөн
+            алга болгочихвол «төлбөрийн хэсэг харагдахгүй байна» гэсэн
+            ойлгомжгүй байдал үүснэ. Оронд нь шалтгааныг нь хэлнэ.
+          */}
+          {checkout.bankLinks.length === 0 && (
+            <p className="rounded-xl border border-dashed border-gray-300 p-3 text-xs text-gray-500 dark:border-white/15 dark:text-gray-400">
+              {checkout.mock
+                ? "QPay тохируулаагүй тул банкны жагсаалт ирэхгүй. `QPAY_CLIENT_ID`, `QPAY_CLIENT_SECRET`, `QPAY_INVOICE_CODE`-ыг тохируулна уу."
+                : "Банкны жагсаалт ирсэнгүй. QR кодыг банкныхаа аппаар уншуулна уу."}
+            </p>
+          )}
+
+          {/*
+            ⚠ Жагсаалт нь 15-20 банктай тул ӨНДРИЙГ ХЯЗГААРЛАНА: эс бөгөөс
+            «Төлбөр шалгах» товч дэлгэцээс доош гарч, хэрэглэгч төлсний
+            дараа юу дарахаа олохгүй болно.
+          */}
+          {checkout.bankLinks.length > 0 && (
             <ul className="grid max-h-64 grid-cols-3 gap-2 overflow-y-auto pr-1">
               {checkout.bankLinks.map((bank) => (
                 <li key={bank.name}>
@@ -207,8 +222,8 @@ export function InvoiceCard({
                 </li>
               ))}
             </ul>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
       <p className="flex items-center justify-center gap-2 text-sm text-gray-500 dark:text-gray-400">
