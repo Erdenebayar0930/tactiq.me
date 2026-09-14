@@ -138,6 +138,8 @@ export async function POST(request: NextRequest) {
       qrText: invoice.qrText,
       qrImageBase64: invoice.qrImageBase64,
       bankLinks: invoice.bankLinks,
+      // Компьютер дээр аппын схем ажиллахгүй тул вэб хувилбар нь хэрэгтэй.
+      shortUrl: invoice.shortUrl,
       mock: invoice.mock,
     });
   } catch (error) {

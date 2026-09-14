@@ -9,6 +9,7 @@ import { ErrorNote } from "@/components/tactiq/ui";
 import PaymentOptions from "@/components/tactiq/PaymentOptions";
 import type { PaymentChoices } from "@/components/tactiq/PaymentOptions";
 import { InvoiceCard } from "@/components/tactiq/QpayInvoice";
+import type { QpayCheckout } from "@/components/tactiq/QpayInvoice";
 import { apiFetch, ApiError } from "@/lib/apiClient";
 import { FAMILY_SEATS, PLANS, perSeatMonthly, savingsPercent } from "@/lib/billing";
 
@@ -30,15 +31,12 @@ import type { PublicUser } from "@/lib/api/publicUser";
  * ⚠ Нэхэмжлэлийн дүнг ЭНД тооцохгүй — серверээс ирсэн дүнг л харуулна.
  */
 
-type Checkout = {
-  senderInvoiceNo: string;
-  amountMnt: number;
-  planLabel: string;
-  qrText: string;
-  qrImageBase64: string | null;
-  bankLinks: { name: string; link: string }[];
-  mock: boolean;
-};
+/*
+ * ⚠ Хэлбэрийг ДАВХАР тодорхойлохгүй: `/api/billing/checkout` нь нэг
+ * хэлбэр буцаадаг бөгөөд энд тусад нь бичвэл сервер талд талбар
+ * нэмэгдэхэд (лого, `shortUrl`) энэ урсгал дээр чимээгүй унтардаг.
+ */
+type Checkout = QpayCheckout;
 
 const money = (amount: number) => `${amount.toLocaleString("mn-MN")}₮`;
 

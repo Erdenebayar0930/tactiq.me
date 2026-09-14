@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Check, Copy, Landmark, Loader2, QrCode } from "lucide-react";
+import { Check, Copy, ExternalLink, Landmark, Loader2, QrCode } from "lucide-react";
 
 import { apiFetch } from "@/lib/apiClient";
 import { BANK_ACCOUNTS } from "@/lib/tactiq/bankAccounts";
@@ -27,6 +27,7 @@ export type QpayCheckout = {
   qrText: string;
   qrImageBase64: string | null;
   bankLinks: { name: string; link: string; logo?: string | null; description?: string | null }[];
+  shortUrl?: string | null;
   mock: boolean;
 };
 
@@ -212,6 +213,24 @@ export function InvoiceCard({
             </div>
           )}
           <p className="text-xs font-semibold text-gray-500 dark:text-gray-400">QPay төлөх</p>
+
+          {/*
+            ⚠ КОМПЬЮТЕРТ ЗОРИУЛСАН ЗАМ. Доорх банкны товчнууд нь
+            `khanbank://` гэх мэт аппын схем тул хөтөч дээр дарахад ЮУ Ч
+            БОЛОХГҮЙ — хэрэглэгч «товч эвдэрсэн» гэж боддог. Энэ богино
+            хаяг нь энгийн https тул хөтөч дээр нээгдэнэ.
+          */}
+          {checkout.shortUrl && (
+            <a
+              href={checkout.shortUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 text-xs font-semibold text-brand-600 underline hover:text-brand-700 dark:text-brand-300"
+            >
+              <ExternalLink className="size-3.5" aria-hidden />
+              Хөтчөөр нээх
+            </a>
+          )}
         </div>
 
         <div className="text-left">
@@ -237,6 +256,16 @@ export function InvoiceCard({
             дараа юу дарахаа олохгүй болно.
           */}
           {checkout.bankLinks.length > 0 && (
+            <>
+              {/*
+                ⚠ Эдгээр товч нь ГАР УТСАН дээр л ажиллана. Компьютер дээр
+                дарахад юу ч болохгүйг УРЬДЧИЛЖ хэлэхгүй бол хэрэглэгч
+                дахин дахин дарж, эцэст нь төлбөрөө орхино.
+              */}
+              <p className="mb-2 text-[11px] text-gray-400">
+                Гар утсан дээр дарвал банкны апп нээгдэнэ. Компьютер дээр QR
+                кодыг уншуулна уу.
+              </p>
             <ul className="grid max-h-64 grid-cols-3 gap-2 overflow-y-auto pr-1">
               {checkout.bankLinks.map((bank) => (
                 <li key={bank.name}>
@@ -287,6 +316,7 @@ export function InvoiceCard({
                 </li>
               ))}
             </ul>
+            </>
           )}
         </div>
       </div>
