@@ -350,12 +350,12 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
               Агуулгын талбар нь харин хоёр сэдвийг бүрэн дэмжсэн хэвээр —
               сурагч тэнд цагаар хэмжигдэх уншилт хийдэг.
 
-              ⚠ ӨНГӨ нь `navy`, `ink` БИШ. `ink-950` (#0a0f1c) нь бараг
-              ХАР бөгөөд брэндийн цэнхэртэй зэрэгцэхэд «унтарсан» мэт
-              харагддаг. `navy` ramp нь яг ЭНЭ зориулалтаар нэмэгдсэн —
-              брэндээс гүн, бага ханалттай хөх (`globals.css` үзнэ үү).
+              ⚠ ӨНГӨ нь макетаас ХЭМЖСЭН (`--color-sidebar-900`, #101b48).
+              `ink-950` (#0a0f1c) нь бараг хар, `navy-900` (#1a2136) нь
+              саарал руугаа — хоёул гүн ХӨХ цэснээс мэдэгдэхүйц зөрдөг.
+              Налуу ч БИШ: макет дээр дэвсгэр нь дээрээсээ доошоо жигд.
             */}
-            <div className="space-y-1 rounded-3xl border border-white/10 bg-gradient-to-b from-navy-900 to-navy-950 p-3">
+            <div className="space-y-1 rounded-3xl border border-white/10 bg-sidebar-900 p-3">
             <ul className="space-y-1">
             {NAV.map(({ href, label, Icon, color }) => (
               <li key={href}>
