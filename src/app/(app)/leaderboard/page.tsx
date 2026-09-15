@@ -27,6 +27,16 @@ import type { LeagueOutcome } from "@/lib/tactiq/league";
  * болгож нийлүүлбэл аль аль нь суларна — Duolingo ч тусад нь барьдаг.
  */
 
+/**
+ * ЛИГИЙН ДҮРСНҮҮДИЙН ХАВТАС.
+ *
+ * ⚠ ЗУРГИЙГ ЗАССАН БҮРД ЭНЭ ДУГААРЫГ ӨСГӨНӨ (`v2` → `v3`) БА файлуудыг
+ * шинэ хавтас руу зөөнө. Service worker нь `/images/**`-ийг CacheFirst-ээр
+ * 30 хоног барьдаг (`next.config.ts`) тул ИЖИЛ нэрээр дарж бичихэд
+ * хэрэглэгч хуучин зургаа үзсээр байна — засвар нь хүрэхгүй.
+ */
+const ART = "/images/league/v2";
+
 type LeagueStanding = {
   uid: string;
   displayName: string;
@@ -244,7 +254,7 @@ function LeagueTab() {
                 ⚠ `priority`: хуудсын гол дүрс, хожимдвол хоосон байр үлдэнэ.
               */}
               <Image
-                src="/images/league/hero.png"
+                src={`${ART}/hero.png`}
                 alt=""
                 aria-hidden
                 width={269}
@@ -326,7 +336,7 @@ function NotJoinedNote() {
   return (
     <div className="surface flex flex-col items-center gap-5 p-6 text-center sm:flex-row sm:text-left">
       <Image
-        src="/images/league/podium.png"
+        src={`${ART}/podium.png`}
         alt=""
         aria-hidden
         width={200}
@@ -513,7 +523,7 @@ function TierLadder({ current }: { current: number }) {
                 өнгө бүдгэрүүлэх шаардлагагүй.
               */}
               <Image
-                src={`/images/league/${step.key}.png`}
+                src={`${ART}/${step.key}.png`}
                 alt=""
                 aria-hidden
                 width={48}
