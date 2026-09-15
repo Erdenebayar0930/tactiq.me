@@ -1,9 +1,11 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 import { ChevronDown, ChevronUp, Lock, Minus, Trophy, Users } from "lucide-react";
 
+import { useCurrentUser } from "@/context/UserContext";
 import { useApiData } from "@/hooks/useApiData";
 import { ErrorNote, EmptyState, Skeleton } from "@/components/tactiq/ui";
 import {
@@ -14,7 +16,6 @@ import {
   tierInfo,
 } from "@/lib/tactiq/league";
 
-import { readableBg, shade } from "@/lib/tactiq/theme";
 
 import type { LeagueOutcome } from "@/lib/tactiq/league";
 
@@ -126,6 +127,7 @@ function TabButton({
 }
 
 function LeagueTab() {
+  const user = useCurrentUser();
   /*
    * `null` = "сервер шийдээгүй байна". Эхний ачаалалтад аль лиг нээхийг
    * СЕРВЕР сонгодог (хамгийн өндөр шаттай нь) тул клиент талд анхдагч
@@ -152,6 +154,12 @@ function LeagueTab() {
   }
 
   const tier = tierInfo(data.tier);
+  /*
+   * ⚠ Байрыг ЖАГСААЛТААС уншина, тусад нь тоолохгүй: сервер нь байрыг
+   * аль хэдийн тооцоод илгээсэн бөгөөд клиент дээр дахин эрэмбэлбэл
+   * тэнцсэн оноотой хүмүүс дээр хоёр тал зөрнө.
+   */
+  const myRank = data.standings.find((row) => row.isMe)?.rank ?? null;
 
   return (
     <div className="space-y-4">
@@ -199,41 +207,69 @@ function LeagueTab() {
       </div>
       )}
 
-      <div className="surface p-5 text-center">
-        {/*
-          ⚠ Хавтгай дүүргэлт биш ГРАДИЕНТ + өнгөт сүүлдэр. Хавтгай тойрог
-          нь ялангуяа саарал шатанд (Мөнгө) бүдэг, амьгүй харагддаг.
-          Сүүдэр нь тухайн шатны өнгөтэй тул медаль гэрэлтэж буй мэдрэмж
-          өгнө — `shade()`-ийг эндээс ч ашиглана.
-        */}
-        <span
-          /*
-           * ⚠ Медаль нь ЭНЭ ХУУДАСНЫ ГОЛ ДҮРС — сурагч аль лигт байгаагаа
-           * нэг харцаар мэдэх ёстой. `size-20` нь хэт даруухан байсан тул
-           * толгойн бичвэртэй ижил жинтэй харагдаж байв.
-           */
-          className="mx-auto grid size-32 place-items-center rounded-full text-white"
-          style={{
-            // Дүрс ҮРГЭЛЖ цагаан — дэвсгэрийг нь уншигдахуйц болгоно
-            // (`readableBg`, `lib/tactiq/theme.ts`).
-            background: `linear-gradient(160deg, ${readableBg(tier.color, 3)}, ${shade(readableBg(tier.color, 3), -40)})`,
-            // Сүүлдэр нь ЖИНХЭНЭ өнгөөр — тэнд уншигдац хамаарахгүй тул
-            // шатны өнгө бүрэн тодоор мэдрэгдэнэ.
-            // Дүрс томорсон тул сүүдрийг ч томсгоно — эс бөгөөс медаль
-            // хөвөхийн оронд наалдсан мэт харагдана.
-            boxShadow: `0 14px 36px -8px ${tier.color}80`,
-          }}
-        >
-          <Trophy className="size-16" aria-hidden />
-        </span>
-        <p className="mt-4 text-2xl font-extrabold text-gray-900 dark:text-white">
-          {tier.label} лиг
-        </p>
-        <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
-          {data.joined
-            ? `${data.size} тоглогч · дээд ${data.promoteCount} дээшилнэ · доод ${data.demoteCount} буурна`
-            : `Нэг бүлэгт ${data.cohortSize} хүртэл тоглогч`}
-        </p>
+      {/*
+        ЛИГИЙН HERO — ягаан налуу дэвсгэр дээр гурван хэсэг: ишлэл,
+        медаль, статистик.
+
+        ⚠ Дэвсгэр нь ГЭРЭЛТ/ХАРАНХУЙ хоёрт ИЖИЛ: медаль, лаврын мөчир нь
+        алтан өнгөтэй бөгөөд цайвар дэвсгэр дээр уусдаг. Тиймээс энэ карт
+        нь сэдвээс хамаарахгүй харанхуй хэвээр.
+      */}
+      <div className="surface overflow-hidden p-0">
+        <div className="relative bg-gradient-to-br from-indigo-700 via-violet-700 to-fuchsia-700 px-5 py-7 text-white">
+          <div className="grid items-center gap-6 lg:grid-cols-[1fr_auto_1fr]">
+            {/*
+              ⚠ Ишлэл нь ЖИЖИГ ДЭЛГЭЦЭНД НУУГДАНА: гурван баганыг нэг
+              баганад хураахад ишлэл нь медалийг доош түлхэж, гол зүйл
+              (аль лигт байгаа) нь эхний дэлгэцээс гарна.
+            */}
+            <figure className="hidden lg:block">
+              <span className="block text-3xl leading-none text-white/40" aria-hidden>
+                &ldquo;
+              </span>
+              <blockquote className="mt-1 max-w-[16rem] text-sm leading-relaxed text-white/85">
+                Өнөөдрийн жижиг амжилт, маргаашийн их боломж юм.
+              </blockquote>
+            </figure>
+
+            <div className="text-center">
+              {/*
+                ⚠ Зураг нь `public/images/league/*.png` — макетаас тасдсан
+                (`priority`: энэ бол хуудсын гол дүрс, хожимдвол хоосон
+                байр үлдэнэ).
+              */}
+              <Image
+                src={`/images/league/${tier.key}.png`}
+                alt=""
+                aria-hidden
+                width={150}
+                height={150}
+                priority
+                className="mx-auto h-auto w-[130px] drop-shadow-[0_10px_30px_rgba(0,0,0,0.35)]"
+              />
+              <p className="mt-3 text-2xl font-extrabold">{tier.label} лиг</p>
+              <p className="mt-1 text-xs text-white/75">
+                {data.joined
+                  ? `${data.size} тоглогч · дээд ${data.promoteCount} дээшилнэ · доод ${data.demoteCount} буурна`
+                  : `Нэг бүлэгт ${data.cohortSize} хүртэл тоглогч`}
+              </p>
+            </div>
+
+            <div className="lg:justify-self-end">
+              <dl className="grid grid-cols-3 gap-1 rounded-2xl bg-white/10 p-3 text-center backdrop-blur-sm">
+                <HeroStat icon="⭐" value={user.xp.toLocaleString("mn-MN")} label="Нийт оноо" />
+                <HeroStat icon="🔥" value={String(user.streakDays)} label="Дасгалын өдөр" />
+                <HeroStat
+                  icon="🛡"
+                  /* ⚠ Бүлэгт ороогүй бол байр ГЭЖ БАЙХГҮЙ — 0 гэж бичвэл
+                     «сүүлийн байр» мэт худал уншигдана. */
+                  value={myRank ? `${myRank}` : "—"}
+                  label="Байр"
+                />
+              </dl>
+            </div>
+          </div>
+        </div>
 
         <TierLadder current={data.tier} />
       </div>
@@ -261,6 +297,19 @@ function LeagueTab() {
   );
 }
 
+/** Hero дээрх нэг үзүүлэлт. */
+function HeroStat({ icon, value, label }: { icon: string; value: string; label: string }) {
+  return (
+    <div className="px-1">
+      <span className="text-base leading-none" aria-hidden>
+        {icon}
+      </span>
+      <dd className="num mt-1 text-lg font-extrabold leading-none">{value}</dd>
+      <dt className="mt-1 text-[10px] leading-tight text-white/70">{label}</dt>
+    </div>
+  );
+}
+
 /**
  * Энэ долоо хоногт хичээл эхлүүлээгүй.
  *
@@ -270,17 +319,27 @@ function LeagueTab() {
  */
 function NotJoinedNote() {
   return (
-    <div className="surface flex flex-col items-center gap-2 p-6 text-center">
-      <p className="font-bold text-gray-900 dark:text-white">
-        Энэ долоо хоногт хараахан ороогүй
-      </p>
-      <p className="max-w-sm text-sm text-gray-500 dark:text-gray-400">
-        Аль нэг курсээр хичээл эхлүүлмэгц шинэ тэмцээнд орно.
-        Өнжсөн долоо хоног шатыг бууруулахгүй.
-      </p>
-      <Link href="/learn" className="btn-primary mt-1 px-5 py-2.5 text-sm">
-        Хичээл эхлүүлэх
-      </Link>
+    <div className="surface flex flex-col items-center gap-5 p-6 text-center sm:flex-row sm:text-left">
+      <Image
+        src="/images/league/podium.png"
+        alt=""
+        aria-hidden
+        width={200}
+        height={158}
+        className="h-auto w-40 shrink-0"
+      />
+      <div className="flex flex-col items-center gap-2 sm:items-start">
+        <p className="text-lg font-extrabold text-gray-900 dark:text-white">
+          Энэ долоо хоногт хараахан ороогүй
+        </p>
+        <p className="max-w-sm text-sm text-gray-500 dark:text-gray-400">
+          Аль нэг курсээр хичээл эхлүүлмэгц шинэ тэмцээнд орно.
+          Өнжсөн долоо хоног шатыг бууруулахгүй.
+        </p>
+        <Link href="/learn" className="btn-primary mt-1 px-5 py-2.5 text-sm">
+          Хичээл эхлүүлэх
+        </Link>
+      </div>
     </div>
   );
 }
@@ -424,40 +483,42 @@ function ListSkeleton() {
  */
 function TierLadder({ current }: { current: number }) {
   return (
-    <div className="no-scrollbar mt-4 flex justify-start gap-2 overflow-x-auto pb-1 sm:justify-center">
+    <div className="no-scrollbar flex justify-start gap-1 overflow-x-auto px-4 py-4 sm:justify-center">
       {LEAGUE_TIERS.map((step, index) => {
         const reached = index <= current;
         const isCurrent = index === current;
-        const color = readableBg(step.color, 3);
 
         return (
           <div
             key={step.key}
-            className="flex w-14 shrink-0 flex-col items-center gap-1"
+            className="flex w-[72px] shrink-0 flex-col items-center gap-1"
           >
             <span
-              className={`grid place-items-center rounded-full transition-all ${
-                isCurrent ? "size-11" : "size-9"
+              className={`relative grid place-items-center rounded-full p-1.5 transition-all ${
+                isCurrent ? "bg-brand-50 ring-2 ring-brand-400 dark:bg-brand-500/15" : ""
               }`}
-              style={
-                reached
-                  ? {
-                      background: `linear-gradient(160deg, ${color}, ${shade(color, -35)})`,
-                      color: "#ffffff",
-                      boxShadow: isCurrent ? `0 0 0 4px ${step.color}40` : undefined,
-                    }
-                  : {
-                      // Хоосон боловч ӨНГӨТ хүрээтэй — "энэ бол Алт лиг,
-                      // хараахан аваагүй" гэдэг нэг харцаар ойлгогдоно.
-                      border: `2px dashed ${step.color}`,
-                      color: step.color,
-                    }
-              }
             >
-              {reached ? (
-                <Trophy className={isCurrent ? "size-5" : "size-4"} aria-hidden />
-              ) : (
-                <Lock className="size-3.5" aria-hidden />
+              {/*
+                ⚠ АВААГҮЙ шатыг САРАЛДУУЛНА. Макет дээр есүүлээ бүтэн
+                өнгөтэй боловч тэр нь зөвхөн загварын үзүүлэн — бодит
+                дэлгэц дээр «би хаана хүрсэн бэ» гэдэг нь ХАМГИЙН чухал
+                мэдээлэл бөгөөд бүгд ижил харагдвал огт уншигдахгүй.
+              */}
+              <Image
+                src={`/images/league/${step.key}.png`}
+                alt=""
+                aria-hidden
+                width={48}
+                height={48}
+                className={`h-auto w-11 transition-[filter,opacity] ${
+                  reached ? "" : "opacity-40 grayscale"
+                }`}
+              />
+              {!reached && (
+                <Lock
+                  className="absolute size-3.5 text-gray-500 dark:text-gray-300"
+                  aria-hidden
+                />
               )}
             </span>
 
@@ -469,7 +530,6 @@ function TierLadder({ current }: { current: number }) {
                     ? "font-semibold text-gray-500 dark:text-gray-400"
                     : "font-medium text-gray-400 dark:text-gray-500"
               }`}
-              title={step.label}
             >
               {step.label}
             </span>
