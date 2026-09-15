@@ -151,11 +151,22 @@ function NavIcon({
 }) {
   const styles = colorStyles(color);
 
+  /*
+   * ⚠ Харанхуй самбар дээр ДҮРС нь ӨНГӨТЭЙ, хайрцаг нь БИШ.
+   *
+   * Урьд нь хайрцгийг өнгөт дэвсгэрээр (`softBg` — `bg-violet-50` г.м)
+   * будаж байсан нь гүн хөх цэсэн дээр цоохор болдог байв. Харин дүрсийг
+   * өөрийг нь будахад цэс нь тайван хэвээр, гэхдээ зүйл бүр өөрийн
+   * өнгөөр таниулагдана — макет дээрх шиг.
+   *
+   * ⚠ Идэвхтэй мөр нь брэндийн налуу дэвсгэртэй тул тэнд дүрс нь ЦАГААН:
+   * өнгөт дүрс тэр дэвсгэр дээр уншигдахгүй.
+   */
   const toneClass =
     tone === "dark"
       ? active
         ? "bg-white/20 text-white"
-        : "bg-white/10 text-white/80"
+        : `bg-white/5 ${styles.onDark}`
       : active
         ? `${styles.iconBg} text-white`
         : `${styles.softBg} ${styles.softText}`;

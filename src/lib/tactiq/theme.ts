@@ -40,6 +40,15 @@ export type ColorStyles = {
   bar: string;
   /** Хүрээ — сонгогдсон төлөвт */
   ring: string;
+  /**
+   * ХАРАНХУЙ гадаргуу дээрх дүрсний өнгө.
+   *
+   * ⚠ `softText`-ээс ӨӨР: тэр нь ЦАЙВАР зөөлөн дэвсгэрт зориулсан 700
+   * өнгө бөгөөд гүн хөх цэс дээр бараг уншигдахгүй. Энд 300-400 муж —
+   * харанхуй дээр тод, гэвч цагаан бичвэрээс сул тул гол зүйл болох
+   * НЭРийг дарахгүй.
+   */
+  onDark: string;
 };
 
 const STYLES: Record<ColorKey, ColorStyles> = {
@@ -49,6 +58,7 @@ const STYLES: Record<ColorKey, ColorStyles> = {
     softText: "text-violet-700 dark:text-violet-300",
     bar: "bg-violet-500",
     ring: "ring-violet-500/40",
+    onDark: "text-violet-300",
   },
   emerald: {
     iconBg: "bg-emerald-500",
@@ -56,6 +66,7 @@ const STYLES: Record<ColorKey, ColorStyles> = {
     softText: "text-emerald-700 dark:text-emerald-300",
     bar: "bg-emerald-500",
     ring: "ring-emerald-500/40",
+    onDark: "text-emerald-300",
   },
   amber: {
     iconBg: "bg-amber-500",
@@ -63,6 +74,7 @@ const STYLES: Record<ColorKey, ColorStyles> = {
     softText: "text-amber-700 dark:text-amber-300",
     bar: "bg-amber-500",
     ring: "ring-amber-500/40",
+    onDark: "text-amber-300",
   },
   sky: {
     iconBg: "bg-sky-500",
@@ -70,6 +82,7 @@ const STYLES: Record<ColorKey, ColorStyles> = {
     softText: "text-sky-700 dark:text-sky-300",
     bar: "bg-sky-500",
     ring: "ring-sky-500/40",
+    onDark: "text-sky-300",
   },
   rose: {
     iconBg: "bg-rose-500",
@@ -77,6 +90,7 @@ const STYLES: Record<ColorKey, ColorStyles> = {
     softText: "text-rose-700 dark:text-rose-300",
     bar: "bg-rose-500",
     ring: "ring-rose-500/40",
+    onDark: "text-rose-300",
   },
   indigo: {
     iconBg: "bg-indigo-500",
@@ -84,6 +98,7 @@ const STYLES: Record<ColorKey, ColorStyles> = {
     softText: "text-indigo-700 dark:text-indigo-300",
     bar: "bg-indigo-500",
     ring: "ring-indigo-500/40",
+    onDark: "text-indigo-300",
   },
   teal: {
     iconBg: "bg-teal-500",
@@ -91,6 +106,7 @@ const STYLES: Record<ColorKey, ColorStyles> = {
     softText: "text-teal-700 dark:text-teal-300",
     bar: "bg-teal-500",
     ring: "ring-teal-500/40",
+    onDark: "text-teal-300",
   },
   orange: {
     iconBg: "bg-orange-500",
@@ -98,6 +114,7 @@ const STYLES: Record<ColorKey, ColorStyles> = {
     softText: "text-orange-700 dark:text-orange-300",
     bar: "bg-orange-500",
     ring: "ring-orange-500/40",
+    onDark: "text-orange-300",
   },
 };
 
