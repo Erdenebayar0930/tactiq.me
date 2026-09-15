@@ -10,7 +10,9 @@ import {
   Award,
   Baby,
   BookOpen,
+  ChevronRight,
   ChevronsUpDown,
+  Crown,
   GraduationCap,
   Handshake,
   Languages,
@@ -133,19 +135,34 @@ function NavIcon({
   color,
   active,
   className = "size-9",
+  tone = "light",
 }: {
   Icon: React.ComponentType<{ className?: string }>;
   color: ColorKey;
   active: boolean;
   className?: string;
+  /**
+   * ⚠ `dark` нь ХАРАНХУЙ САМБАР дээр. Тэнд өнгөт цайвар дэвсгэр
+   * (`softBg` — жишээ нь `bg-indigo-50`) нь бараан дэвсгэртэй зөрчилдөж,
+   * цэсийг цоохор болгодог. Мөн идэвхтэй мөрийн дэвсгэр нь аль хэдийн
+   * `iconBg` тул дүрс нь түүн дээр ижил өнгөөр уусаж алга болно.
+   */
+  tone?: "light" | "dark";
 }) {
   const styles = colorStyles(color);
 
+  const toneClass =
+    tone === "dark"
+      ? active
+        ? "bg-white/20 text-white"
+        : "bg-white/10 text-white/80"
+      : active
+        ? `${styles.iconBg} text-white`
+        : `${styles.softBg} ${styles.softText}`;
+
   return (
     <span
-      className={`grid shrink-0 place-items-center rounded-xl transition-colors ${className} ${
-        active ? `${styles.iconBg} text-white` : `${styles.softBg} ${styles.softText}`
-      }`}
+      className={`grid shrink-0 place-items-center rounded-xl transition-colors ${className} ${toneClass}`}
     >
       <Icon className="size-5" aria-hidden />
     </span>
@@ -320,10 +337,20 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       </div>
 
       <div className={`flex gap-6 py-6 ${SHELL_WIDTH}`}>
-        <nav className="hidden w-52 shrink-0 print:hidden lg:block">
+        <nav className="hidden w-60 shrink-0 print:hidden lg:block">
           <div className="sticky top-24 space-y-3">
             <ActiveCourseCard />
 
+            {/*
+              ⚠ ХАЖУУГИЙН ЦЭС ҮРГЭЛЖ ХАРАНХУЙ — гэрэлт сэдэвт ч.
+
+              Энэ нь брэндийн дүр төрх (`(site)` бүлгийн толгойтой ижил
+              шийдвэр): цэс нь агуулгын хажууд зогсох «хүрээ» бөгөөд
+              хоёр өөр байдалтай байвал апп хагарсан мэт харагдана.
+              Агуулгын талбар нь харин хоёр сэдвийг бүрэн дэмжсэн хэвээр —
+              сурагч тэнд цагаар хэмжигдэх уншилт хийдэг.
+            */}
+            <div className="space-y-1 rounded-3xl border border-white/10 bg-ink-950 p-3">
             <ul className="space-y-1">
             {NAV.map(({ href, label, Icon, color }) => (
               <li key={href}>
@@ -345,7 +372,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
             */}
             {ROLE_NAV.length > 0 && (
               <li
-                className="px-3 pt-4 pb-1 text-[11px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500"
+                className="px-3 pt-4 pb-1 text-[11px] font-bold uppercase tracking-wider text-white/35"
                 aria-hidden
               >
                 {t("Бусад")}
@@ -364,6 +391,9 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
               </li>
             ))}
             </ul>
+
+            <FamilyPlanPromo />
+            </div>
           </div>
         </nav>
 
@@ -465,6 +495,33 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
  * өөрөөр хэлбэл өнгө нэмсэн ч идэвхтэй үедээ алга болно. Одоо мөр нь
  * тухайн зүйлийн ЗӨӨЛӨН өнгөөр будагдаж, дүрс нь дүүрэн өнгө болно.
  */
+/**
+ * ГЭР БҮЛИЙН БАГЦЫН урилга — хажуугийн цэсний ёроолд.
+ *
+ * ⚠ Холбоос нь `/parent` руу: гэр бүлийн багцыг ЗӨВХӨН эцэг эхийн эрхтэй
+ * данс авч чаддаг (`api/billing/checkout`-ийн `isParentOnlyPlan`) бөгөөд
+ * худалдан авалтын урсгал тэр хуудсанд амьдардаг.
+ */
+function FamilyPlanPromo() {
+  return (
+    <Link
+      href="/parent"
+      className="mt-3 flex items-center gap-3 rounded-2xl bg-gradient-to-br from-indigo-600 to-violet-600 p-3 text-white transition-transform hover:-translate-y-0.5"
+    >
+      <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-white/20">
+        <Crown className="size-5" aria-hidden />
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block text-sm font-bold">Family Plan</span>
+        <span className="block text-[11px] leading-tight text-white/75">
+          Гэр бүлээрээ хамтдаа суралцъя
+        </span>
+      </span>
+      <ChevronRight className="size-4 shrink-0 text-white/70" aria-hidden />
+    </Link>
+  );
+}
+
 function SidebarLink({
   href,
   label,
@@ -478,13 +535,18 @@ function SidebarLink({
     <Link
       href={href}
       aria-current={active ? "page" : undefined}
-      className={`flex items-center gap-3 rounded-xl px-2 py-2 text-sm transition-colors ${
+      /*
+       * ⚠ Идэвхтэй цэс нь ӨНГӨТ ДЭВСГЭРТЭЙ, зөвхөн бичвэрийн өнгө БИШ.
+       * Харанхуй самбар дээр цайвар бичвэрийн өнгө ялгаа нь маш сул
+       * дохио — хэрэглэгч аль хуудсанд байгаагаа хайх шаардлагатай болно.
+       */
+      className={`flex items-center gap-3 rounded-2xl px-2.5 py-2.5 text-sm transition-colors ${
         active
-          ? `${styles.softBg} font-bold ${styles.softText}`
-          : "font-medium text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-white/5"
+          ? `font-bold text-white ${styles.iconBg}`
+          : "font-medium text-white/70 hover:bg-white/5 hover:text-white"
       }`}
     >
-      <NavIcon Icon={Icon} color={color} active={active} />
+      <NavIcon Icon={Icon} color={color} active={active} tone="dark" />
       <span className="min-w-0 flex-1 truncate">{label}</span>
     </Link>
   );
