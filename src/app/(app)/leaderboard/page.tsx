@@ -79,8 +79,8 @@ export default function LeaderboardPage() {
       <div>
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Тэргүүлэгчид</h1>
         <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          Долоо хоног бүр Даваа гарагт шинэ тэмцээн эхэлнэ. Лиг нь сургууль
-          тус бүрд тусдаа — Mind, Kids 4-6, Codely…
+          Долоо хоног бүр Даваа гарагт шинэ тэмцээн эхэлнэ. Бүх сурагч
+          НЭГ лигт өрсөлдөнө.
         </p>
       </div>
 
@@ -207,19 +207,26 @@ function LeagueTab() {
           өгнө — `shade()`-ийг эндээс ч ашиглана.
         */}
         <span
-          className="mx-auto grid size-20 place-items-center rounded-full text-white"
+          /*
+           * ⚠ Медаль нь ЭНЭ ХУУДАСНЫ ГОЛ ДҮРС — сурагч аль лигт байгаагаа
+           * нэг харцаар мэдэх ёстой. `size-20` нь хэт даруухан байсан тул
+           * толгойн бичвэртэй ижил жинтэй харагдаж байв.
+           */
+          className="mx-auto grid size-32 place-items-center rounded-full text-white"
           style={{
             // Дүрс ҮРГЭЛЖ цагаан — дэвсгэрийг нь уншигдахуйц болгоно
             // (`readableBg`, `lib/tactiq/theme.ts`).
             background: `linear-gradient(160deg, ${readableBg(tier.color, 3)}, ${shade(readableBg(tier.color, 3), -40)})`,
             // Сүүлдэр нь ЖИНХЭНЭ өнгөөр — тэнд уншигдац хамаарахгүй тул
             // шатны өнгө бүрэн тодоор мэдрэгдэнэ.
-            boxShadow: `0 8px 24px -6px ${tier.color}80`,
+            // Дүрс томорсон тул сүүдрийг ч томсгоно — эс бөгөөс медаль
+            // хөвөхийн оронд наалдсан мэт харагдана.
+            boxShadow: `0 14px 36px -8px ${tier.color}80`,
           }}
         >
-          <Trophy className="size-9" aria-hidden />
+          <Trophy className="size-16" aria-hidden />
         </span>
-        <p className="mt-3 text-lg font-extrabold text-gray-900 dark:text-white">
+        <p className="mt-4 text-2xl font-extrabold text-gray-900 dark:text-white">
           {tier.label} лиг
         </p>
         <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
@@ -268,7 +275,7 @@ function NotJoinedNote() {
         Энэ долоо хоногт хараахан ороогүй
       </p>
       <p className="max-w-sm text-sm text-gray-500 dark:text-gray-400">
-        Энэ сургуулийн аль нэг курсээр хичээл эхлүүлмэгц шинэ тэмцээнд орно.
+        Аль нэг курсээр хичээл эхлүүлмэгц шинэ тэмцээнд орно.
         Өнжсөн долоо хоног шатыг бууруулахгүй.
       </p>
       <Link href="/learn" className="btn-primary mt-1 px-5 py-2.5 text-sm">
