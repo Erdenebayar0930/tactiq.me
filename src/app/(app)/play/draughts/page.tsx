@@ -14,6 +14,7 @@ import { CoachReview } from "@/components/tactiq/CoachReview";
 import { CoachTip } from "@/components/tactiq/CoachTip";
 import { GameOverAd } from "@/components/tactiq/GameOverAd";
 import { analyzeDraughtsGame } from "@/lib/draughts/analysis";
+import { DAAMAL } from "@/lib/tactiq/coaches";
 
 import type { GameReview } from "@/lib/tactiq/moveQuality";
 import { Mascot } from "@/components/tactiq/Mascot";
@@ -59,6 +60,13 @@ export default function DraughtsBotPage() {
   const [end, setEnd] = useState<EndInfo | null>(null);
   const [adDone, setAdDone] = useState(false);
   const [review, setReview] = useState<GameReview | null>(null);
+  /**
+   * Шинжилгээнд сонгосон нүүдэл — тоглоомыг ТЭР ЦЭГ ХҮРТЭЛ дахин
+   * тоглуулж хөлөг дээр харуулна.
+   *
+   * ⚠ `null` = одоогийн (эцсийн) байрлал.
+   */
+  const [reviewPly, setReviewPly] = useState<number | null>(null);
 
   const checkGameOver = useCallback(() => {
     const game = gameRef.current;
@@ -131,8 +139,35 @@ export default function DraughtsBotPage() {
     setEnd(null);
     setReview(null);
     setAdDone(false);
+    setReviewPly(null);
     forceUpdate((v) => v + 1);
   };
+
+  /*
+   * СОНГОСОН НҮҮДЛИЙН БАЙРЛАЛ — эхнээс нь дахин тоглуулж гаргана.
+   *
+   * ⚠ `gameRef`-ийг БУЦААХГҮЙ (`undo`): тэр объект нь дууссан тоглоомын
+   * эцсийн байдал бөгөөд шинжилгээ, статистик түүнээс уншина. Шинэ
+   * `Draughts` дээр давтан тоглох нь хямд (100 нүд, хэдэн арван нүүдэл)
+   * бөгөөд хажуугийн нөлөөгүй.
+   *
+   * ⚠ `ply` нь 1-ээс эхэлдэг (`moveQuality`) тул тэр нүүдлийг ОРУУЛААД
+   * тоглуулна — сурагч «алдаа гарсны ДАРААХ» байрлалыг харах ёстой.
+   */
+  const reviewSnapshot = useMemo(() => {
+    if (reviewPly === null) return null;
+
+    const replay = new Draughts();
+    const history = gameRef.current.moveHistory();
+    let last: { from: Square; to: Square } | null = null;
+
+    for (const move of history.slice(0, reviewPly)) {
+      replay.applyMove(move);
+      last = { from: move.from, to: move.to };
+    }
+
+    return { board: replay.board(), lastMove: last };
+  }, [reviewPly]);
 
   const snapshot = useMemo(() => {
     const game = gameRef.current;
@@ -186,16 +221,33 @@ export default function DraughtsBotPage() {
       />
 
       <DraughtsBoard
-        board={snapshot.board}
+        board={reviewSnapshot ? reviewSnapshot.board : snapshot.board}
         orientation="white"
-        interactive={myTurn}
+        /* ⚠ Шинжилгээний байрлалд НҮҮХ БОЛОМЖГҮЙ: тэр бол өнгөрсөн
+           байрлал бөгөөд тэндээс нүүвэл дууссан тоглоом «сэргэнэ». */
+        interactive={myTurn && !reviewSnapshot}
         getLegalTargets={(square) => gameRef.current.movesFrom(square).map((m) => m.to)}
         onMove={handleMove}
-        lastMove={snapshot.lastMove}
+        lastMove={reviewSnapshot ? reviewSnapshot.lastMove : snapshot.lastMove}
       />
 
+      {reviewSnapshot && (
+        <div className="flex items-center justify-between gap-3 rounded-xl bg-amber-50 px-4 py-2.5 text-sm dark:bg-amber-500/10">
+          <span className="font-semibold text-amber-800 dark:text-amber-200">
+            {reviewPly}-р нүүдлийн дараах байрлал
+          </span>
+          <button
+            type="button"
+            onClick={() => setReviewPly(null)}
+            className="shrink-0 font-semibold text-amber-800 underline hover:text-amber-900 dark:text-amber-200"
+          >
+            {t("Эцсийн байрлал руу")}
+          </button>
+        </div>
+      )}
+
       {tip && !end && (
-        <CoachTip coachId={user?.coachId} text={tip.text} onDismiss={dismiss} />
+        <CoachTip coachId={DAAMAL.id} text={tip.text} onDismiss={dismiss} />
       )}
 
       {end && !adDone && <GameOverAd onDone={() => setAdDone(true)} />}
@@ -224,7 +276,14 @@ export default function DraughtsBotPage() {
       )}
 
       {end && adDone && review && (
-        <CoachReview coachId={user?.coachId} review={review} />
+        /* ⚠ Даамд ҮРГЭЛЖ «Даамал» — бүртгэлийн үед сонгосон багш нь
+           шатрын дүр (`lib/tactiq/coaches.ts`-ийн тайлбарыг үзнэ үү). */
+        <CoachReview
+          coachId={DAAMAL.id}
+          review={review}
+          selectedPly={reviewPly}
+          onSelectMove={(ply) => setReviewPly((current) => (current === ply ? null : ply))}
+        />
       )}
     </div>
   );

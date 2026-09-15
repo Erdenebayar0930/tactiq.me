@@ -1,5 +1,7 @@
+import Image from "next/image";
+
 import { Icon } from "@/components/tactiq/Icon";
-import { COACHES } from "@/lib/tactiq/coaches";
+import { coachById } from "@/lib/tactiq/coaches";
 import { QUALITY_META, QUALITY_ORDER } from "@/lib/tactiq/moveQuality";
 
 import type { GameReview, ReviewedMove } from "@/lib/tactiq/moveQuality";
@@ -66,11 +68,23 @@ function coachComment(review: GameReview): string {
 export function CoachReview({
   coachId,
   review,
+  onSelectMove,
+  selectedPly,
 }: {
   coachId: string | null | undefined;
   review: GameReview;
+  /**
+   * Нүүдэл дээр дарахад дуудагдана — байрлалыг ХӨЛӨГ ДЭЭР эргүүлж
+   * харуулах боломж (`play/draughts`).
+   *
+   * ⚠ Заавал биш: шатрын хуудас үүнийг хараахан дэмжээгүй бөгөөд
+   * дэмжээгүй газар мөрүүд дарагдахгүй энгийн бичвэр хэвээр үлдэнэ —
+   * дарж болох мэт харагдаад юу ч болдоггүй байхаас дээр.
+   */
+  onSelectMove?: (ply: number) => void;
+  selectedPly?: number | null;
 }) {
-  const coach = COACHES.find((entry) => entry.id === coachId) ?? COACHES[0];
+  const coach = coachById(coachId);
 
   /*
    * Жагсаалтад АЛДААНУУД болон ОНЦЛОХ нүүдлүүд хоёулаа орно.
@@ -88,11 +102,22 @@ export function CoachReview({
   return (
     <div className="surface space-y-4 p-5">
       <div className="flex items-start gap-3">
-        <span
-          className={`grid size-12 shrink-0 place-items-center rounded-full bg-gradient-to-br text-white ${coach.gradient}`}
-        >
-          <Icon name={coach.icon} className="size-6" />
-        </span>
+        {coach.image ? (
+          <Image
+            src={coach.image}
+            alt=""
+            aria-hidden
+            width={64}
+            height={64}
+            className="size-14 shrink-0 object-contain"
+          />
+        ) : (
+          <span
+            className={`grid size-12 shrink-0 place-items-center rounded-full bg-gradient-to-br text-white ${coach.gradient}`}
+          >
+            <Icon name={coach.icon} className="size-6" />
+          </span>
+        )}
         <div className="min-w-0 flex-1">
           <p className="font-semibold text-gray-900 dark:text-white">{coach.name}</p>
           <p className="mt-0.5 text-sm text-gray-600 dark:text-gray-300">
@@ -126,10 +151,26 @@ export function CoachReview({
 
       {listed.length > 0 && (
         <div className="max-h-52 space-y-1.5 overflow-y-auto">
-          {listed.map((move) => (
-            <div
+          {onSelectMove && (
+            <p className="px-2.5 pb-1 text-[11px] text-gray-400 dark:text-gray-500">
+              Нүүдэл дээр дарвал тэр үеийн байрлалыг хөлөг дээр харуулна.
+            </p>
+          )}
+          {listed.map((move) => {
+            const Row = onSelectMove ? "button" : "div";
+            const active = selectedPly === move.ply;
+
+            return (
+            <Row
               key={move.ply}
-              className="flex items-center justify-between gap-2 rounded-lg px-2.5 py-1.5 text-sm hover:bg-gray-50 dark:hover:bg-white/5"
+              {...(onSelectMove
+                ? { type: "button" as const, onClick: () => onSelectMove(move.ply) }
+                : {})}
+              className={`flex w-full items-center justify-between gap-2 rounded-lg px-2.5 py-1.5 text-left text-sm ${
+                active
+                  ? "bg-brand-50 ring-1 ring-brand-300 dark:bg-brand-500/15 dark:ring-brand-500/40"
+                  : "hover:bg-gray-50 dark:hover:bg-white/5"
+              }`}
             >
               <span className="min-w-0 font-medium text-gray-700 dark:text-gray-200">
                 <span className="num">{move.moveNumber}.</span> {move.notation}
@@ -145,8 +186,9 @@ export function CoachReview({
               >
                 {QUALITY_META[move.quality].label}
               </span>
-            </div>
-          ))}
+            </Row>
+            );
+          })}
         </div>
       )}
     </div>

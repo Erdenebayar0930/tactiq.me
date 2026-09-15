@@ -1,9 +1,10 @@
 "use client";
 
+import Image from "next/image";
 import { X } from "lucide-react";
 
 import { Icon } from "@/components/tactiq/Icon";
-import { COACHES } from "@/lib/tactiq/coaches";
+import { coachById } from "@/lib/tactiq/coaches";
 import { t } from "@/lib/i18n/t";
 
 /**
@@ -28,16 +29,32 @@ export function CoachTip({
   text: string;
   onDismiss: () => void;
 }) {
-  const coach = COACHES.find((entry) => entry.id === coachId) ?? COACHES[0];
+  const coach = coachById(coachId);
 
   return (
     <div className="flex items-start gap-2.5">
-      <span
-        className={`grid size-11 shrink-0 place-items-center rounded-2xl bg-gradient-to-br text-white shadow ${coach.gradient}`}
-        aria-hidden
-      >
-        <Icon name={coach.icon} className="size-5" />
-      </span>
+      {/*
+        ⚠ Зурагтай дүр нь ХАЙРЦАГГҮЙ: «Даамал» зэрэг дүр нь өөрөө бүтэн
+        дүрслэл бөгөөд өнгөт дөрвөлжин дотор хийвэл хоёр давхар хүрээтэй
+        болж, жижгэрч алга болно.
+      */}
+      {coach.image ? (
+        <Image
+          src={coach.image}
+          alt=""
+          aria-hidden
+          width={56}
+          height={56}
+          className="size-12 shrink-0 object-contain"
+        />
+      ) : (
+        <span
+          className={`grid size-11 shrink-0 place-items-center rounded-2xl bg-gradient-to-br text-white shadow ${coach.gradient}`}
+          aria-hidden
+        >
+          <Icon name={coach.icon} className="size-5" />
+        </span>
+      )}
 
       {/*
         Яриа бөмбөлгийн «хошуу» — зүүн тал дээрх 45°-аар эргүүлсэн дөрвөлжин.

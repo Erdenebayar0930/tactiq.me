@@ -21,6 +21,14 @@ export type Coach = {
   icon: string;
   /** Аватарын дэвсгэр градиент — Tailwind классын БҮТЭН мөр (`theme.ts`-тэй адил шалтгаанаар). */
   gradient: string;
+  /**
+   * Дүрийн ЗУРАГ (`public/` доторх зам) — байвал `icon`-ын ОРОНД гарна.
+   *
+   * ⚠ Заавал биш: бүртгэлийн үед сонгодог дасгалжуулагчид зурагтай биш,
+   * дүрстэй. Зураг нэмэх тусам PWA-гийн precache өснө тул зөвхөн
+   * тогтмол харагддаг дүрд л өгнө.
+   */
+  image?: string;
 };
 
 export const COACHES: Coach[] = [
@@ -84,4 +92,32 @@ export const COACHES: Coach[] = [
 
 export function isCoachId(value: unknown): value is string {
   return COACHES.some((coach) => coach.id === value);
+}
+
+/**
+ * ДААМЫН дасгалжуулагч — «Даамал».
+ *
+ * ⚠ `COACHES`-т ОРООГҮЙ, зориуд: тэр жагсаалт нь бүртгэлийн үеийн
+ * СОНГОЛТ бөгөөд Даамал нь сонголт биш — даамын хуудсанд ҮРГЭЛЖ энэ дүр
+ * гарна. Жагсаалтад нэмбэл шатрын хичээлд ч санал болгогдоно.
+ */
+export const DAAMAL: Coach = {
+  id: "daamal",
+  name: "Даамал",
+  blurb: "Даамын дүрэм, тактикийг алхам алхмаар тайлбарлана.",
+  icon: "cpu",
+  gradient: "from-sky-400 to-indigo-600",
+  image: "/images/characters/robot.webp",
+};
+
+/**
+ * ID-аар дасгалжуулагч олох.
+ *
+ * ⚠ Даамал нь `COACHES`-т байхгүй тул `find`-аар л хайвал даамын хуудас
+ * анхдагч багшийг харуулна. Дуудагч бүр үүнийг санах ёсгүй — энд нэг
+ * дор шийдэв.
+ */
+export function coachById(id: string | null | undefined): Coach {
+  if (id === DAAMAL.id) return DAAMAL;
+  return COACHES.find((entry) => entry.id === id) ?? COACHES[0];
 }

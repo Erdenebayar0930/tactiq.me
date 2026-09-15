@@ -113,8 +113,43 @@ export function draughtsTips(game: Draughts): CoachTip[] {
   const tips: CoachTip[] = [];
   const moves = game.legalMoves();
   const capture = moves.find((move) => move.captures.length > 0);
+  const history = game.moveHistory();
+  const board = game.board();
 
-  if (game.moveHistory().length === 0) {
+  /*
+   * Хөлгийн ТООЛЛОГО — зөвлөгөө нь байрлалаас хамаарах ёстой.
+   *
+   * ⚠ Нэг удаа тоолж хуваалцана: тайлбар бүрд дахин гүйлгэвэл нүүдэл
+   * бүрд хөлгийг олон дахин алхана.
+   */
+  let myMen = 0;
+  let myKings = 0;
+  let theirMen = 0;
+  let theirKings = 0;
+  let myBackRow = 0;
+  let myEdge = 0;
+
+  for (let row = 0; row < board.length; row += 1) {
+    for (let col = 0; col < board[row].length; col += 1) {
+      const piece = board[row][col];
+      if (!piece) continue;
+
+      if (piece.color === "w") {
+        if (piece.king) myKings += 1;
+        else myMen += 1;
+        // Цагаан доод эгнээнээс эхэлдэг тул түүний «ар тал» нь сүүлийн мөр.
+        if (row === board.length - 1) myBackRow += 1;
+        if (col === 0 || col === board[row].length - 1) myEdge += 1;
+      } else if (piece.king) theirKings += 1;
+      else theirMen += 1;
+    }
+  }
+
+  const mine = myMen + myKings;
+  const theirs = theirMen + theirKings;
+
+  // --- Дүрэм: эхлэхэд нэг удаа ------------------------------------------
+  if (history.length === 0) {
     tips.push(
       tip(
         "draughts:goal",
@@ -124,6 +159,7 @@ export function draughtsTips(game: Draughts): CoachTip[] {
     );
   }
 
+  // --- Дүрэм: идэлт -----------------------------------------------------
   if (capture) {
     tips.push(
       tip(
@@ -152,14 +188,120 @@ export function draughtsTips(game: Draughts): CoachTip[] {
         )
       );
     }
+
+    if (capture.captures.length >= 3) {
+      tips.push(
+        tip(
+          "draughts:big-chain",
+          95,
+          "Гурав ба түүнээс олон дүрс идэх цуваа бол даамын хамгийн хүчтэй зэвсэг. Идэхийнхээ өмнө цувааныхаа ТӨГСГӨЛД хаана зогсохоо хараарай."
+        )
+      );
+    }
+  } else if (history.length > 2) {
+    /*
+     * ⚠ Идэлтгүй мөчид л ерөнхий зөвлөгөө өгнө. Идэлт байхад сурагчийн
+     * бүх анхаарал тэр дээр байх ёстой — өөр зөвлөгөө нь саад л болно.
+     */
+    tips.push(
+      tip(
+        "draughts:tempo",
+        20,
+        "Идэлт байхгүй бол дүрсээ урагш, хамтдаа нүүлгэ: ганцаарчилсан дүрс амархан баригддаг."
+      )
+    );
   }
 
+  // --- Хаан -------------------------------------------------------------
   if (moves.some((move) => move.promoted)) {
     tips.push(
       tip(
         "draughts:king",
         70,
         "Сүүлийн эгнээнд хүрсэн бэр ХААН болно: хаан урагш, хойш аль ч чигт, хэдэн ч нүд хөдөлнө."
+      )
+    );
+  }
+
+  if (myKings > 0) {
+    tips.push(
+      tip(
+        "draughts:king-power",
+        40,
+        "Хаан нь хол зайнаас идэж чадна — түүнийг урт диагональ дээр тавь, тэндээс хөлгийн хоёр талыг зэрэг заналхийлнэ."
+      )
+    );
+  }
+
+  if (theirKings > myKings) {
+    tips.push(
+      tip(
+        "draughts:their-king",
+        60,
+        "Өрсөлдөгч хаантай боллоо. Хааны замыг хаах нь түүнийг идэхээс хамаагүй амархан: диагональ дээр нь өөрийн хоёр дүрсийг зэрэгцүүлж тавь."
+      )
+    );
+  }
+
+  // --- Ар тал, зах ------------------------------------------------------
+  if (history.length > 6 && myBackRow >= 3) {
+    tips.push(
+      tip(
+        "draughts:back-row",
+        35,
+        "Ар талын эгнээгээ хэт удаан бүтэн барих хэрэггүй — тэнд зогссон дүрс тоглоомд оролцдоггүй. Хоёр, гурвыг нь үлдээгээд бусдыг урагшлуул."
+      )
+    );
+  }
+
+  if (myEdge >= 3) {
+    tips.push(
+      tip(
+        "draughts:edge",
+        30,
+        "Захын нүдэн дээрх дүрсийг ИДЭЖ БОЛОХГҮЙ — тэр нь давуу тал мэт боловч зөвхөн нэг чиглэлд нүүдэг тул хүч нь хагасаар буурна."
+      )
+    );
+  }
+
+  // --- Материалын байдал ------------------------------------------------
+  if (history.length > 10 && mine > theirs) {
+    tips.push(
+      tip(
+        "draughts:trade-ahead",
+        45,
+        "Чи дүрсээр илүү байна. Ийм үед СОЛИЛЦОХ нь ашигтай: дүрс цөөрөх тусам илүү дүрсний давуу тал нь томордог."
+      )
+    );
+  }
+
+  if (history.length > 10 && theirs > mine) {
+    tips.push(
+      tip(
+        "draughts:behind",
+        45,
+        "Дүрсээр хоцорч байна. Солилцохоос зайлсхийж, дүрсээ ойр байлга — хамтдаа зогссон дүрсийг идэх нь хэцүү."
+      )
+    );
+  }
+
+  if (mine <= 4 && myKings === 0) {
+    tips.push(
+      tip(
+        "draughts:endgame",
+        50,
+        "Дүрс цөөрлөө. Одоо хамгийн чухал зорилго нь нэг дүрсээ ХААН болгох — нэг хаан гурван бэртэй тэнцэнэ."
+      )
+    );
+  }
+
+  // --- Хавчаа -----------------------------------------------------------
+  if (moves.length === 1 && !capture) {
+    tips.push(
+      tip(
+        "draughts:only-move",
+        85,
+        "Ганцхан нүүдэл үлдлээ. Нүүх боломж бүрмөсөн дуусвал тоглоом ялагдлаар төгсдөг — дүрсээ хэт бөөгнүүлэхээс сэрэмжил."
       )
     );
   }
