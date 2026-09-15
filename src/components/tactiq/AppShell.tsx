@@ -529,8 +529,16 @@ function SidebarLink({
   color,
   active,
 }: NavItem & { active: boolean }) {
-  const styles = colorStyles(color);
-
+  /*
+   * ⚠ ЦЭС БҮРИЙН ӨӨР ӨНГӨӨР БУДАХГҮЙ. Цэсний зүйл бүр `color` талбартай
+   * (`buildNav`) бөгөөд урьд нь идэвхтэй мөрийг тэр өнгөөр будаж байсан —
+   * гэвч харанхуй самбар дээр долоон өөр өнгө ээлжлэн гарахад цэс нь
+   * цоохор болж, «аль нь идэвхтэй вэ» гэдэг нь өнгөний дунд живнэ.
+   *
+   * Одоо идэвхтэй нь ҮРГЭЛЖ брэндийн нэг өнгө. `color` нь доод тууз,
+   * «Бусад» хуудсанд хэвээр хэрэглэгдэнэ — тэнд дэвсгэр нь цайвар тул
+   * өнгө нь ялгарч харагддаг.
+   */
   return (
     <Link
       href={href}
@@ -542,7 +550,7 @@ function SidebarLink({
        */
       className={`flex items-center gap-3 rounded-2xl px-2.5 py-2.5 text-sm transition-colors ${
         active
-          ? `font-bold text-white ${styles.iconBg}`
+          ? "bg-gradient-to-r from-brand-600 to-brand-500 font-bold text-white shadow-lg shadow-brand-900/40"
           : "font-medium text-white/70 hover:bg-white/5 hover:text-white"
       }`}
     >
