@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
-import { ChevronDown, ChevronUp, Lock, Minus, Trophy, Users } from "lucide-react";
+import { ChevronDown, ChevronUp, Minus, Trophy, Users } from "lucide-react";
 
 import { useCurrentUser } from "@/context/UserContext";
 import { useApiData } from "@/hooks/useApiData";
@@ -234,18 +234,23 @@ function LeagueTab() {
 
             <div className="text-center">
               {/*
-                ⚠ Зураг нь `public/images/league/*.png` — макетаас тасдсан
-                (`priority`: энэ бол хуудсын гол дүрс, хожимдвол хоосон
-                байр үлдэнэ).
+                ⚠ ШАТНЫ медаль БИШ, лаврын мөчиртэй ТОМ медаль
+                (`hero.png`). Шатны жижиг медаль нь 68px өндөртэй зурсан
+                тул 130px хүртэл томсгоход бүдгэрч, ялангуяа Мөнгө шат нь
+                саарал толботой мэт харагдана. Макет дээр ч энэ хэсэгт
+                ҮРГЭЛЖ ижил том медаль байдаг — шатыг нь доорх эгнээ ба
+                гарчиг хэлнэ.
+
+                ⚠ `priority`: хуудсын гол дүрс, хожимдвол хоосон байр үлдэнэ.
               */}
               <Image
-                src={`/images/league/${tier.key}.png`}
+                src="/images/league/hero.png"
                 alt=""
                 aria-hidden
-                width={150}
-                height={150}
+                width={269}
+                height={189}
                 priority
-                className="mx-auto h-auto w-[130px] drop-shadow-[0_10px_30px_rgba(0,0,0,0.35)]"
+                className="mx-auto h-auto w-[190px] drop-shadow-[0_10px_30px_rgba(0,0,0,0.35)]"
               />
               <p className="mt-3 text-2xl font-extrabold">{tier.label} лиг</p>
               <p className="mt-1 text-xs text-white/75">
@@ -499,10 +504,13 @@ function TierLadder({ current }: { current: number }) {
               }`}
             >
               {/*
-                ⚠ АВААГҮЙ шатыг САРАЛДУУЛНА. Макет дээр есүүлээ бүтэн
-                өнгөтэй боловч тэр нь зөвхөн загварын үзүүлэн — бодит
-                дэлгэц дээр «би хаана хүрсэн бэ» гэдэг нь ХАМГИЙН чухал
-                мэдээлэл бөгөөд бүгд ижил харагдвал огт уншигдахгүй.
+                ⚠ БҮХ ШАТ БҮТЭН ӨНГӨТЭЙ — саарал, түгжээтэй хувилбарыг
+                хассан (макетын дагуу). Шатууд нь «түгжээтэй агуулга» БИШ,
+                урагшлах ЗАМЫН ГАЗРЫН ЗУРАГ: есөн өнгө зэрэгцэн харагдвал
+                дараагийн зорилго нь сонирхол татна.
+
+                ⚠ «Би хаана байна» гэдгийг ЦАГИРАГ ба доорх СУМ хэлнэ —
+                өнгө бүдгэрүүлэх шаардлагагүй.
               */}
               <Image
                 src={`/images/league/${step.key}.png`}
@@ -510,16 +518,8 @@ function TierLadder({ current }: { current: number }) {
                 aria-hidden
                 width={48}
                 height={48}
-                className={`h-auto w-11 transition-[filter,opacity] ${
-                  reached ? "" : "opacity-40 grayscale"
-                }`}
+                className={`h-auto w-11 transition-transform ${isCurrent ? "scale-110" : ""}`}
               />
-              {!reached && (
-                <Lock
-                  className="absolute size-3.5 text-gray-500 dark:text-gray-300"
-                  aria-hidden
-                />
-              )}
             </span>
 
             <span
@@ -533,6 +533,14 @@ function TierLadder({ current }: { current: number }) {
             >
               {step.label}
             </span>
+
+            {/* Макет дээрх заагч — «чи энд байна». */}
+            {isCurrent && (
+              <span
+                className="-mt-0.5 size-0 border-x-4 border-t-[6px] border-x-transparent border-t-brand-400"
+                aria-hidden
+              />
+            )}
           </div>
         );
       })}
