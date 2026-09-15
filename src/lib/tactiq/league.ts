@@ -76,22 +76,33 @@ export const LEAGUE_TIERS = [
 export type LeagueTier = (typeof LEAGUE_TIERS)[number];
 
 /**
- * ЛИГИЙН ТҮЛХҮҮР = сургуулийн `slug` (`lib/tactiq/schools.ts`).
+ * ЛИГИЙН ТҮЛХҮҮР — БҮХ сурагчид НЭГ Л ЛИГ.
  *
- * Курсийн XP нь тэр курсийн `courses.school`-ийн лигт орно. Сургууль
- * заагаагүй (эсвэл танигдаагүй) курс → «Бусад» (`OTHER_LEAGUE`) — XP нь
- * алга болохгүй.
+ * ⚠ Урьд нь түлхүүр нь СУРГУУЛИЙН slug байсан: сурагч Mind-д Алт,
+ * Codely-д Хүрэл лигт зэрэг байж болно гэсэн үг. Тэр нь хоёр асуудал
+ * үүсгэсэн — (1) сурагч «би аль лигт байгаа вэ?» гэдгээ хэлж чадахгүй,
+ * (2) сургууль бүрд 20 хүний бүлэг бүрдүүлэх хүн хүрэлцэхгүй тул
+ * жагсаалт хоосон харагдана.
  *
  * ⚠ Сангийн лигийн хүснэгтүүдийн `course_slug` баганад ЭНЭ түлхүүр
- * бичигдэнэ. Баганын нэрийг өөрчлөөгүй нь DDL-гүй шилжих, хуучин курсийн
- * долоо хоногуудын түүхийг хадгалах зорилготой
- * (`drizzle/0036_school_leagues.sql`).
+ * бичигдэнэ. Баганын нэрийг өөрчлөөгүй нь DDL-гүй шилжих зорилготой
+ * (`drizzle/0036_school_leagues.sql`, `0039_single_league.sql`).
  */
-export const OTHER_LEAGUE = "other";
+export const GLOBAL_LEAGUE = "all";
 
-export function leagueKeyForSchool(school: string | null | undefined): string {
-  const found = SCHOOLS.find((item) => item.slug === school);
-  return found ? found.slug : OTHER_LEAGUE;
+/**
+ * ⚠ Хуучин нэр — гадны код дуудсаар байж болно. Одоо бүх түлхүүр нэг тул
+ * утга нь `GLOBAL_LEAGUE`-тэй ижил.
+ */
+export const OTHER_LEAGUE = GLOBAL_LEAGUE;
+
+/**
+ * ⚠ СУРГУУЛИЙГ ҮЛ ТООМСОРЛОНО. Гарын үсэг нь хэвээр — дуудагч талууд
+ * (`lib/api/league.ts`, `leagueOptions`) хуучин мөрийн түлхүүрийг ч
+ * үүгээр дамжуулдаг тул тэд бүгд нэг лиг рүү нийлнэ.
+ */
+export function leagueKeyForSchool(_school?: string | null): string {
+  return GLOBAL_LEAGUE;
 }
 
 /**
@@ -100,9 +111,8 @@ export function leagueKeyForSchool(school: string | null | undefined): string {
  * Хоосон (сургуульгүй) бол «Бусад». Танигдаагүй slug-ууд «Бусад» болж
  * нэгтгэгдэнэ — нэг хичээлийн XP «Бусад»-д хоёр удаа орохгүй.
  */
-export function leagueKeysForSchools(schools: readonly string[]): string[] {
-  const keys = [...new Set(schools.map(leagueKeyForSchool))];
-  return keys.length > 0 ? keys : [OTHER_LEAGUE];
+export function leagueKeysForSchools(_schools: readonly string[]): string[] {
+  return [GLOBAL_LEAGUE];
 }
 
 /**
@@ -112,15 +122,13 @@ export function leagueKeysForSchools(schools: readonly string[]): string[] {
  * болдог тул дуудагч нийлүүлсэн жагсаалтыг (`getSchools()`) дамжуулах
  * ёстой. Дамжуулаагүй бол кодын анхдагч нэрээр буцна.
  */
-export function leagueTitle(key: string, schools: readonly School[] = SCHOOLS): string {
-  const school = schools.find((item) => item.slug === key);
-  return school ? `${school.title} · ${school.subtitle}` : "Бусад";
+export function leagueTitle(_key?: string, _schools: readonly School[] = SCHOOLS): string {
+  return "Ерөнхий лиг";
 }
 
 /** Сонгогчийн тогтмол дараалал — сургуулийн дараалал, «Бусад» хамгийн сүүлд. */
-export function leagueOrder(key: string): number {
-  const index = SCHOOLS.findIndex((item) => item.slug === key);
-  return index === -1 ? SCHOOLS.length : index;
+export function leagueOrder(_key?: string): number {
+  return 0;
 }
 
 export const TOP_TIER = LEAGUE_TIERS.length - 1;

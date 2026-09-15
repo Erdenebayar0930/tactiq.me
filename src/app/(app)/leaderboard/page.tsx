@@ -158,9 +158,16 @@ function LeagueTab() {
       {data.lastOutcome && <OutcomeBanner outcome={data.lastOutcome} tier={data.tier} />}
 
       {/*
-        ⚠ СУРГУУЛЬ СОНГОГЧ. Лиг сургууль тус бүрд тусдаа тул сурагч Mind-д
-        Алт, Codely-д Хүрэл лигт зэрэг байж болно.
+        ⚠ ЛИГ СОНГОГЧ — зөвхөн НЭГЭЭС ОЛОН лиг байвал.
+
+        Лиг одоо БҮГДЭД НЭГ (`lib/tactiq/league.ts`-ийн `GLOBAL_LEAGUE`)
+        тул энэ жагсаалтад ганц зүйл л ирнэ. Ганц сонголттой «сонгогч» нь
+        юу ч сонгуулахгүй, зөвхөн зай эзэлж, дарж болох мэт харагдана.
+
+        ⚠ Гэсэн ч кодыг нь ХАССАНГҮЙ: хожим лигийг дахин хуваах (насны
+        бүлгээр гэх мэт) шаардлага гарвал сонгогч өөрөө эргэж ирнэ.
       */}
+      {data.leagues.length > 1 && (
       <div className="no-scrollbar -mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
         {data.leagues.map((option) => {
           const active = option.key === data.leagueKey;
@@ -190,6 +197,7 @@ function LeagueTab() {
           );
         })}
       </div>
+      )}
 
       <div className="surface p-5 text-center">
         {/*
