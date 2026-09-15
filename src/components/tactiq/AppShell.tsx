@@ -79,9 +79,22 @@ import { localized } from "@/lib/i18n/content";
 function buildNav(courseSlug: string | null | undefined): NavItem[] {
   const play = coursePlay(courseSlug);
 
+  /*
+   * ХОЁР ДАХЬ СУУДАЛ — ТЭМЦЭЭН, боломжтой бол.
+   *
+   * ⚠ `tournamentEnabled()` ХЭВЭЭР шалгана: хаяг тохируулаагүй үед
+   * `/tournament` нь сесс үүсгэх хүсэлт илгээгээд УНАЖ, улаан алдаа
+   * харуулдаг (тэр хуудсанд «тун удахгүй» гэсэн төлөв алга). Тиймээс
+   * хаяггүй үед хуучин «Тоглох» цэс үлдэнэ — хоосон алдаа руу хөтлөхөөс
+   * ажиллаж байгаа цэс нь дээр.
+   */
+  const second: NavItem = tournamentEnabled()
+    ? { href: "/tournament", label: t("Тэмцээн"), Icon: Swords, color: "rose" }
+    : { href: play.href, label: t(play.label), Icon: play.Icon, color: "rose" };
+
   return [
     { href: "/learn", label: t("Сурах"), Icon: BookOpen, color: "violet" },
-    { href: play.href, label: t(play.label), Icon: play.Icon, color: "rose" },
+    second,
     { href: "/courses", label: t("Курс"), Icon: GraduationCap, color: "sky" },
     { href: "/profile", label: t("Профайл"), Icon: UserIcon, color: "indigo" },
     { href: "/settings", label: t("Тохиргоо"), Icon: Settings, color: "teal" },
@@ -180,17 +193,15 @@ function buildRoleNav(user: PublicUser | null): NavItem[] {
      * (тэр тууз яг 5 зүйлд тохируулагдсан, дээрх `buildNav` үзнэ үү).
      */
     /*
-     * ⚠ ТЭМЦЭЭН нь ТУСДАА серверт (`chess.daamal.org`) ажиллана
+     * ⚠ ТЭМЦЭЭН ЭНД БАЙХГҮЙ: одоо үндсэн цэсний хоёр дахь суудалд
+     * суусан (`buildNav`). Хоёуланд нь байвал нэг холбоос хоёр газар
+     * давхардаж, «аль нь зөв бэ» гэсэн эргэлзээ төрүүлнэ.
+     *
+     * ⚠ Тэмцээн нь ТУСДАА серверт (`chess.daamal.org`) ажиллана
      * (`lib/tactiq/tournament.ts`). Холбоос нь тэр сайт руу ШУУД
      * заахгүй, `/tournament` гүүр рүү ордог — тасалбар зөвхөн
      * нэвтэрсэн хүсэлтээс төрөх ёстой.
-     *
-     * ⚠ Хаяг тохируулаагүй бол цэс ОГТ гарахгүй: гарвал хэрэглэгч
-     * дарж хоосон дэлгэцэнд унана.
      */
-    ...(tournamentEnabled()
-      ? [{ href: "/tournament", label: t("Тэмцээн"), Icon: Swords, color: "rose" } as NavItem]
-      : []),
     { href: "/leaderboard", label: t("Тэргүүлэгчид"), Icon: Trophy, color: "amber" },
     { href: "/friends", label: t("Найзууд"), Icon: Handshake, color: "emerald" },
     { href: "/achievements", label: t("Амжилтууд"), Icon: Award, color: "orange" },
