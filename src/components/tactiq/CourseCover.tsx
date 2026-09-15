@@ -123,7 +123,13 @@ export function CourseCover({
           alt=""
           fill
           aria-hidden
-          sizes="(max-width: 640px) 100vw, 320px"
+          /*
+           * ⚠ Картын өргөн: гар утсан дээр бүтэн дэлгэц, `md`-ээс хоёр
+           * багана, `lg`-ээс гурав (`courses/page.tsx`-ийн тор). Буруу
+           * `sizes` нь хэт том файл татуулж, гар утсан дээр дэмий
+           * трафик үүсгэнэ.
+           */
+          sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
           className="object-cover"
         />
       </div>

@@ -90,7 +90,18 @@ export function CourseCard({
           color={course.color as ColorKey}
           seed={course.slug}
           slug={course.slug}
-          className="h-32 w-full transition-transform duration-300 group-hover:scale-[1.03]"
+          /*
+           * ⚠ ТОГТМОЛ ӨНДӨР БИШ, ХАРЬЦАА. Урьд нь `h-32` байсан: картын
+           * өргөн нь баганын тооноос хамаарч өөрчлөгддөг тул коверын
+           * харьцаа 1.9:1 ~ 3:1 хооронд хэлбэлзэж, `object-cover` нь
+           * зургийн ХАЖУУ талыг тайрдаг байв — баннер дээрх гарчиг,
+           * тайлбар таллаа алга болно.
+           *
+           * ⚠ `aspect-[5/2]` нь `public/images/covers/*`-ийн харьцаатай
+           * ЯГ тэнцүү (400×160). Шинэ ковер нэмэхдээ ижил харьцаагаар
+           * тасдана — `CourseCover`-ийн тайлбарыг үзнэ үү.
+           */
+          className="aspect-[5/2] w-full transition-transform duration-300 group-hover:scale-[1.03]"
         />
         {/*
           ⚠ Хугацаа / төлөвийн badge ЗУРАГ ДЭЭР (зүүн дээд). Гарчгийн хажууд
