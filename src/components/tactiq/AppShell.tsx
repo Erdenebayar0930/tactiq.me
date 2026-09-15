@@ -349,8 +349,13 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
               хоёр өөр байдалтай байвал апп хагарсан мэт харагдана.
               Агуулгын талбар нь харин хоёр сэдвийг бүрэн дэмжсэн хэвээр —
               сурагч тэнд цагаар хэмжигдэх уншилт хийдэг.
+
+              ⚠ ӨНГӨ нь `navy`, `ink` БИШ. `ink-950` (#0a0f1c) нь бараг
+              ХАР бөгөөд брэндийн цэнхэртэй зэрэгцэхэд «унтарсан» мэт
+              харагддаг. `navy` ramp нь яг ЭНЭ зориулалтаар нэмэгдсэн —
+              брэндээс гүн, бага ханалттай хөх (`globals.css` үзнэ үү).
             */}
-            <div className="space-y-1 rounded-3xl border border-white/10 bg-ink-950 p-3">
+            <div className="space-y-1 rounded-3xl border border-white/10 bg-gradient-to-b from-navy-900 to-navy-950 p-3">
             <ul className="space-y-1">
             {NAV.map(({ href, label, Icon, color }) => (
               <li key={href}>
