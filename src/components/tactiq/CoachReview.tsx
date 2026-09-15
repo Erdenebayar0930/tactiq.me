@@ -102,14 +102,15 @@ export function CoachReview({
   return (
     <div className="surface space-y-4 p-5">
       <div className="flex items-start gap-3">
+        {/* ⚠ Өндрөөр хэмжинэ, дөрвөлжин хайрцгаар БИШ — `CoachTip` үзнэ үү. */}
         {coach.image ? (
           <Image
             src={coach.image}
             alt=""
             aria-hidden
-            width={64}
-            height={64}
-            className="size-14 shrink-0 object-contain"
+            width={179}
+            height={305}
+            className="h-24 w-auto shrink-0"
           />
         ) : (
           <span
