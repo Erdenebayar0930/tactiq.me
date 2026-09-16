@@ -28,20 +28,20 @@ export type Bi = [mn: string, en: string];
  *
  * ⚠ ЯАГААД ХЭРЭГТЭЙ ВЭ: тоглуулагч (`BoardMoveExercise.tsx`) сурагчийн
  * нүүдлийг ГАНЦ хадгалсан `correctFrom`→`correctTo`-той жишдэг. Хэрэв
- * «шат өг» гэсэн байрлалд ХОЁР өөр шат байвал сурагч зөв хийгээд «буруу»
+ * «шаг өг» гэсэн байрлалд ХОЁР өөр шаг байвал сурагч зөв хийгээд «буруу»
  * гэж сонсоно. Тиймээс зорилго бүрд «энэ нөхцөлийг хангах нүүдэл ЯГ НЭГ
  * байх ёстой» гэж шалгана.
  */
 export type BoardGoal =
   /** Тухайн төрлийн дүрсийг `to` нүд рүү нүүлгэх ганц нүүдэл. */
   | { kind: "reach"; piece: PieceSymbol }
-  /** Шат өгөх ганц нүүдэл (мад биш). */
+  /** Шаг өгөх ганц нүүдэл (мад биш). */
   | { kind: "check" }
-  /** Шатнаас НОЁНЫ нүүдлээр гарах ганц зам. */
+  /** Шагаас НОЁНЫ нүүдлээр гарах ганц зам. */
   | { kind: "kingEscape" }
-  /** Шатыг дүрсээр ХААХ ганц нүүдэл (идэлтгүй, ноён биш). */
+  /** Шагийг дүрсээр ХААХ ганц нүүдэл (идэлтгүй, ноён биш). */
   | { kind: "block" }
-  /** Шат өгч буй дүрсийг идэх ганц нүүдэл. */
+  /** Шаг өгч буй дүрсийг идэх ганц нүүдэл. */
   | { kind: "captureChecker" }
   /** Хариу идэгдэхгүй ганц идэлт (бусад идэлт нь хариу иддэг). */
   | { kind: "safeCapture" }
@@ -210,7 +210,7 @@ export function toFen(
 /**
  * FEN-ийг ачаалж, БОДИТ байрлал эсэхийг шалгана.
  *
- * ⚠ chess.js нь хоёр ноён байгааг шалгадаг ч «нүүх ээлжгүй тал шатанд
+ * ⚠ chess.js нь хоёр ноён байгааг шалгадаг ч «нүүх ээлжгүй тал шагт
  * байна» (хууль бус байрлал) эсвэл 1/8-р эгнээн дэх хүүг алгасдаг.
  * Хүүхдэд ийм байрлал үзүүлбэл «энэ яаж боломжтой юм бэ?» гэсэн буруу
  * ойлголт үлдээнэ.
@@ -431,7 +431,7 @@ export function validateBoardTask(task: Extract<Task, { type: "board-move" }>): 
   if (stalemate) return "нүүдэл пат хийж байна";
 
   const preconditionCheck = ["kingEscape", "block", "captureChecker"].includes(task.goal.kind);
-  if (preconditionCheck && !chess.inCheck()) return "шатанд байх ёстой";
+  if (preconditionCheck && !chess.inCheck()) return "шагт байх ёстой";
 
   const satisfying = distinctMoves(chess).filter((move) => goalHolds(chess, move, task.goal, task.to));
   if (satisfying.length !== 1) {

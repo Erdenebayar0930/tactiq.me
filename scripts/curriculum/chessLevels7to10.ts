@@ -98,10 +98,10 @@ export const LEVEL_7: SeedUnit = {
       xp: 25,
       exercises: [
         q(
-          ["«Нээлттэй шат» гэж юу вэ?", "What is a discovered check?"],
-          [["Урдах дүрс нүүж, ард нь байгаа дүрс шат өгөх", "A piece moves away and the piece behind it gives check"], ["Шатыг хаах", "Blocking a check"], ["Хоёр удаа шат өгөх", "Checking twice in a row"]],
+          ["«Нээлттэй шаг» гэж юу вэ?", "What is a discovered check?"],
+          [["Урдах дүрс нүүж, ард нь байгаа дүрс шаг өгөх", "A piece moves away and the piece behind it gives check"], ["Шагийг хаах", "Blocking a check"], ["Хоёр удаа шаг өгөх", "Checking twice in a row"]],
           0,
-          ["Нүүсэн дүрс өөр газар дайрч чадна — өрсөлдөгч шатнаас гарах ёстой тул түүнийг зогсоож чадахгүй.", "The moving piece is free to attack elsewhere — the opponent must deal with the check first."]
+          ["Нүүсэн дүрс өөр газар дайрч чадна — өрсөлдөгч шагаас гарах ёстой тул түүнийг зогсоож чадахгүй.", "The moving piece is free to attack elsewhere — the opponent must deal with the check first."]
         ),
         gen(discoveredTask(), 11),
       ],
@@ -135,9 +135,9 @@ export const LEVEL_8: SeedUnit = {
       exercises: [
         q(
           ["2 нүүдэлд мадын бодлогыг хэрхэн бодох вэ?", "How do you solve a mate-in-two?"],
-          [["Эхний нүүдлийн дараа хар талын БҮХ хариуг шалгах", "After the first move, check EVERY Black reply"], ["Эхний шатыг шууд хийх", "Always play the first check"], ["Хамгийн их дүрс идэх", "Capture as much as possible"]],
+          [["Эхний нүүдлийн дараа хар талын БҮХ хариуг шалгах", "After the first move, check EVERY Black reply"], ["Эхний шагийг шууд хийх", "Always play the first check"], ["Хамгийн их дүрс идэх", "Capture as much as possible"]],
           0,
-          ["Хар тал хамгийн сайн хамгаалалтаа хийнэ гэж бод. Заримдаа эхний нүүдэл нь шат ч биш!", "Assume Black finds the best defence. Sometimes the first move isn't even a check!"]
+          ["Хар тал хамгийн сайн хамгаалалтаа хийнэ гэж бод. Заримдаа эхний нүүдэл нь шаг ч биш!", "Assume Black finds the best defence. Sometimes the first move isn't even a check!"]
         ),
         gen(mateTask(MATE_SPECS.queenKing, 2, { explain: MATE2_IDEA }), 11),
       ],
@@ -196,7 +196,7 @@ export const LEVEL_8: SeedUnit = {
 };
 
 const STALEMATE_TRAP: Bi = [
-  "Анхаар: зарим нүүдэл хар ноёныг ПАТ-д оруулна (тэнцээ). Ноён шатанд байгаа эсэхийг шалгаж, мадыг ол.",
+  "Анхаар: зарим нүүдэл хар ноёныг ПАТ-д оруулна (тэнцээ). Ноён шагт байгаа эсэхийг шалгаж, мадыг ол.",
   "Careful: some moves STALEMATE the black king (a draw). Make sure your move gives check — find the mate.",
 ];
 
@@ -246,7 +246,7 @@ export const LEVEL_9: SeedUnit = {
         gen(
           mateTask(MATE_SPECS.rookKing, 1, {
             explain: [
-              "Тэрэг ба ноён хамтарч л мад хийнэ: хаад нүүр тулж, тэрэг захын шугамаар шатлана.",
+              "Тэрэг ба ноён хамтарч л мад хийнэ: хаад нүүр тулж, тэрэг захын шугамаар шаг өгнө.",
               "Rook and king work together: the kings face each other and the rook checks along the edge.",
             ],
           }),

@@ -7,7 +7,7 @@
  * харин «ТЭНЦЭХ МАГАДЛАЛ ӨНДӨРТЭЙ» байрлал бүтээнэ (жишээ нь сэрээний
  * нүдийг геометрээр олж, морийг түүний хажууд тавина).
  *
- * ⚠ ГАНЦ ШИЙДЭЛ: даалгаврын бичвэр («d5 рүү нүү», «шат өг», «мад хий»)
+ * ⚠ ГАНЦ ШИЙДЭЛ: даалгаврын бичвэр («d5 рүү нүү», «шаг өг», «мад хий»)
  * зөвшөөрөх нүүдэл ЯГ НЭГ байхыг шалгагч баталгаажуулна
  * (`chessShared.ts` → `validateBoardTask`, `auditMateLine`, `auditWinLine`).
  */
@@ -371,7 +371,7 @@ export function safeCaptureTask(whites: number, blacks: number, minCaptures = 2)
   };
 }
 
-// --- Level 4: шат -----------------------------------------------------------
+// --- Level 4: шаг -----------------------------------------------------------
 
 export function giveCheckTask(pieces: PieceSymbol[], blackExtras = 1): Generator {
   return (rng) => {
@@ -392,14 +392,14 @@ export function giveCheckTask(pieces: PieceSymbol[], blackExtras = 1): Generator
       goal: { kind: "check" },
       prompt: ["Хар ноёнд ШАТ өг. Ганц л ийм нүүдэл бий!", "Give CHECK to the black king. There is only one way!"],
       explain: [
-        "Шат гэдэг нь ноёныг дайрах. Аль дүрс ямар нүднээс ноёныг «харж» чадахыг бод.",
+        "Шаг гэдэг нь ноёныг дайрах. Аль дүрс ямар нүднээс ноёныг «харж» чадахыг бод.",
         "Check means attacking the king. Think about which piece could 'see' the king from which square.",
       ],
     };
   };
 }
 
-/** Хар дүрс цагаан ноёнд шат өгч буй байрлал бэлдэнэ. */
+/** Хар дүрс цагаан ноёнд шаг өгч буй байрлал бэлдэнэ. */
 function checkedPosition(
   rng: Rng,
   whitePieces: string[],
@@ -436,7 +436,7 @@ export function kingEscapeTask(): Generator {
       to: escapes[0].to,
       goal: { kind: "kingEscape" },
       prompt: [
-        "Цагаан ноён шатанд байна! НОЁНОО аюулгүй нүд рүү нүү.",
+        "Цагаан ноён шагт байна! НОЁНОО аюулгүй нүд рүү нүү.",
         "The white king is in check! Move YOUR KING to a safe square.",
       ],
       explain: [
@@ -464,11 +464,11 @@ export function blockTask(): Generator {
       to: blocks[0].to,
       goal: { kind: "block" },
       prompt: [
-        "Шат! Ноёноо биш, ДҮРСЭЭ хаалт болгон тавьж шатыг хаа.",
+        "Шаг! Ноёноо биш, ДҮРСЭЭ хаалт болгон тавьж шагийг хаа.",
         "Check! Don't move the king — BLOCK the check with a piece.",
       ],
       explain: [
-        "Холоос шатлаж буй тэрэг, тэмээ, бэрсийн замын ДУНД дүрсээ тавибал шат хаагдана.",
+        "Холоос шаг өгч буй тэрэг, тэмээ, бэрсийн замын ДУНД дүрсээ тавибал шаг хаагдана.",
         "A check from a rook, bishop or queen far away can be blocked by putting a piece in between.",
       ],
     };
@@ -494,9 +494,9 @@ export function captureCheckerTask(): Generator {
       from: takes[0].from,
       to: takes[0].to,
       goal: { kind: "captureChecker" },
-      prompt: ["Шат! Шат өгч буй хар дүрсийг ИД.", "Check! CAPTURE the piece that is giving check."],
+      prompt: ["Шаг! Шаг өгч буй хар дүрсийг ИД.", "Check! CAPTURE the piece that is giving check."],
       explain: [
-        "Шатнаас гарах гурван арга: ноёноо нүүлгэх, шатыг хаах, эсвэл шатлагч дүрсийг идэх. Идэж чадвал ихэвчлэн хамгийн сайн.",
+        "Шагаас гарах гурван арга: ноёноо нүүлгэх, шагийг хаах, эсвэл шаг өгсөн дүрсийг идэх. Идэж чадвал ихэвчлэн хамгийн сайн.",
         "Three ways out of check: move the king, block, or capture the checking piece. Capturing is often the best.",
       ],
     };
@@ -544,11 +544,11 @@ export function castleTask(mode: "one" | "choose"): Generator {
             ],
       explain: kingside
         ? [
-            "Богино рокировка: ноён e1→g1, тэрэг h1→f1. Ноён шатанд байж, шатлагдсан нүдийг дамжиж, замд дүрс байж болохгүй.",
+            "Богино рокировка: ноён e1→g1, тэрэг h1→f1. Ноён шагт байж, дайрагдсан нүдийг дамжиж, замд дүрс байж болохгүй.",
             "Short castling: king e1→g1, rook h1→f1. Not allowed out of, through or into check, or with pieces in the way.",
           ]
         : [
-            "Урт рокировка: ноён e1→c1, тэрэг a1→d1. Ноён шатанд байж, шатлагдсан нүдийг дамжиж, замд дүрс байж болохгүй.",
+            "Урт рокировка: ноён e1→c1, тэрэг a1→d1. Ноён шагт байж, дайрагдсан нүдийг дамжиж, замд дүрс байж болохгүй.",
             "Long castling: king e1→c1, rook a1→d1. Not allowed out of, through or into check, or with pieces in the way.",
           ],
     };
@@ -701,7 +701,7 @@ export function knightForkTask(target: "r" | "q"): Generator {
       "Use your knight for a FORK: attack the king and another piece AT ONCE, then capture.",
     ],
     [
-      "Сэрээ — нэг дүрс хоёр зүйлийг зэрэг дайрна. Ноён шатнаас гарах ёстой тул нөгөө дүрс хамгаалалтгүй үлдэнэ.",
+      "Сэрээ — нэг дүрс хоёр зүйлийг зэрэг дайрна. Ноён шагаас гарах ёстой тул нөгөө дүрс хамгаалалтгүй үлдэнэ.",
       "A fork attacks two things at once. The king must get out of check, so the other piece is left undefended.",
     ]
   );
@@ -721,7 +721,7 @@ export function queenForkTask(): Generator {
     },
     3,
     [
-      "Бэрсээрээ СЭРЭЭ хий: шат өгөөд хамгаалалтгүй дүрсийг зэрэг дайр.",
+      "Бэрсээрээ СЭРЭЭ хий: шаг өгөөд хамгаалалтгүй дүрсийг зэрэг дайр.",
       "FORK with your queen: give check and attack an undefended piece at the same time.",
     ],
     [
@@ -765,7 +765,7 @@ const DIAG: Dir[] = [[1, 1], [1, -1], [-1, 1], [-1, -1]];
  * Хар ноён ба үнэтэй дүрсийг НЭГ шугамд тавьж, цагаан шугаман дүрсийг
  * тэр шугам руу нүүж чадах байдлаар байрлуулна (рентген / хүлээс).
  *
- * ⚠ `kingFirst` = рентген (skewer): ноён шатлагч талд ойр. Эс бөгөөс
+ * ⚠ `kingFirst` = рентген (skewer): ноён шаг өгсөн талд ойр. Эс бөгөөс
  * хүлээс (pin): үнэтэй дүрс нь ноён ба довтлогчийн дунд.
  */
 function lineTactic(kingFirst: boolean) {
@@ -813,7 +813,7 @@ export function skewerTask(): Generator {
     lineTactic(true),
     3,
     [
-      "РЕНТГЕН хий: ноёнд шат өг — ноён зайлахад ард нь байгаа дүрсийг ид.",
+      "РЕНТГЕН хий: ноёнд шаг өг — ноён зайлахад ард нь байгаа дүрсийг ид.",
       "SKEWER: check the king — when it steps aside, take the piece behind it.",
     ],
     [
@@ -893,7 +893,7 @@ export function winMaterialTask(): Generator {
       "Find the strongest two moves — win material however Black defends.",
     ],
     [
-      "Шат, идэлт, заналхийлэл гэсэн дарааллаар хай. Хар талын ХАМГИЙН САЙН хариуг бодож үз.",
+      "Шаг, идэлт, заналхийлэл гэсэн дарааллаар хай. Хар талын ХАМГИЙН САЙН хариуг бодож үз.",
       "Look for checks, captures and threats — in that order. Always consider Black's BEST reply.",
     ]
   );

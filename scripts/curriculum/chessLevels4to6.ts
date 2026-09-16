@@ -1,7 +1,7 @@
 /**
- * ШАТАР LEVEL 4–6 — шат, рокировка ба онцгой дүрэм, 1 нүүдэлд мад.
+ * ШАТАР LEVEL 4–6 — шаг, рокировка ба онцгой дүрэм, 1 нүүдэлд мад.
  *
- * ⚠ «Шат өг», «шатнаас гар» даалгаврын байрлал бүр ГАНЦ зөв хариулттай:
+ * ⚠ «Шаг өг», «шагаас гар» даалгаврын байрлал бүр ГАНЦ зөв хариулттай:
  * тоглуулагч хадгалсан нэг нүүдэлтэй л жишдэг тул хоёр өөр зөв хариулт
  * байвал хүүхэд зөв хийгээд «буруу» гэж сонсоно.
  */
@@ -25,27 +25,27 @@ import { gen, q, type Bi, type SeedUnit } from "./chessShared";
  * «initialization-ээс өмнө хандсан» алдаа гарна.
  */
 const STALEMATE_WARN: Bi = [
-  "Нүүдлийн дараа хар ноён ШАТАНД байх ёстой. Шатгүй, нүүдэлгүй бол пат — тэнцээ.",
+  "Нүүдлийн дараа хар ноён ШАТАНД байх ёстой. Шаггүй, нүүдэлгүй бол пат — тэнцээ.",
   "After your move the black king must be IN CHECK. No check and no moves means stalemate — a draw.",
 ];
 
 export const LEVEL_4: SeedUnit = {
-  title: ["Шат", "Check"],
-  seedKey: "Шатар Level 4 — Шат",
+  title: ["Шаг", "Check"],
+  seedKey: "Шатар Level 4 — Шаг",
   color: "rose",
   lessons: [
     {
-      title: ["Шат гэж юу вэ?", "What is check?"],
+      title: ["Шаг гэж юу вэ?", "What is check?"],
       xp: 10,
       exercises: [
         q(
-          ["«Шат» гэж юу вэ?", "What is 'check'?"],
+          ["«Шаг» гэж юу вэ?", "What is 'check'?"],
           [["Ноён дайрагдаж байгаа байдал", "The king is being attacked"], ["Бэрс дайрагдах", "The queen is attacked"], ["Тоглолт тэнцээ болох", "The game is a draw"]],
           0,
-          ["Ноён дайрагдвал «шат». Шатанд байгаа тал ЗААВАЛ дараагийн нүүдлээрээ шатнаас гарна.", "When the king is attacked it is 'check'. The side in check MUST get out of it next move."]
+          ["Ноён дайрагдвал «шаг». Шагт байгаа тал ЗААВАЛ дараагийн нүүдлээрээ шагаас гарна.", "When the king is attacked it is 'check'. The side in check MUST get out of it next move."]
         ),
         q(
-          ["Өөрийн ноёныг шатанд оруулах нүүдэл хийж болох уу?", "May you make a move that puts your own king in check?"],
+          ["Өөрийн ноёныг шагт оруулах нүүдэл хийж болох уу?", "May you make a move that puts your own king in check?"],
           [["Үгүй — хууль бус нүүдэл", "No — it is an illegal move"], ["Тийм", "Yes"], ["Зөвхөн эхний нүүдэлд", "Only on the first move"]],
           0,
           ["Өөрийн ноёныг дайралтад үлдээх нүүдэл хэзээ ч болохгүй.", "You may never leave your own king under attack."]
@@ -54,7 +54,7 @@ export const LEVEL_4: SeedUnit = {
       ],
     },
     {
-      title: ["Шат өгөх", "Giving check"],
+      title: ["Шаг өгөх", "Giving check"],
       xp: 15,
       exercises: [
         gen(giveCheckTask(["b"]), 5),
@@ -63,26 +63,26 @@ export const LEVEL_4: SeedUnit = {
       ],
     },
     {
-      title: ["Шатнаас гарах гурван арга", "Three ways out of check"],
+      title: ["Шагаас гарах гурван арга", "Three ways out of check"],
       xp: 10,
       exercises: [
         q(
-          ["Шатнаас гарах гурван арга аль нь вэ?", "What are the three ways out of check?"],
-          [["Ноёноо нүүлгэх, хаах, шатлагчийг идэх", "Move the king, block, capture the checker"], ["Ноёноо нүүлгэх, рокировка, пат", "Move the king, castle, stalemate"], ["Бэрсээ өгөх, хүлээх, бууж өгөх", "Give the queen, wait, resign"]],
+          ["Шагаас гарах гурван арга аль нь вэ?", "What are the three ways out of check?"],
+          [["Ноёноо нүүлгэх, хаах, шаг өгсөн дүрсийг идэх", "Move the king, block, capture the checker"], ["Ноёноо нүүлгэх, рокировка, пат", "Move the king, castle, stalemate"], ["Бэрсээ өгөх, хүлээх, бууж өгөх", "Give the queen, wait, resign"]],
           0,
           ["Нүүх, хаах, идэх — энэ гурваас өөр арга байхгүй.", "Move, block, capture — there is no other way."]
         ),
         q(
-          ["Шатанд байхдаа рокировка хийж болох уу?", "Can you castle while in check?"],
+          ["Шагт байхдаа рокировка хийж болох уу?", "Can you castle while in check?"],
           [["Үгүй", "No"], ["Тийм", "Yes"], ["Зөвхөн урт рокировка", "Only long castling"]],
           0,
-          ["Рокировкоор шатнаас гарч болохгүй.", "Castling is not a way out of check."]
+          ["Рокировкоор шагаас гарч болохгүй.", "Castling is not a way out of check."]
         ),
         q(
-          ["Морины шатыг хааж болох уу?", "Can a knight's check be blocked?"],
+          ["Морины шагийг хааж болох уу?", "Can a knight's check be blocked?"],
           [["Үгүй — морь үсэрдэг", "No — the knight jumps"], ["Тийм, хүүгээр", "Yes, with a pawn"], ["Тийм, бэрсээр", "Yes, with the queen"]],
           0,
-          ["Морь дүрсний дээгүүр үсэрдэг тул түүний шатыг ХААХ боломжгүй — нүүх эсвэл идэх л үлдэнэ.", "A knight jumps, so its check can't be blocked — you must move the king or capture."]
+          ["Морь дүрсний дээгүүр үсэрдэг тул түүний шагийг ХААХ боломжгүй — нүүх эсвэл идэх л үлдэнэ.", "A knight jumps, so its check can't be blocked — you must move the king or capture."]
         ),
         gen(anyOf(kingEscapeTask(), captureCheckerTask()), 6),
       ],
@@ -93,22 +93,22 @@ export const LEVEL_4: SeedUnit = {
       exercises: [gen(kingEscapeTask(), 12)],
     },
     {
-      title: ["Шатыг хаа", "Block the check"],
+      title: ["Шагийг хаа", "Block the check"],
       xp: 15,
       exercises: [gen(blockTask(), 11)],
     },
     {
-      title: ["Шатлагчийг ид", "Capture the checker"],
+      title: ["Шаг өгсөн дүрсийг ид", "Capture the checker"],
       xp: 15,
       exercises: [gen(captureCheckerTask(), 11)],
     },
     {
-      title: ["Бэрсээр шат өгөх", "Checking with the queen"],
+      title: ["Бэрсээр шаг өгөх", "Checking with the queen"],
       xp: 15,
       exercises: [gen(giveCheckTask(["q"], 2), 10)],
     },
     {
-      title: ["Шат — Challenge", "Check — Challenge"],
+      title: ["Шаг — Challenge", "Check — Challenge"],
       xp: 25,
       exercises: [gen(anyOf(kingEscapeTask(), blockTask(), captureCheckerTask(), giveCheckTask(["q"], 2)), 15)],
     },
@@ -150,10 +150,10 @@ export const LEVEL_5: SeedUnit = {
           ["Ноён ба тэр тэрэг огт нүүгээгүй, завсар нь хоосон байх ёстой.", "The king and that rook must never have moved, and the squares between must be empty."]
         ),
         q(
-          ["Ноён шатлагдсан нүдийг ДАМЖИЖ рокировка хийж болох уу?", "May the king castle THROUGH an attacked square?"],
+          ["Ноён дайрагдсан нүдийг ДАМЖИЖ рокировка хийж болох уу?", "May the king castle THROUGH an attacked square?"],
           [["Үгүй", "No"], ["Тийм", "Yes"], ["Зөвхөн богино рокировкод", "Only when castling short"]],
           0,
-          ["Ноён шатанд байж, шатлагдсан нүдийг дамжиж, шатлагдсан нүдэнд буух — гурвуулаа хориотой.", "Out of check, through check, into check — all three are forbidden."]
+          ["Ноён шагт байж, дайрагдсан нүдийг дамжиж, дайрагдсан нүдэнд буух — гурвуулаа хориотой.", "Out of check, through check, into check — all three are forbidden."]
         ),
         gen(castleTask("choose"), 14),
       ],
@@ -169,15 +169,15 @@ export const LEVEL_5: SeedUnit = {
       exercises: [
         q(
           ["«Пат» гэж юу вэ?", "What is stalemate?"],
-          [["Нүүх ээлжтэй тал шатгүй ч ямар ч хууль ёсны нүүдэлгүй — тэнцээ", "The side to move is not in check but has no legal move — a draw"], ["Ноён шатанд, нүүдэлгүй — хожил", "The king is in check with no moves — a win"], ["Хоёр ноён хөрш зогсох", "The kings stand next to each other"]],
+          [["Нүүх ээлжтэй тал шаггүй ч ямар ч хууль ёсны нүүдэлгүй — тэнцээ", "The side to move is not in check but has no legal move — a draw"], ["Ноён шагт, нүүдэлгүй — хожил", "The king is in check with no moves — a win"], ["Хоёр ноён хөрш зогсох", "The kings stand next to each other"]],
           0,
           ["Пат бол ТЭНЦЭЭ. Их илүү материалтай үедээ пат хийчихвэл хожлоо алдана!", "Stalemate is a DRAW. Stalemating when you are far ahead throws the win away!"]
         ),
         q(
           ["Мад ба патын ялгаа юу вэ?", "What is the difference between checkmate and stalemate?"],
-          [["Мадад ноён шатанд, патад шатгүй", "In checkmate the king is in check, in stalemate it is not"], ["Ялгаа байхгүй", "There is no difference"], ["Пат нь хожил", "Stalemate is a win"]],
+          [["Мадад ноён шагт, патад шаггүй", "In checkmate the king is in check, in stalemate it is not"], ["Ялгаа байхгүй", "There is no difference"], ["Пат нь хожил", "Stalemate is a win"]],
           0,
-          ["Хоёуланд нь нүүдэл байхгүй. Шат байвал МАД (хожил), шатгүй бол ПАТ (тэнцээ).", "Both have no legal moves. With check it is MATE (a win), without check it is STALEMATE (a draw)."]
+          ["Хоёуланд нь нүүдэл байхгүй. Шаг байвал МАД (хожил), шаггүй бол ПАТ (тэнцээ).", "Both have no legal moves. With check it is MATE (a win), without check it is STALEMATE (a draw)."]
         ),
         q(
           ["Пат хийсэн тал хожих уу?", "Does the side that gives stalemate win?"],
@@ -247,7 +247,7 @@ export const LEVEL_5: SeedUnit = {
 };
 
 const MATE_IDEA: Bi = [
-  "Мад = шат + зугтах нүд алга + хаах, идэх боломж алга. Хар ноёны нүд бүрийг шалга.",
+  "Мад = шаг + зугтах нүд алга + хаах, идэх боломж алга. Хар ноёны нүд бүрийг шалга.",
   "Mate = check + no escape square + no block or capture. Check every square around the black king.",
 ];
 
@@ -262,13 +262,13 @@ export const LEVEL_6: SeedUnit = {
       exercises: [
         q(
           ["«Мад» гэж юу вэ?", "What is checkmate?"],
-          [["Ноён шатанд, гарах арга огт алга — тоглолт дуусна", "The king is in check with no way out — the game ends"], ["Бэрс идэгдэх", "The queen gets captured"], ["Шат өгөх бүр", "Every check"]],
+          [["Ноён шагт, гарах арга огт алга — тоглолт дуусна", "The king is in check with no way out — the game ends"], ["Бэрс идэгдэх", "The queen gets captured"], ["Шаг өгөх бүр", "Every check"]],
           0,
           ["Мад хийсэн тал ХОЖНО. Шатрын зорилго бол мад.", "The side giving mate WINS. Checkmate is the goal of chess."]
         ),
         q(
           ["Хар ноён буланд, цагаан бэрс хажууд нь хамгаалагдсан байвал?", "The black king is in the corner and a protected white queen stands next to it. What is it?"],
-          [["Мад — ноён бэрсийг идэж чадахгүй", "Mate — the king can't take the protected queen"], ["Пат", "Stalemate"], ["Шат ч биш", "Not even check"]],
+          [["Мад — ноён бэрсийг идэж чадахгүй", "Mate — the king can't take the protected queen"], ["Пат", "Stalemate"], ["Шаг ч биш", "Not even check"]],
           0,
           ["Хамгаалагдсан бэрсийг ноён идэж чадахгүй. «Бэрсийн үнсэлт» мад гэж нэрлэдэг.", "The king can't take a protected queen. This is called the 'kiss of death' mate."]
         ),
@@ -338,7 +338,7 @@ export const LEVEL_6: SeedUnit = {
         gen(
           mateTask(MATE_SPECS.minors, 1, {
             explain: [
-              "Хөнгөн дүрсүүд ч мад хийнэ: морь үсэрч шатлаж, тэмээ ба ноён зугтах нүдийг хаана.",
+              "Хөнгөн дүрсүүд ч мад хийнэ: морь үсэрч шаг өгч, тэмээ ба ноён зугтах нүдийг хаана.",
               "Minor pieces can mate too: the knight jumps in with check while bishop and king cover the escapes.",
             ],
           }),
