@@ -355,7 +355,16 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           гүйдэг болов. `xl`-ээс дээш зай сул тул тэнд л өргөсгөнө.
         */}
         <nav className="hidden w-52 shrink-0 print:hidden lg:block xl:w-60">
-          <div className="sticky top-24 space-y-3">
+          {/*
+            ⚠ ДЭЛГЭЦЭЭС УРТ БОЛОХООС сэргийлнэ. Цэс 11 зүйл + курсын карт +
+            Family Plan-тай тул намхан дэлгэц (1080p дээр хөтчийн мөр
+            хассан ~900px) дээр ёроол нь гарч, Family Plan хүрэхгүй
+            болдог байв.
+
+            `sticky` элемент нь өөрөө гүйлгэгддэггүй тул өндрийг нь
+            хязгаарлаж, ДОТОРХ гүйлгэлтийг өгнө.
+          */}
+          <div className="sticky top-24 max-h-[calc(100dvh-7rem)] space-y-3 overflow-y-auto pb-2">
             <ActiveCourseCard />
 
             {/*
@@ -394,7 +403,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
             */}
             {ROLE_NAV.length > 0 && (
               <li
-                className="px-3 pt-4 pb-1 text-[11px] font-bold uppercase tracking-wider text-white/35"
+                className="px-3 pt-3 pb-0.5 text-[11px] font-bold uppercase tracking-wider text-white/35"
                 aria-hidden
               >
                 {t("Бусад")}
@@ -528,7 +537,7 @@ function FamilyPlanPromo() {
   return (
     <Link
       href="/parent"
-      className="mt-3 flex items-center gap-3 rounded-2xl bg-gradient-to-br from-indigo-600 to-violet-600 p-3 text-white transition-transform hover:-translate-y-0.5"
+      className="mt-2 flex items-center gap-2.5 rounded-2xl bg-gradient-to-br from-indigo-600 to-violet-600 p-2.5 text-white transition-transform hover:-translate-y-0.5"
     >
       <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-white/20">
         <Crown className="size-5" aria-hidden />
@@ -570,13 +579,13 @@ function SidebarLink({
        * Харанхуй самбар дээр цайвар бичвэрийн өнгө ялгаа нь маш сул
        * дохио — хэрэглэгч аль хуудсанд байгаагаа хайх шаардлагатай болно.
        */
-      className={`flex items-center gap-3 rounded-2xl px-2.5 py-2.5 text-sm transition-colors ${
+      className={`flex items-center gap-2.5 rounded-2xl px-2.5 py-1.5 text-sm transition-colors ${
         active
           ? "bg-gradient-to-r from-brand-600 to-brand-500 font-bold text-white shadow-lg shadow-brand-900/40"
           : "font-medium text-white/70 hover:bg-white/5 hover:text-white"
       }`}
     >
-      <NavIcon Icon={Icon} color={color} active={active} tone="dark" />
+      <NavIcon Icon={Icon} color={color} active={active} tone="dark" className="size-8" />
       <span className="min-w-0 flex-1 truncate">{label}</span>
     </Link>
   );
