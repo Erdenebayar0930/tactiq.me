@@ -71,15 +71,53 @@ export async function createPendingPayment(input: {
   /** НӨАТ-ын баримтын төрөл ба байгууллагын регистр. */
   ebarimtType?: string;
   registerNo?: string;
+  /**
+   * Төлбөрийн суваг — `lib/api/paymentProviders.ts`.
+   *
+   * ⚠ Анхдагч "qpay": дуудагч бүрийг засахаас сэргийлж. Гадаад картын
+   * суваг нэмэгдэхэд тэр дуудалт нь өөрөө `provider` дамжуулна.
+   */
+  provider?: string;
+  /** Цэнэглэсэн валют ба тэр валют дахь дүн (жижиг нэгжээр). */
+  currency?: string;
+  chargedAmount?: number;
 }): Promise<{ id: string; senderInvoiceNo: string }> {
   const senderInvoiceNo = newSenderInvoiceNo();
 
+  /*
+   * ⚠ `chargedAmount` заагаагүй бол ТӨГРӨГИЙН дүнг авна: төгрөгөөр
+   * төлөхөд «цэнэглэсэн дүн» нь `amountMnt`-тэй үргэлж тэнцүү. Тэгээр
+   * үлдээвэл «хэдэн нэгж хасагдсан бэ» гэсэн асуулт зарим мөрд
+   * хариултгүй болно.
+   */
   const [row] = await db
     .insert(payments)
-    .values({ ...input, senderInvoiceNo })
+    .values({
+      ...input,
+      chargedAmount: input.chargedAmount ?? input.amountMnt,
+      senderInvoiceNo,
+    })
     .returning({ id: payments.id });
 
   return { id: row.id, senderInvoiceNo };
+}
+
+/**
+ * Цэнэглэсэн валют ба дүнг мөрд бичнэ.
+ *
+ * ⚠ Нэхэмжлэл ҮҮССЭНИЙ ДАРАА л мэдэгддэг: гадаад сувагт ханш, шимтгэл нь
+ * тэдний талд тооцогддог тул төлбөрийн мөрийг үүсгэх мөчид бид эцсийн
+ * дүнг мэдэхгүй.
+ */
+export async function setChargedAmount(
+  id: string,
+  currency: string,
+  chargedAmount: number
+): Promise<void> {
+  await db
+    .update(payments)
+    .set({ currency, chargedAmount, updatedAt: new Date() })
+    .where(eq(payments.id, id));
 }
 
 /** QPay-ээс буцаж ирсэн `invoice_id`-г мөрдөө холбоно. */

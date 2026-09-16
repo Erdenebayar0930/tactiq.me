@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 
 import { badRequest, forbidden, requireActiveUser, serverError } from "@/lib/api/auth";
-import { createInvoice } from "@/lib/api/qpay";
-import { attachInvoiceId, createPendingPayment } from "@/lib/api/payments";
+import { isProviderId, providerById } from "@/lib/api/paymentProviders";
+import { attachInvoiceId, createPendingPayment, setChargedAmount } from "@/lib/api/payments";
 import {
   isEbarimtType,
   isParentOnlyPlan,
@@ -37,6 +37,7 @@ export async function POST(request: NextRequest) {
       promoCode?: unknown;
       ebarimtType?: unknown;
       registerNo?: unknown;
+      provider?: unknown;
     };
 
     // `body` нь `any`/`unknown` тул `isPlanId`-ийн нарийсгалт ажиллахын тулд
@@ -114,7 +115,23 @@ export async function POST(request: NextRequest) {
     // хувийн мэдээллийг санд үлдээхгүй.
     const registerNo = ebarimtType === "organization" ? rawRegister : "";
 
-    // Мөрийг нэхэмжлэлийн ӨМНӨ үүсгэнэ: `senderInvoiceNo` нь QPay-д
+    /*
+     * ТӨЛБӨРИЙН СУВАГ. Заагаагүй бол QPay — хуучин клиент (кэшлэгдсэн
+     * JS) суваг илгээхгүй тул тэднийг эвдэхгүй.
+     *
+     * ⚠ Тохируулаагүй сувгийг ТАТГАЛЗАНА: `providerById` нь мөрийг
+     * буцаадаг ч `createCheckout` нь алдаа шиднэ. Урьдчилж шалгаснаар
+     * хэрэглэгчид ойлгомжтой мессеж очно, мөн ХООСОН төлбөрийн мөр
+     * үүсэхгүй.
+     */
+    const providerId = isProviderId(body.provider) ? body.provider : "qpay";
+    const provider = providerById(providerId);
+
+    if (!provider.configured()) {
+      return badRequest("Энэ төлбөрийн суваг одоогоор боломжгүй байна.");
+    }
+
+    // Мөрийг нэхэмжлэлийн ӨМНӨ үүсгэнэ: `senderInvoiceNo` нь сувагт
     // дамжуулах шаардлагатай бөгөөд webhook түүгээр буцаж ирнэ.
     const payment = await createPendingPayment({
       uid: caller.uid,
@@ -127,18 +144,26 @@ export async function POST(request: NextRequest) {
       discountPercent: promo?.discountPercent ?? 0,
       ebarimtType,
       registerNo,
+      provider: providerId,
     });
 
-    const invoice = await createInvoice({
+    const checkout = await provider.createCheckout({
       amountMnt,
       description: `Daamal.org — ${plan.label}`,
       senderInvoiceNo: payment.senderInvoiceNo,
       registerNo: registerNo || undefined,
     });
 
-    await attachInvoiceId(payment.id, invoice.invoiceId);
+    await attachInvoiceId(payment.id, checkout.invoiceId);
+    await setChargedAmount(payment.id, checkout.currency, checkout.chargedAmount);
 
-    return NextResponse.json({
+    /*
+     * ⚠ ХАРИУ НЬ СУВГААС ХАМААРНА: QR суваг нь QR + банкны холбоос,
+     * картын суваг нь ЗӨВХӨН шилжих хаяг буцаана. Дэлгэц `kind`-ээр
+     * ялгаж зурна — нэг хэлбэрт шахвал картын хариунд утгагүй хоосон
+     * талбарууд үлдэнэ.
+     */
+    const common = {
       senderInvoiceNo: payment.senderInvoiceNo,
       amountMnt,
       planLabel: plan.label,
@@ -148,13 +173,25 @@ export async function POST(request: NextRequest) {
       discountMnt: promo?.discountMnt ?? 0,
       ebarimtType,
       registerNo,
-      qrText: invoice.qrText,
-      qrImageBase64: invoice.qrImageBase64,
-      bankLinks: invoice.bankLinks,
+      provider: providerId,
+      currency: checkout.currency,
+      chargedAmount: checkout.chargedAmount,
+    };
+
+    if (checkout.kind === "redirect") {
+      return NextResponse.json({ ...common, kind: "redirect", url: checkout.url });
+    }
+
+    return NextResponse.json({
+      ...common,
+      kind: "qr",
+      qrText: checkout.qrText,
+      qrImageBase64: checkout.qrImageBase64,
+      bankLinks: checkout.bankLinks,
       // Компьютер дээр аппын схем ажиллахгүй тул вэб хувилбар нь хэрэгтэй.
-      shortUrl: invoice.shortUrl,
-      sandbox: invoice.sandbox,
-      mock: invoice.mock,
+      shortUrl: checkout.shortUrl,
+      sandbox: checkout.sandbox,
+      mock: checkout.mock,
     });
   } catch (error) {
     return serverError(error, "Нэхэмжлэл үүсгэхэд алдаа гарлаа");
