@@ -377,9 +377,13 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
             `sticky` элемент нь өөрөө гүйлгэгддэггүй тул өндрийг нь
             хязгаарлаж, ДОТОРХ гүйлгэлтийг өгнө.
           */}
-          <div className="sticky top-24 max-h-[calc(100dvh-7rem)] space-y-3 overflow-y-auto pb-2">
-            <ActiveCourseCard />
-
+          {/*
+            ⚠ КУРСЫН КАРТЫГ ЭНЭ ЦЭСЭЭС ХАСАВ. Тэр нь ТОЛГОЙД аль хэдийн
+            байдаг (`CourseSwitcherLink` — бүх өргөнд харагддаг) тул ижил
+            мэдээлэл хоёр газар давхардаж, дээр нь ~88px өндөр эзэлж
+            цэсийг дэлгэцээс гаргаж байв.
+          */}
+          <div className="sticky top-20 max-h-[calc(100dvh-6rem)] overflow-y-auto pb-2">
             {/*
               ⚠ ХАЖУУГИЙН ЦЭС ҮРГЭЛЖ ХАРАНХУЙ — гэрэлт сэдэвт ч.
 
@@ -825,55 +829,6 @@ function CourseSwitcherLink() {
   );
 }
 
-/**
- * Хажуугийн цэсний дээрх курсын карт.
- *
- * Толгойн туг нь ЖИЖИГ бөгөөд бусад товчны дунд алдагддаг. Өргөн дэлгэц дээр
- * зай байгаа тул идэвхтэй курсыг цэсний ЯГ ДЭЭР, өнгөт дүрстэйгээ томоор
- * харуулна — доорх цэсүүд яагаад ийм байгааг тайлбарлаж өгнө.
- */
-function ActiveCourseCard() {
-  const course = useActiveCourse();
-
-  if (!course) {
-    return (
-      <Link
-        href="/courses"
-        className="flex items-center gap-3 rounded-2xl border border-dashed border-gray-300 p-3 text-sm font-semibold text-gray-500 hover:bg-gray-100 dark:border-white/15 dark:text-gray-400 dark:hover:bg-white/5"
-      >
-        <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-gray-100 dark:bg-white/5">
-          <GraduationCap className="size-4" aria-hidden />
-        </span>
-        {t("Курс сонгох")}
-      </Link>
-    );
-  }
-
-  const styles = colorStyles(course.color);
-
-  return (
-    <Link
-      href="/courses"
-      className="surface flex items-center gap-3 p-3 transition-colors hover:bg-gray-50 dark:hover:bg-white/[0.06]"
-      title={t("Курс солих")}
-    >
-      <span
-        className={`grid size-9 shrink-0 place-items-center rounded-xl text-white ${styles.iconBg}`}
-      >
-        <CourseIcon name={course.icon} className="size-4" />
-      </span>
-      <span className="min-w-0 flex-1">
-        <span className="block text-[10px] font-semibold uppercase tracking-wide text-gray-400">
-          {t("Сурч буй курс")}
-        </span>
-        <span className="block truncate text-sm font-bold text-gray-900 dark:text-white">
-          {localized(course.title, course.titleEn)}
-        </span>
-      </span>
-      <ChevronsUpDown className="size-4 shrink-0 text-gray-400" aria-hidden />
-    </Link>
-  );
-}
 
 function UserMenu() {
   const { user } = useUser();
