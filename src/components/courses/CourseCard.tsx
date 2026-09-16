@@ -157,7 +157,6 @@ export function CourseCard({
             <CourseStats
               lessons={stat.lessons}
               exercises={stat.exercises}
-              coins={stat.earnedCoins}
               maxCoins={stat.totalCoins}
             />
             <CourseProgress value={stat.progress} />

@@ -11,33 +11,36 @@ const number = (value: number) => value.toLocaleString("mn-MN");
  * Шагналын нэг л валют (зоос) харагдана. XP нь (`lessons.xp_reward`) санд
  * хэвээр бөгөөд лиг, ур чадварын тооцоонд ажилласаар байна.
  *
- * ⚠ ТОГТМОЛ 4 БАГАНА (`flex-wrap` биш). Урьд нь нарийн (~270px) картад
+ * ⚠ ТОГТМОЛ 3 БАГАНА (`flex-wrap` биш). Урьд нь нарийн (~270px) картад
  * зоос нь дараагийн мөрөнд унаж, карт урт, эмх замбараагүй харагдаж байв.
  * Багтаахын тулд:
  *   • тоо нь `tabular-nums` энгийн фонтоор (`num` monospace нь хэт өргөн)
- *   • зоос нь «5/415» — зайгүй
- *   • зоосны багана арай өргөн (`1.4fr`) — хамгийн урт утга
  *   • дүрс + тоо нэг мөрөнд, нэр нь доор (босоо зай бага)
  */
 export function CourseStats({
   lessons,
   exercises,
-  coins,
   maxCoins,
 }: {
   lessons: number;
   exercises: number;
-  coins: number;
+  /** Курсыг БҮТНЭЭР нь дуусгавал цуглуулах зоос. */
   maxCoins: number;
 }) {
   const items: { Icon: LucideIcon; color: string; fill?: boolean; value: string; label: string }[] = [
     { Icon: BookOpen, color: "#3b82f6", value: number(lessons), label: "хичээл" },
     { Icon: Pencil, color: "#8b5cf6", value: number(exercises), label: "дасгал" },
-    { Icon: Coins, color: "#f59e0b", value: `${number(coins)}/${number(maxCoins)}`, label: "зоос" },
+    /*
+     * ⚠ Зөвхөн НИЙТ хэмжээ, «цуглуулсан/нийт» БИШ. Тэр хоёр тоо нь
+     * картын хамгийн нарийн баганад багтахгүй урт болдог байсан бөгөөд
+     * цуглуулсан зоос нь толгой хэсэгт аль хэдийн харагддаг. Энд хэрэгтэй
+     * мэдээлэл нь «энэ курс хэдэн зоос өгөх вэ» гэдэг.
+     */
+    { Icon: Coins, color: "#f59e0b", value: number(maxCoins), label: "зоос" },
   ];
 
   return (
-    <dl className="grid grid-cols-[1fr_1fr_1.4fr] gap-1.5">
+    <dl className="grid grid-cols-3 gap-1.5">
       {items.map(({ Icon, color, fill, value, label }) => (
         <div key={label} className="min-w-0">
           <div className="flex items-center gap-1">
