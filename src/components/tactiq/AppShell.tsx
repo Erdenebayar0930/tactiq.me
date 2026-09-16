@@ -423,7 +423,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
             ))}
             </ul>
 
-            <FamilyPlanPromo />
+            <PremiumPromo />
             </div>
           </div>
         </nav>
@@ -527,25 +527,27 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
  * тухайн зүйлийн ЗӨӨЛӨН өнгөөр будагдаж, дүрс нь дүүрэн өнгө болно.
  */
 /**
- * ГЭР БҮЛИЙН БАГЦЫН урилга — хажуугийн цэсний ёроолд.
+ * PREMIUM БАГЦЫН урилга — хажуугийн цэсний ёроолд.
  *
- * ⚠ Холбоос нь `/parent` руу: гэр бүлийн багцыг ЗӨВХӨН эцэг эхийн эрхтэй
- * данс авч чаддаг (`api/billing/checkout`-ийн `isParentOnlyPlan`) бөгөөд
- * худалдан авалтын урсгал тэр хуудсанд амьдардаг.
+ * ⚠ Холбоос нь `/premium` руу: тэнд бүх багц (сарын, 3 сарын, жилийн)
+ * харагдана. Урьд нь «Family Plan» гэж `/parent` руу заадаг байсан —
+ * гэр бүлийн багцыг ЗӨВХӨН эцэг эхийн эрхтэй данс авч чаддаг
+ * (`api/billing/checkout`-ийн `isParentOnlyPlan`) тул сурагчийн дансанд
+ * тэр урилга нь хаалттай хаалга руу хөтөлдөг байв.
  */
-function FamilyPlanPromo() {
+function PremiumPromo() {
   return (
     <Link
-      href="/parent"
+      href="/premium"
       className="mt-2 flex items-center gap-2.5 rounded-2xl bg-gradient-to-br from-indigo-600 to-violet-600 p-2.5 text-white transition-transform hover:-translate-y-0.5"
     >
       <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-white/20">
         <Crown className="size-5" aria-hidden />
       </span>
       <span className="min-w-0 flex-1">
-        <span className="block text-sm font-bold">Family Plan</span>
+        <span className="block text-sm font-bold">Premium Plan</span>
         <span className="block text-[11px] leading-tight text-white/75">
-          Гэр бүлээрээ хамтдаа суралцъя
+          Бүх хичээл, хязгааргүй
         </span>
       </span>
       <ChevronRight className="size-4 shrink-0 text-white/70" aria-hidden />
