@@ -10,11 +10,9 @@ import PaymentOptions from "@/components/tactiq/PaymentOptions";
 import type { PaymentChoices } from "@/components/tactiq/PaymentOptions";
 import { apiFetch, ApiError } from "@/lib/apiClient";
 import {
-  FAMILY_SEATS,
   monthlyEquivalent,
-  PLAN_IDS,
+  PURCHASABLE_PLAN_IDS,
   PLANS,
-  perSeatMonthly,
   REFERRAL_BONUS_DAYS,
   savingsPercent,
   TRIAL_DAYS,
@@ -196,7 +194,7 @@ export default function PremiumPage() {
             санамсаргүй гарч ирэхгүй.
           */}
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            {PLAN_IDS.filter((planId) => PLANS[planId].seats === 1).map((planId) => (
+            {PURCHASABLE_PLAN_IDS.map((planId) => (
               <PlanCard
                 key={planId}
                 planId={planId}
@@ -209,7 +207,6 @@ export default function PremiumPage() {
             ))}
           </div>
 
-          <FamilyCard />
         </>
       )}
     </div>
@@ -361,119 +358,3 @@ function PaidCard() {
   );
 }
 
-/**
- * Гэр бүлийн багц — өөр ТӨРЛИЙН санал тул өөр хэлбэрээр.
- *
- * ⚠ Нэг хүнд ногдох үнийг ХАМГИЙН ТОМ тоогоор харуулна. Бүтэн үнэ
- * (159,000₮) нь жилийн багцаас (89,000₮) хоёр дахин их харагддаг тул
- * зөвхөн түүнийг харуулбал хамгийн ашигтай санал хамгийн үнэтэй нь мэт
- * ойлгогдоно. Бодит утга нь 5 хүнд хуваасны дараа гарна: сард ~2,650₮.
- *
- * ⚠ Тэмдгийг картын ГАДНА хөвүүлэхгүй (`-top-2.5`) — `overflow-hidden`
- * түүнийг ТАСАЛЖ хаядаг. Дээд тууз нь хэзээ ч тасрахгүй.
- *
- * ⚠ ХУДАЛДАН АВАЛТ ЭНД ХИЙГДЭХГҮЙ. Суудлууд нь `student_links`
- * холбоосоор тарааагддаг ба тэр холбоосыг ЗӨВХӨН эцэг эх үүсгэдэг —
- * сурагчийн данс энэ багцыг авбал 159,000₮ төлчихөөд суудлаа хэнд ч өгч
- * чадахгүй. Тиймээс:
- *   • эцэг эх   → товч нь `/parent` руу аваачна (тэнд хүүхдүүдээ хараад авна)
- *   • бусад     → товч ИДЭВХГҮЙ, шалтгааныг доор нь бичнэ
- *
- * Карт нь бүх хэрэглэгчид ХАРАГДАНА: «ийм багц байдаг» гэдгийг мэдэх нь
- * эцэг эхээрээ авахуулах шалтгаан болно. Нуувал санал өөрөө алга болно.
- *
- * ⚠ Клиент дэх энэ хаалт нь ХАМГААЛАЛТ БИШ — жинхэнэ нь
- * `api/billing/checkout` дээрх `isParentOnlyPlan` шалгалт.
- */
-function FamilyCard() {
-  const { user } = useUser();
-  const isParent = user?.role === "parent" || user?.secondaryRole === "parent";
-  const plan = PLANS.family;
-
-  return (
-    <div className="surface overflow-hidden p-0 ring-2 ring-violet-400 dark:ring-violet-500/50">
-      <p className="flex items-center justify-center gap-1.5 bg-violet-500 py-1.5 text-xs font-bold text-white">
-        <Users className="size-3.5 shrink-0" aria-hidden />
-        {FAMILY_SEATS} хүнд — гэр бүлээрээ
-      </p>
-
-      <div className="grid gap-5 p-5 sm:grid-cols-[1fr_auto] sm:items-center">
-        <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-            <p className="text-base font-bold text-gray-900 dark:text-white">
-              {plan.label}
-            </p>
-            <span className="shrink-0 whitespace-nowrap rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-bold text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300">
-              −{savingsPercent("family")}%
-            </span>
-          </div>
-
-          {/*
-            Нэг хүнд ногдох үнэ нь ТОМ, нийт үнэ нь жижиг — гэхдээ нийт
-            үнийг НУУХГҮЙ. Төлөх бодит дүнг харуулахгүй бол хэрэглэгч
-            нэхэмжлэл дээр 159,000₮ хараад гэнэтийн мэдрэмж авна.
-          */}
-          <p className="mt-2 flex flex-wrap items-baseline gap-x-2">
-            <span className="num text-3xl font-extrabold tracking-tight text-violet-600 dark:text-violet-300">
-              ~{money(perSeatMonthly("family"))}
-            </span>
-            <span className="text-sm text-gray-500 dark:text-gray-400">
-              нэг хүнд / сард
-            </span>
-          </p>
-
-          <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-            Нийт <span className="num font-semibold">{money(plan.amountMnt)}</span> ·{" "}
-            <span className="num">{plan.days}</span> хоног · нэг хүнд жилдээ{" "}
-            <span className="num">{money(Math.round(plan.amountMnt / plan.seats))}</span>
-          </p>
-
-          <ul className="mt-4 space-y-2 text-[13px] leading-snug text-gray-600 dark:text-gray-300">
-            {[
-              `Эцэг эх + ${FAMILY_SEATS - 1} хүүхэд`,
-              "Хүүхэд бүрт гэрчилгээ тус тусад нь",
-              "Хүүхдийн явцыг нэг дороос хянана",
-            ].map((line) => (
-              <li key={line} className="flex items-start gap-2">
-                <Check className="mt-0.5 size-4 shrink-0 text-emerald-500" aria-hidden />
-                <span>{line}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        <div className="sm:text-right">
-          {isParent ? (
-            /*
-             * ⚠ `?buy=family` — ШУУД худалдан авалтын алхам руу.
-             *
-             * Урьд нь энэ товч зүгээр `/parent` руу аваачдаг байсан ба
-             * тэнд ЯГ ИЖИЛ гэр бүлийн карт дахин гарч, хэрэглэгч
-             * «Худалдаж авах»-ыг ДАХИН дарах шаардлагатай болдог байв —
-             * нэг сонголтыг хоёр удаа хийлгэж байсан утгагүй алхам.
-             */
-            <Link
-              href="/parent?buy=family"
-              className="btn-primary block w-full px-6 py-3 text-center sm:w-auto"
-            >
-              Сонгох
-            </Link>
-          ) : (
-            <>
-              <button
-                type="button"
-                disabled
-                className="btn-primary w-full cursor-not-allowed px-6 py-3 opacity-50 sm:w-auto"
-              >
-                Сонгох
-              </button>
-              <p className="mt-2 max-w-[15rem] text-xs text-gray-500 dark:text-gray-400">
-                Зөвхөн эцэг эхийн эрхтэй хэрэглэгч авна.
-              </p>
-            </>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}

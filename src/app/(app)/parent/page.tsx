@@ -1,8 +1,6 @@
 "use client";
 
-import { Suspense } from "react";
 
-import FamilyPlanPurchase from "@/components/tactiq/FamilyPlanPurchase";
 import Protected from "@/components/tactiq/Protected";
 import StudentRoster from "@/components/tactiq/StudentRoster";
 
@@ -32,22 +30,6 @@ export default function ParentPage() {
           description="Хүүхдүүдийнхээ суралцах ахиц, өдөр тутмын дараалалыг хараарай."
         />
 
-        <section>
-          <h2 className="mb-3 text-lg font-bold text-gray-900 dark:text-white">
-            Гэр бүлийн багц
-          </h2>
-          {/*
-            ⚠ Suspense ЗААВАЛ. `FamilyPlanPurchase` нь `useSearchParams`
-            ашигладаг (`?buy=family`) бөгөөд Next-ийн баримтад тодорхой
-            бичсэнээр: дев дээр ажиллаж байгаа мэт харагдах ч ПРОД BUILD нь
-            "Missing Suspense boundary with useSearchParams" гэж УНАНА.
-            Хүрээ нь мөн энэ хэсгээс дээших агуулгыг урьдчилан зурах
-            боломжийг үлдээнэ.
-          */}
-          <Suspense fallback={<div className="surface h-40 animate-pulse" />}>
-            <FamilyPlanPurchase />
-          </Suspense>
-        </section>
       </div>
     </Protected>
   );

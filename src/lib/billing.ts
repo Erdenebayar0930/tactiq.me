@@ -108,6 +108,27 @@ export const PLAN_IDS = ["monthly", "quarterly", "halfYear", "yearly", "family"]
 
 export type PlanId = (typeof PLAN_IDS)[number];
 
+/**
+ * ЗАРАГДАХАА БОЛЬСОН багцууд.
+ *
+ * ⚠ `PLANS`-ээс ХАСААГҮЙ, зориуд: төлбөрийн ТҮҮХ (`payments.plan_id`),
+ * суудал тараах логик (`lib/api/family.ts`), мөн хүчин төгөлдөр эрхтэй
+ * хэрэглэгчид бүгд энэ мөрийг уншсаар байна. Хасвал тэдний нэхэмжлэл,
+ * суудал «танихгүй багц» болно.
+ *
+ * ⚠ ЗӨВХӨН ШИНЭ ХУДАЛДАН АВАЛТЫГ хаана: дэлгэцэнд гарахгүй, `checkout`
+ * татгалзана. Аль хэдийн худалдаж авсан хүн хугацаагаа дуустал
+ * ашиглана — мөнгө нь төлөгдсөн.
+ */
+const RETIRED_PLANS = new Set<PlanId>(["family"]);
+
+export function isRetiredPlan(planId: PlanId): boolean {
+  return RETIRED_PLANS.has(planId);
+}
+
+/** Одоо ЗАРАГДАЖ байгаа багцууд — дэлгэц эндээс уншина. */
+export const PURCHASABLE_PLAN_IDS = PLAN_IDS.filter((id) => !isRetiredPlan(id));
+
 export function isPlanId(value: unknown): value is PlanId {
   return typeof value === "string" && (PLAN_IDS as readonly string[]).includes(value);
 }

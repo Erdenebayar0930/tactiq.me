@@ -6,6 +6,7 @@ import { attachInvoiceId, createPendingPayment } from "@/lib/api/payments";
 import {
   isEbarimtType,
   isParentOnlyPlan,
+  isRetiredPlan,
   isPlanId,
   isValidRegisterNo,
   PLANS,
@@ -53,6 +54,18 @@ export async function POST(request: NextRequest) {
      * `hasRole` нь НЭМЭЛТ эрхийг ч хардаг — багш+эцэг эх хосолсон данс
      * (`secondaryRole`) энд хаагдахгүй.
      */
+    /*
+     * ⚠ ЗАРАГДАХАА БОЛЬСОН багц — ШИНЭ нэхэмжлэл үүсгэхгүй.
+     *
+     * Дэлгэцэнд ч гарахгүй боловч клиент нь хамгаалалт БИШ: хуучин
+     * хавчуурга, хуулсан холбоос (`?buy=family`) энэ route руу шууд
+     * ирнэ. Аль хэдийн худалдаж авсан хүний эрх хөндөгдөхгүй — энэ нь
+     * зөвхөн ШИНЭ худалдан авалтын хаалт.
+     */
+    if (isRetiredPlan(planId)) {
+      return badRequest("Энэ багц зарагдахаа больсон.");
+    }
+
     if (isParentOnlyPlan(planId) && !hasRole(caller.user!, "parent")) {
       return forbidden(
         "Гэр бүлийн багцыг зөвхөн эцэг эхийн эрхтэй хэрэглэгч авна.",
