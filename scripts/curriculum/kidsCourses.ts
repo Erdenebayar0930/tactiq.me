@@ -1342,7 +1342,7 @@ function chessKids(): KidsCourse {
     slug: "chess",
     title: ["Шатар", "Chess"],
     description: [
-      "Хөлөг, дүрсүүд, нүүдлээс эхлээд мат, тактик хүртэл — шатрыг анхнаас нь сур.",
+      "Хөлөг, дүрсүүд, нүүдлээс эхлээд мад, тактик хүртэл — шатрыг анхнаас нь сур.",
       "From the board, pieces and moves to checkmates and tactics — learn chess from scratch.",
     ],
     icon: "crown",
