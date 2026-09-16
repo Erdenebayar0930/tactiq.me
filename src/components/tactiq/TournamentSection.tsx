@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
-import { CalendarClock, Check, Medal, Trophy, Users } from "lucide-react";
+import { CalendarClock, Check, Medal, ScrollText, Trophy, Users } from "lucide-react";
 
 import { useUser } from "@/context/UserContext";
 import { InvoiceCard } from "@/components/tactiq/QpayInvoice";
@@ -14,6 +14,11 @@ import {
   TOURNAMENT_CATEGORIES,
   tournamentCategoryLabel,
 } from "@/lib/tactiq/tournament";
+import {
+  ARENA_RULES,
+  CHESS_RULES,
+  DRAUGHTS_RULES,
+} from "@/lib/tactiq/tournamentRules";
 import { t } from "@/lib/i18n/t";
 
 import type { QpayCheckout } from "@/components/tactiq/QpayInvoice";
@@ -312,6 +317,58 @@ export function TournamentSection() {
           })}
         </ul>
       )}
+
+      <TournamentRules />
     </section>
+  );
+}
+
+/**
+ * ТЭМЦЭЭНИЙ ДҮРЭМ — эвхэгддэг хэсэг.
+ *
+ * ⚠ ЭВХЭЭСТЭЙ (`<details>`), зориуд: дүрэм нь урт бөгөөд давтан
+ * оролцогчид үүнийг мэднэ. Задгай харуулбал тэмцээний ЖАГСААЛТ (гол
+ * зүйл) доош түлхэгдэнэ.
+ *
+ * ⚠ `<details>` нь JavaScript-гүй ажилладаг уугуул элемент —
+ * товшилт, гар, дэлгэц уншигч бүгд автоматаар ажиллана. Өөрсдөө
+ * `useState`-ээр хийвэл `aria-expanded`, товчлуурын дүрмийг гараар
+ * зөв бичих шаардлагатай болно.
+ *
+ * ⚠ БҮХ дүрэм нэг дор: тоглогч шатар, даам хоёуланд оролцож болно.
+ * Ангиллаар нь нуувал «нөгөө тоглоомын дүрэм хаана байна?» гэсэн
+ * асуулт үүснэ.
+ */
+function TournamentRules() {
+  return (
+    <details className="rounded-xl border border-gray-200 px-4 py-3 dark:border-white/10">
+      <summary className="cursor-pointer list-none text-sm font-bold text-gray-900 dark:text-white">
+        <span className="inline-flex items-center gap-2">
+          <ScrollText className="size-4 shrink-0 text-amber-500" aria-hidden />
+          {t("Тэмцээний дүрэм")}
+        </span>
+      </summary>
+
+      <div className="mt-3 space-y-4">
+        {[...ARENA_RULES, CHESS_RULES, DRAUGHTS_RULES].map((group) => (
+          <div key={group.title}>
+            <p className="text-xs font-bold uppercase tracking-wide text-amber-600 dark:text-amber-400">
+              {group.title}
+            </p>
+            <ul className="mt-1 space-y-1">
+              {group.items.map((item) => (
+                <li
+                  key={item}
+                  className="flex gap-2 text-sm leading-relaxed text-gray-600 dark:text-gray-300"
+                >
+                  <span className="mt-2 size-1 shrink-0 rounded-full bg-gray-300 dark:bg-white/25" aria-hidden />
+                  <span>{item}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
+      </div>
+    </details>
   );
 }
