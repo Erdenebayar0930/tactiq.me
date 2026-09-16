@@ -82,27 +82,23 @@ function buildNav(courseSlug: string | null | undefined): NavItem[] {
   const play = coursePlay(courseSlug);
 
   /*
-   * ДӨРӨВ ДЭХ СУУДАЛ — ТЭМЦЭЭН.
+   * ⚠ ПРОФАЙЛ ЭНД БАЙХГҮЙ. Толгойн аватар нь `/profile` руу шууд заадаг
+   * бөгөөд хэрэглэгчийн цэсэнд ч мөр нь байдаг — доод туузны ховор
+   * суудлыг эзлэх шаардлагагүй. Цэсийг «Бусад» жагсаалтаас ч олно
+   * (`buildRoleNav`).
    *
-   * ⚠ Урьд нь ПРОФАЙЛ энд байсныг гаргав: профайл нь толгойн аватараас
-   * НЭГ товшилтоор нээгддэг (`/profile` холбоос, хэрэглэгчийн цэс) тул
-   * доод туузны ховор дөрвөн суудлын нэгийг эзлэх шаардлагагүй. Тэмцээн
-   * харин өөр газраас олдохгүй.
-   *
-   * ⚠ `tournamentEnabled()` ХЭВЭЭР: `NEXT_PUBLIC_TOURNAMENT_URL`
-   * тохируулаагүй үед `/tournament` нь сесс үүсгэх хүсэлт илгээгээд
-   * унаж, улаан алдаа харуулдаг. Тэр үед суудлыг Профайл эзэлнэ — хоосон
-   * алдаа руу хөтлөхөөс ажиллаж байгаа цэс дээр.
+   * ⚠ ТЭМЦЭЭН нь `tournamentEnabled()` үед л гарна: хаяг тохируулаагүй
+   * бол `/tournament` нь сесс үүсгэх хүсэлт илгээгээд унаж, улаан алдаа
+   * харуулдаг. Тэр үед цэс НЭГЭЭР ЦӨӨН болно — хоосон алдаа руу
+   * хөтлөхөөс дутуу цэс дээр.
    */
-  const fourth: NavItem = tournamentEnabled()
-    ? { href: "/tournament", label: t("Тэмцээн"), Icon: Swords, color: "amber" }
-    : { href: "/profile", label: t("Профайл"), Icon: UserIcon, color: "indigo" };
-
   return [
     { href: "/learn", label: t("Сурах"), Icon: BookOpen, color: "violet" },
     { href: play.href, label: t(play.label), Icon: play.Icon, color: "rose" },
     { href: "/courses", label: t("Курс"), Icon: GraduationCap, color: "sky" },
-    fourth,
+    ...(tournamentEnabled()
+      ? [{ href: "/tournament", label: t("Тэмцээн"), Icon: Swords, color: "amber" } as NavItem]
+      : []),
     { href: "/settings", label: t("Тохиргоо"), Icon: Settings, color: "teal" },
   ];
 }
@@ -207,14 +203,18 @@ function buildRoleNav(user: PublicUser | null): NavItem[] {
   if (!user) return [];
 
   /*
-   * ⚠ ПРОФАЙЛ ЭНД: үндсэн цэснээс гарсан тул ширээний хажуу багана,
-   * гар утасны «Бусад» хуудсанд ЗААВАЛ байх ёстой. Зөвхөн аватарт
-   * үлдээвэл ширээний хэрэглэгч түүнийг хайж олохгүй — аватар нь
+   * ⚠ ПРОФАЙЛ ЭНД, ҮРГЭЛЖ: үндсэн цэснээс бүрмөсөн гарсан тул ширээний
+   * хажуу багана, гар утасны «Бусад» хуудсанд заавал байх ёстой. Зөвхөн
+   * аватарт үлдээвэл ширээний хэрэглэгч түүнийг хайж олохгүй — аватар
    * жижиг бөгөөд цэс гэж танигддаггүй.
+   *
+   * ⚠ Урьд нь `tournamentEnabled()` -ээс хамаардаг байсан нь алдаатай:
+   * тэмцээнгүй үед Профайл үндсэн цэсэнд байсан тул энд давхардахгүй
+   * гэж үзсэн. Одоо үндсэн цэсэнд огт байхгүй болсон.
    */
-  const profile: NavItem[] = tournamentEnabled()
-    ? [{ href: "/profile", label: t("Профайл"), Icon: UserIcon, color: "indigo" }]
-    : [];
+  const profile: NavItem[] = [
+    { href: "/profile", label: t("Профайл"), Icon: UserIcon, color: "indigo" },
+  ];
 
   const parent: NavItem[] = hasRole(user, "parent")
     ? [{ href: "/parent", label: t("Миний хүүхдүүд"), Icon: Baby, color: "rose" }]
