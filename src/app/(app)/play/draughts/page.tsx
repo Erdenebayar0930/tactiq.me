@@ -28,6 +28,16 @@ import type { Square } from "@/lib/draughts/engine";
 import type { PublicUser } from "@/lib/api/publicUser";
 import { t } from "@/lib/i18n/t";
 
+/**
+ * Бот нүүхийн ӨМНӨХ хамгийн бага завсарлага (мс).
+ *
+ * ⚠ Хиймэл хүлээлт нь ЗОРИУД: хайлт нь ихэвчлэн хэдхэн миллисекунд тул
+ * бот хүний нүүдлийн яг ард нүүж, хоёр нүүдэл нэг зэрэг болсон мэт
+ * харагддаг. Хүн «бодож байна» гэдгийг мэдрэх ёстой — тэр нь тоглоомыг
+ * ойлгомжтой болгохоос гадна өрсөлдөгч амьд мэт мэдрүүлнэ.
+ */
+const BOT_PAUSE_MS = 550;
+
 type EndInfo = {
   didIWin: boolean | null; // null = тэнцээ
 };
@@ -67,6 +77,8 @@ export default function DraughtsBotPage() {
    * ⚠ `null` = одоогийн (эцсийн) байрлал.
    */
   const [reviewPly, setReviewPly] = useState<number | null>(null);
+  /** Ботын нүүдлийн гулсах хөдөлгөөн — дуусмагц `null`. */
+  const [botAnim, setBotAnim] = useState<{ from: Square; to: Square } | null>(null);
 
   const checkGameOver = useCallback(() => {
     const game = gameRef.current;
@@ -106,13 +118,34 @@ export default function DraughtsBotPage() {
     const game = gameRef.current;
     if (game.isGameOver() || game.turn() !== "b") return;
 
+    const startedThinking = Date.now();
+
     setThinking(true);
     await new Promise(requestAnimationFrame);
 
     const move = pickBotMove(game, difficulty);
+
+    /*
+     * БОДОХ ЗАВСАРЛАГА.
+     *
+     * ⚠ Хайлт нь ихэвчлэн хэдхэн миллисекунд тул бот нь хүний нүүдлийн
+     * ЯГ АРД нүүж, хоёр нүүдэл нэг зэрэг болсон мэт харагддаг байв.
+     * Хүүхэд юу болсныг анзаарах зав гардаггүй.
+     *
+     * ⚠ Хайлтад зарцуулсан хугацааг ХАСНА: гүн 4 дээр бодолт өөрөө удаан
+     * үргэлжилбэл дээр нь дахин хүлээлгэх нь утгагүй.
+     */
+    const thought = Date.now() - startedThinking;
+    if (thought < BOT_PAUSE_MS) {
+      await new Promise((resolve) => setTimeout(resolve, BOT_PAUSE_MS - thought));
+    }
+
     if (move) {
       game.applyMove(move);
       lastMoveRef.current = { from: move.from, to: move.to };
+      // ⚠ Хөдөлгөөнийг нүүдэл ХИЙГДСЭНИЙ ДАРАА эхлүүлнэ: хөлөг шинэ
+      // байрлалаа зурсан байх ёстой, гулсах дүрс нь зөвхөн харагдац.
+      setBotAnim({ from: move.from, to: move.to });
     }
 
     setThinking(false);
@@ -140,6 +173,7 @@ export default function DraughtsBotPage() {
     setReview(null);
     setAdDone(false);
     setReviewPly(null);
+    setBotAnim(null);
     forceUpdate((v) => v + 1);
   };
 
@@ -229,6 +263,9 @@ export default function DraughtsBotPage() {
         getLegalTargets={(square) => gameRef.current.movesFrom(square).map((m) => m.to)}
         onMove={handleMove}
         lastMove={reviewSnapshot ? reviewSnapshot.lastMove : snapshot.lastMove}
+        /* ⚠ Шинжилгээний байрлалд хөдөлгөөн хэрэггүй — тэр бол өнгөрсөн. */
+        animate={reviewSnapshot ? null : botAnim}
+        onAnimationEnd={() => setBotAnim(null)}
       />
 
       {reviewSnapshot && (

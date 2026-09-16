@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Crown } from "lucide-react";
 
 import type { PointerEvent as ReactPointerEvent } from "react";
@@ -34,6 +34,15 @@ const PIECE_LOOK: Record<Color, string> = {
   b: "bg-gradient-to-br from-[#4a463f] to-[#1c1a17] border-2 border-black/50",
 };
 
+/**
+ * Гулсах хөдөлгөөний үргэлжлэх хугацаа (мс).
+ *
+ * ⚠ Хэт БОГИНО бол нүүдэл «гэнэт» болж, хүүхэд юу болсныг анзаарахгүй.
+ * Хэт УРТ бол тоглоом удаашрч уйтгартай болно. 260мс нь нүдээр дагахад
+ * хангалттай, гэхдээ хүлээлт мэдрэгдэхгүй завсар.
+ */
+const ANIM_MS = 260;
+
 export function DraughtsBoard({
   board,
   orientation,
@@ -41,6 +50,8 @@ export function DraughtsBoard({
   getLegalTargets,
   onMove,
   lastMove,
+  animate,
+  onAnimationEnd,
 }: {
   /** `Draughts.board()`-ийн гаралт — 10 мөр, мөр бүр 10 багана. */
   board: DraughtsGrid;
@@ -49,15 +60,54 @@ export function DraughtsBoard({
   getLegalTargets: (square: Square) => Square[];
   onMove: (from: Square, to: Square) => void;
   lastMove?: { from: Square; to: Square } | null;
+  /**
+   * ГУЛСАХ ХӨДӨЛГӨӨН — ботын нүүдлийг харагдуулна.
+   *
+   * ⚠ ЗӨВХӨН БОТЫНХОД. Хүний нүүдэл нь чирэлтээр хийгддэг тул дүрс нь
+   * аль хэдийн хүссэн газраа очсон байдаг — түүнийг дахин гулсуулбал
+   * хоёр дахин хөдөлсөн мэт харагдана.
+   *
+   * ⚠ Нүүдэл нь аль хэдийн ХИЙГДСЭН байна (`board` шинэчлэгдсэн). Энэ нь
+   * зөвхөн ХАРАГДАЦ: хөдөлгөөний туршид очих нүдэн дэх дүрсийг нуугаад,
+   * оронд нь хөвөгч хуулбарыг гулсуулна.
+   */
+  animate?: { from: Square; to: Square } | null;
+  onAnimationEnd?: () => void;
 }) {
   const [selected, setSelected] = useState<Square | null>(null);
   const [legalTargets, setLegalTargets] = useState<Square[]>([]);
   const [dragPos, setDragPos] = useState<{ x: number; y: number } | null>(null);
   const [squareSize, setSquareSize] = useState(42);
   const boardRef = useRef<HTMLDivElement>(null);
+  /**
+   * Хөдөлгөөний ЯВЦ: `false` = эхлэлийн нүдэнд, `true` = очих нүдэнд.
+   *
+   * ⚠ Хоёр ШАТ ЗААВАЛ: CSS шилжилт нь утга ӨӨРЧЛӨГДӨХӨД л ажилладаг.
+   * Шууд очих байрлалаар зурвал шилжих зүйлгүй тул дүрс гэнэт гарч ирнэ.
+   */
+  const [animDone, setAnimDone] = useState(false);
 
   const rowsOrder = orientation === "white" ? range() : range().reverse();
   const colsOrder = orientation === "white" ? range() : range().reverse();
+
+  /*
+   * ⚠ Хөдөлгөөн бүрийг ШИНЭЭР эхлүүлнэ: `animate` солигдоход төлөвөө
+   * тэглэхгүй бол хоёр дахь нүүдэл нь аль хэдийн «дууссан» байрлалаас
+   * эхэлж, огт хөдлөхгүй.
+   */
+  useEffect(() => {
+    if (!animate) return;
+
+    setAnimDone(false);
+    const start = requestAnimationFrame(() => setAnimDone(true));
+    const done = setTimeout(() => onAnimationEnd?.(), ANIM_MS);
+
+    return () => {
+      cancelAnimationFrame(start);
+      clearTimeout(done);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [animate?.from.row, animate?.from.col, animate?.to.row, animate?.to.col]);
 
   const reset = () => {
     setSelected(null);
@@ -118,6 +168,23 @@ export function DraughtsBoard({
 
   const draggedPiece = selected ? board[selected.row][selected.col] : null;
 
+  /*
+   * Гулсах дүрс ба түүний ОДООГИЙН байрлал.
+   *
+   * ⚠ Дүрсийг ОЧИХ нүднээс уншина: нүүдэл аль хэдийн хийгдсэн тул
+   * эхлэлийн нүд ХООСОН. Хаан болсон бол ч энэ нь зөв дүрсийг өгнө.
+   */
+  const animatedPiece = animate ? board[animate.to.row][animate.to.col] : null;
+  const animSquare = animate ? (animDone ? animate.to : animate.from) : null;
+  const animPoint = {
+    x: animSquare
+      ? (colsOrder.indexOf(animSquare.col) + 0.5) * squareSize - squareSize * 0.39
+      : 0,
+    y: animSquare
+      ? (rowsOrder.indexOf(animSquare.row) + 0.5) * squareSize - squareSize * 0.39
+      : 0,
+  };
+
   return (
     <div className="relative mx-auto aspect-square w-full max-w-[560px] select-none rounded-lg bg-gradient-to-br from-[#4a2f1c] to-[#1c0f07] p-[3%] shadow-[inset_0_2px_3px_rgba(255,255,255,0.12),inset_0_-3px_8px_rgba(0,0,0,0.65),0_8px_24px_rgba(0,0,0,0.45)]">
       <div
@@ -137,6 +204,9 @@ export function DraughtsBoard({
               const isLastMove =
                 dark && lastMove && (sameSquare(lastMove.from, square) || sameSquare(lastMove.to, square));
               const isDraggingThis = isSelected && dragPos;
+              // Хөдөлгөөний туршид ОЧИХ нүдний дүрсийг нуулаа — хөвөгч
+              // хуулбар нь тэр байрлал руу очиж байгаа.
+              const isAnimTarget = Boolean(animate && sameSquare(animate.to, square));
 
               return (
                 <div
@@ -157,7 +227,7 @@ export function DraughtsBoard({
                     />
                   )}
 
-                  {piece && !isDraggingThis && (
+                  {piece && !isDraggingThis && !isAnimTarget && (
                     <div
                       onPointerDown={(event) => onPieceDown(event, square, piece)}
                       className={`relative flex size-[78%] items-center justify-center rounded-full ${
@@ -183,6 +253,39 @@ export function DraughtsBoard({
 
         {dragPos && draggedPiece && (
           <FloatingPiece piece={draggedPiece} x={dragPos.x} y={dragPos.y} size={squareSize} />
+        )}
+
+        {/*
+          ГУЛСАХ ДҮРС — хөлгийн ДОТОР, үнэмлэхүй байрлалаар.
+
+          ⚠ `FloatingPiece` (чирэлтийнх) нь `position: fixed` бөгөөд
+          хулганы координатаар явдаг. Энд харин хөлгийн нүднүүдийн
+          байрлал хэрэгтэй тул тусдаа.
+        */}
+        {animate && animatedPiece && (
+          <div
+            className={`pointer-events-none absolute grid place-items-center rounded-full ${
+              PIECE_LOOK[animatedPiece.color]
+            } shadow-[0_2px_2px_rgba(0,0,0,0.35)]`}
+            style={{
+              width: squareSize * 0.78,
+              height: squareSize * 0.78,
+              left: animPoint.x,
+              top: animPoint.y,
+              transition: `left ${ANIM_MS}ms ease-in-out, top ${ANIM_MS}ms ease-in-out`,
+            }}
+          >
+            {animatedPiece.king && (
+              <Crown
+                className={
+                  animatedPiece.color === "w"
+                    ? "size-[45%] text-amber-600"
+                    : "size-[45%] text-amber-400"
+                }
+                aria-hidden
+              />
+            )}
+          </div>
         )}
       </div>
     </div>
