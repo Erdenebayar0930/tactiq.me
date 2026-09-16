@@ -348,7 +348,13 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       </div>
 
       <div className={`flex gap-6 py-6 ${SHELL_WIDTH}`}>
-        <nav className="hidden w-60 shrink-0 print:hidden lg:block">
+        {/*
+          ⚠ ӨРГӨН НЬ ХОЁР ШАТТАЙ. `lg` (1024px) дээр цэс гарч ирдэг ч тэр
+          өргөнд агуулга нь аль хэдийн шахагдсан байдаг — `w-60` (240px)
+          болгоход хүснэгт, карт хоёр багана болж чадахгүй, хажуу тийш
+          гүйдэг болов. `xl`-ээс дээш зай сул тул тэнд л өргөсгөнө.
+        */}
+        <nav className="hidden w-52 shrink-0 print:hidden lg:block xl:w-60">
           <div className="sticky top-24 space-y-3">
             <ActiveCourseCard />
 
