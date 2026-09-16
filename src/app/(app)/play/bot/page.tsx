@@ -201,8 +201,13 @@ export default function BotPage() {
   );
   const { tip, dismiss } = useCoachTip(tips);
 
+  /*
+   * ⚠ `max-w-lg` (512px) нь ХӨЛГИЙН дээд хязгаарыг тогтоодог: хөлөг нь
+   * `w-full` тул багананаас өргөн болж чадахгүй. Хөлөг бол энэ дэлгэцийн
+   * гол агуулга тул баганыг `max-w-xl` (576px) болгов.
+   */
   return (
-    <div className="mx-auto max-w-lg space-y-4">
+    <div className="mx-auto max-w-xl space-y-4">
       <div className="surface flex items-center justify-between p-4">
         <Link
           href="/play"

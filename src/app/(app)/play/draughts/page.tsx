@@ -223,21 +223,37 @@ export default function DraughtsBotPage() {
   );
   const { tip, dismiss } = useCoachTip(tips);
 
+  /*
+   * ⚠ `max-w-lg` (512px) нь ХӨЛГИЙН дээд хязгаарыг тогтоодог: хөлөг нь
+   * `w-full` тул багананаас өргөн болж чадахгүй. Хөлөг бол энэ дэлгэцийн
+   * гол агуулга тул баганыг `max-w-xl` (576px) болгов.
+   */
   return (
-    <div className="mx-auto max-w-lg space-y-4">
-      <div className="surface flex items-center justify-between p-4">
+    <div className="mx-auto max-w-xl space-y-3">
+      {/*
+        ⚠ НЭГ МӨР. Урьд нь хоёр мөр (нэр / төлөв) байсан тул толгой нь
+        ~66px эзэлж, хөлөг тэр хэмжээгээр багасдаг байв. Хөлөг бол энэ
+        дэлгэцийн ГОЛ агуулга — дээр талын мэдээлэл түүнээс зай булаах
+        ёсгүй.
+
+        ⚠ Төлөв (`Таны ээлж`) нь ХАМГИЙН ЧУХАЛ тул төгсгөлд, тод үсгээр:
+        нэр, хүндрэл нь тоглолтын туршид өөрчлөгддөггүй, төлөв нь нүүдэл
+        бүрд солигдоно.
+      */}
+      <div className="surface flex items-center justify-between gap-3 px-4 py-2">
         <Link
           href="/play"
-          className="flex items-center gap-1 text-sm font-semibold text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+          className="flex shrink-0 items-center gap-1 text-sm font-semibold text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
         >
           <ChevronLeft className="size-4" aria-hidden />
           {t("Буцах")}
         </Link>
-        <div className="text-right">
-          <p className="font-semibold text-gray-900 dark:text-white">
+        <p className="min-w-0 truncate text-right text-sm">
+          <span className="text-gray-500 dark:text-gray-400">
             {t("Дам")} · {t(DIFFICULTY_LABELS[difficulty])}
-          </p>
-          <p className="text-xs text-gray-500 dark:text-gray-400">
+          </span>
+          <span className="mx-1.5 text-gray-300 dark:text-white/20">·</span>
+          <span className="font-bold text-gray-900 dark:text-white">
             {end
               ? t("Тоглоом дууссан")
               : thinking
@@ -245,8 +261,8 @@ export default function DraughtsBotPage() {
                 : myTurn
                   ? t("Таны ээлж")
                   : t("Ботын ээлж")}
-          </p>
-        </div>
+          </span>
+        </p>
       </div>
 
       <MatchHeader

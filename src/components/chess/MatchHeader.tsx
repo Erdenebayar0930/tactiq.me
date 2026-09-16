@@ -10,11 +10,11 @@ import { Clock, Crown } from "lucide-react";
  */
 export function MatchHeader({ leftName, rightName }: { leftName: string; rightName: string }) {
   return (
-    <div className="rounded-2xl bg-gradient-to-b from-[#1c2740] to-[#0d1424] px-4 py-3 shadow-lg">
+    <div className="rounded-2xl bg-gradient-to-b from-[#1c2740] to-[#0d1424] px-4 py-2 shadow-lg">
       <p className="truncate text-center text-sm font-semibold text-white/90">
         {leftName} <span className="font-normal text-white/40">vs</span> {rightName}
       </p>
-      <div className="mt-2.5 flex items-center justify-between">
+      <div className="mt-1.5 flex items-center justify-between">
         <ClockBadge />
         <CrownBadge />
         <ClockBadge />
@@ -25,7 +25,7 @@ export function MatchHeader({ leftName, rightName }: { leftName: string; rightNa
 
 function ClockBadge() {
   return (
-    <div className="flex items-center gap-1.5 rounded-full border border-white/10 bg-[#0b1220] px-3 py-1.5">
+    <div className="flex items-center gap-1.5 rounded-full border border-white/10 bg-[#0b1220] px-3 py-1">
       <Clock className="size-3.5 text-amber-300/80" aria-hidden />
       <span className="font-mono text-sm font-semibold tabular-nums text-white/90">10:00</span>
     </div>
@@ -34,7 +34,7 @@ function ClockBadge() {
 
 function CrownBadge() {
   return (
-    <div className="flex size-9 shrink-0 items-center justify-center rounded-full border border-amber-300/30 bg-[#0b1220]">
+    <div className="flex size-8 shrink-0 items-center justify-center rounded-full border border-amber-300/30 bg-[#0b1220]">
       <Crown className="size-4 text-amber-300" aria-hidden />
     </div>
   );
