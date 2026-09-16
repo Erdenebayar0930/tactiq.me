@@ -84,7 +84,7 @@ export const ACHIEVEMENTS: AchievementDef[] = [
     metric: "xp",
     icon: "Zap",
     color: "#8b5cf6",
-    tiers: [100, 500, 1_000, 2_500, 5_000, 10_000, 25_000, 50_000, 100_000],
+    tiers: [1_000, 5_000, 10_000, 25_000, 50_000, 100_000, 250_000, 500_000, 1_000_000],
   },
   {
     id: "scholar",

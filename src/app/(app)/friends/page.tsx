@@ -230,7 +230,7 @@ function QuestCard({
       <div>
         <p className="font-bold text-gray-900 dark:text-white">Хамтын даалгавар эхлүүлэх</p>
         <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
-          Найзтайгаа хамт долоо хоногт {data?.goalXp ?? 300} оноо цуглуулбал хоёулаа{" "}
+          Найзтайгаа хамт долоо хоногт {data?.goalXp ?? 3000} оноо цуглуулбал хоёулаа{" "}
           {data?.rewardGems ?? 30} зоос авна. Долоо хоногт нэг найзтай.
         </p>
       </div>

@@ -21,7 +21,7 @@ import { daysBetween, today } from "@/lib/tactiq/day";
  */
 
 /** Долоо хоногийн хосын зорилт (XP). */
-export const QUEST_GOAL_XP = 300;
+export const QUEST_GOAL_XP = 3_000;
 
 /** Зорилтод хүрсэн ХОЁУЛАНД нь олгох зоос. */
 export const QUEST_REWARD_GEMS = 30;

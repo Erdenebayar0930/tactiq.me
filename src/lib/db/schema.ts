@@ -1177,7 +1177,14 @@ export const lessons = pgTable(
     title: varchar("title", { length: 160 }).notNull(),
     titleEn: varchar("title_en", { length: 160 }).notNull().default(""),
     /** Дуусгахад олгох оноо — `lessonProgress.xpEarned`-д хуулбарлагдана. */
-    xpReward: integer("xp_reward").notNull().default(10),
+    /**
+     * Хичээл дуусгахад олгох оноо.
+     *
+     * ⚠ Бүх онооны хэмжээ ×10 болсон (`0042_xp_x10.sql`): шагнал, түвшний
+     * босго (`lib/tactiq/xp.ts`), амжилтын шат, найзын зорилт бүгд зэрэг
+     * өссөн тул тэнцвэр хэвээр. Шинэ хичээлд 10 биш 100 өгнө.
+     */
+    xpReward: integer("xp_reward").notNull().default(100),
     sortOrder: integer("sort_order").notNull().default(0),
     /**
      * Хэн нэмсэн (`users.uid`). `null` = ХУУЧИН мөр эсвэл админ үүсгэсэн.

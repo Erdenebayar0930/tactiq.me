@@ -274,7 +274,7 @@ async function main() {
         id: lessonId,
         unitId,
         title,
-        xpReward: 20,
+        xpReward: 200,
         sortOrder: lessonOrder++,
         createdBy: owner.uid,
       });

@@ -26,7 +26,7 @@ export async function POST(
     const title = cleanTitle(body.title, 160);
     if (!title) return badRequest("Гарчиг заавал бөглөнө үү.");
 
-    const xpReward = Number.isFinite(Number(body.xpReward)) ? Math.max(0, Number(body.xpReward)) : 10;
+    const xpReward = Number.isFinite(Number(body.xpReward)) ? Math.max(0, Number(body.xpReward)) : 100;
     const sortOrder = Number.isFinite(Number(body.sortOrder)) ? Number(body.sortOrder) : 0;
 
     const lessonId = await createLesson({

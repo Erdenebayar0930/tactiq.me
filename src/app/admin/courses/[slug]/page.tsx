@@ -556,7 +556,7 @@ function AddLessonForm({
   const [title, setTitle] = useState("");
   // Англи нэр — заавал биш (`lib/i18n/content.ts`).
   const [titleEn, setTitleEn] = useState("");
-  const [xpReward, setXpReward] = useState(10);
+  const [xpReward, setXpReward] = useState(100);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -606,7 +606,7 @@ function AddLessonForm({
         />
       </div>
       <div className="w-28">
-        <NumberField label="Оноо" value={xpReward} onChange={setXpReward} min={0} max={100} />
+        <NumberField label="Оноо" value={xpReward} onChange={setXpReward} min={0} max={1000} />
       </div>
       {error && <p className="text-sm text-rose-600 dark:text-rose-400">{error}</p>}
       <button
@@ -681,7 +681,7 @@ function LessonCard({ lesson, onChanged }: { lesson: AdminLesson; onChanged: () 
           onChange={(event) => setXpReward(Number(event.target.value))}
           onBlur={() => xpReward !== lesson.xpReward && void saveMeta({ xpReward })}
           disabled={busy}
-          className="num w-16 shrink-0 rounded-lg border border-gray-200 bg-white px-2 py-1 text-xs dark:border-white/15 dark:bg-white/5 dark:text-white"
+          className="num w-20 shrink-0 rounded-lg border border-gray-200 bg-white px-2 py-1 text-xs dark:border-white/15 dark:bg-white/5 dark:text-white"
         />
         <span className="shrink-0 text-xs text-gray-400">{lesson.exercises.length} дасгал</span>
         <button
