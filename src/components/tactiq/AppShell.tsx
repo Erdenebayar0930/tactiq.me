@@ -82,23 +82,27 @@ function buildNav(courseSlug: string | null | undefined): NavItem[] {
   const play = coursePlay(courseSlug);
 
   /*
-   * ХОЁР ДАХЬ СУУДАЛ — ТЭМЦЭЭН, боломжтой бол.
+   * ДӨРӨВ ДЭХ СУУДАЛ — ТЭМЦЭЭН.
    *
-   * ⚠ `tournamentEnabled()` ХЭВЭЭР шалгана: хаяг тохируулаагүй үед
-   * `/tournament` нь сесс үүсгэх хүсэлт илгээгээд УНАЖ, улаан алдаа
-   * харуулдаг (тэр хуудсанд «тун удахгүй» гэсэн төлөв алга). Тиймээс
-   * хаяггүй үед хуучин «Тоглох» цэс үлдэнэ — хоосон алдаа руу хөтлөхөөс
-   * ажиллаж байгаа цэс нь дээр.
+   * ⚠ Урьд нь ПРОФАЙЛ энд байсныг гаргав: профайл нь толгойн аватараас
+   * НЭГ товшилтоор нээгддэг (`/profile` холбоос, хэрэглэгчийн цэс) тул
+   * доод туузны ховор дөрвөн суудлын нэгийг эзлэх шаардлагагүй. Тэмцээн
+   * харин өөр газраас олдохгүй.
+   *
+   * ⚠ `tournamentEnabled()` ХЭВЭЭР: `NEXT_PUBLIC_TOURNAMENT_URL`
+   * тохируулаагүй үед `/tournament` нь сесс үүсгэх хүсэлт илгээгээд
+   * унаж, улаан алдаа харуулдаг. Тэр үед суудлыг Профайл эзэлнэ — хоосон
+   * алдаа руу хөтлөхөөс ажиллаж байгаа цэс дээр.
    */
-  const second: NavItem = tournamentEnabled()
-    ? { href: "/tournament", label: t("Тэмцээн"), Icon: Swords, color: "rose" }
-    : { href: play.href, label: t(play.label), Icon: play.Icon, color: "rose" };
+  const fourth: NavItem = tournamentEnabled()
+    ? { href: "/tournament", label: t("Тэмцээн"), Icon: Swords, color: "amber" }
+    : { href: "/profile", label: t("Профайл"), Icon: UserIcon, color: "indigo" };
 
   return [
     { href: "/learn", label: t("Сурах"), Icon: BookOpen, color: "violet" },
-    second,
+    { href: play.href, label: t(play.label), Icon: play.Icon, color: "rose" },
     { href: "/courses", label: t("Курс"), Icon: GraduationCap, color: "sky" },
-    { href: "/profile", label: t("Профайл"), Icon: UserIcon, color: "indigo" },
+    fourth,
     { href: "/settings", label: t("Тохиргоо"), Icon: Settings, color: "teal" },
   ];
 }
@@ -202,6 +206,16 @@ function NavIcon({
 function buildRoleNav(user: PublicUser | null): NavItem[] {
   if (!user) return [];
 
+  /*
+   * ⚠ ПРОФАЙЛ ЭНД: үндсэн цэснээс гарсан тул ширээний хажуу багана,
+   * гар утасны «Бусад» хуудсанд ЗААВАЛ байх ёстой. Зөвхөн аватарт
+   * үлдээвэл ширээний хэрэглэгч түүнийг хайж олохгүй — аватар нь
+   * жижиг бөгөөд цэс гэж танигддаггүй.
+   */
+  const profile: NavItem[] = tournamentEnabled()
+    ? [{ href: "/profile", label: t("Профайл"), Icon: UserIcon, color: "indigo" }]
+    : [];
+
   const parent: NavItem[] = hasRole(user, "parent")
     ? [{ href: "/parent", label: t("Миний хүүхдүүд"), Icon: Baby, color: "rose" }]
     : [];
@@ -221,7 +235,7 @@ function buildRoleNav(user: PublicUser | null): NavItem[] {
      * (тэр тууз яг 5 зүйлд тохируулагдсан, дээрх `buildNav` үзнэ үү).
      */
     /*
-     * ⚠ ТЭМЦЭЭН ЭНД БАЙХГҮЙ: одоо үндсэн цэсний хоёр дахь суудалд
+     * ⚠ ТЭМЦЭЭН ЭНД БАЙХГҮЙ: одоо үндсэн цэсний дөрөв дэх суудалд
      * суусан (`buildNav`). Хоёуланд нь байвал нэг холбоос хоёр газар
      * давхардаж, «аль нь зөв бэ» гэсэн эргэлзээ төрүүлнэ.
      *
@@ -230,6 +244,7 @@ function buildRoleNav(user: PublicUser | null): NavItem[] {
      * заахгүй, `/tournament` гүүр рүү ордог — тасалбар зөвхөн
      * нэвтэрсэн хүсэлтээс төрөх ёстой.
      */
+    ...profile,
     { href: "/leaderboard", label: t("Тэргүүлэгчид"), Icon: Trophy, color: "amber" },
     { href: "/friends", label: t("Найзууд"), Icon: Handshake, color: "emerald" },
     { href: "/achievements", label: t("Амжилтууд"), Icon: Award, color: "orange" },
