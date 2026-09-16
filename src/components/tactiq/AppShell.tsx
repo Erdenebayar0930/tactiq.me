@@ -37,6 +37,7 @@ import { updateMe } from "@/lib/users";
 import { getAdSenseSlotId } from "@/lib/tactiq/ads";
 import { coursePlay } from "@/lib/tactiq/courseNav";
 import { colorStyles } from "@/lib/tactiq/theme";
+import { useGuestCourse } from "@/lib/tactiq/guestCourse";
 import { tournamentEnabled } from "@/lib/tactiq/tournament";
 
 import { AdSlot } from "./AdSlot";
@@ -772,14 +773,25 @@ function StatCounters({ user }: { user: PublicUser }) {
 function useActiveCourse(): Course | null {
   const { user, isGuest } = useUser();
   /*
-   * ⚠ ЗОЧИНД ТАТАХГҮЙ: `/api/courses` нь нэвтрэлт шаарддаг тул зочны
-   * нэрийн өмнөөс дуудвал хуудас бүр дээр 401 үүснэ. Зочинд идэвхтэй
-   * курс гэж байхгүй ч учраас хариу нь хэрэг ч болохгүй.
+   * ⚠ ЗОЧИНД ӨӨР ХАЯГ: `/api/courses` нь нэвтрэлт шаарддаг тул зочны
+   * нэрийн өмнөөс дуудвал хуудас бүр дээр 401 үүснэ. Нийтийн
+   * `/api/trial/courses` нь ижил мета мэдээллийг өгнө.
    */
-  const { data } = useApiData<{ courses: Course[] }>(user && !isGuest ? "/api/courses" : null);
+  const { data } = useApiData<{ courses: Course[] }>(
+    !user ? null : isGuest ? "/api/trial/courses" : "/api/courses"
+  );
 
-  if (!user?.activeCourseSlug) return null;
-  return data?.courses.find((entry) => entry.slug === user.activeCourseSlug) ?? null;
+  /*
+   * ⚠ Зочны сонголт нь `localStorage`-д — рендерийн үед шууд уншвал
+   * сервер/клиент зөрнө. `useGuestCourse` нь `useSyncExternalStore`-оор
+   * серверт `null` өгч, hydration-ыг цэвэр барина.
+   */
+  const guestSlug = useGuestCourse();
+
+  const slug = isGuest ? guestSlug : (user?.activeCourseSlug ?? null);
+  if (!slug) return null;
+
+  return data?.courses.find((entry) => entry.slug === slug) ?? null;
 }
 
 /**

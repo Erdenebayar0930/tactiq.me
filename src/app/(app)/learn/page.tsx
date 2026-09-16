@@ -20,6 +20,7 @@ import {
 import { AdSlot } from "@/components/tactiq/AdSlot";
 import { Icon } from "@/components/tactiq/Icon";
 import { PathCharacter, characterSetForCourse } from "@/components/tactiq/PathCharacter";
+import { useGuestCourse } from "@/lib/tactiq/guestCourse";
 import RewardPopup from "@/components/tactiq/RewardPopup";
 import { EmptyState, ErrorNote, Skeleton } from "@/components/tactiq/ui";
 import { t } from "@/lib/i18n/t";
@@ -33,15 +34,21 @@ export default function LearnPage() {
   const { isGuest } = useUser();
 
   /*
-   * ⚠ ЗОЧИН нь курс сонгоогүй (сонгох газар нь ч байхгүй) тул
-   * `activeCourseSlug` нь үргэлж хоосон. Түүнд ТУРШИЛТЫН зам харагдана —
-   * нийтийн `/api/trial` route нь нэг курсын эхний хичээлүүдийг л өгдөг.
+   * ⚠ ЗОЧИНД хэрэглэгчийн мөр байхгүй тул сонголт нь `localStorage`-д
+   * (`guestCourse.ts`). Сонгоогүй бол `null` — сервер анхдагч курсаа өгнө.
+   *
+   * ⚠ Хоёр дахь рендер хүртэл `null`: `localStorage`-ийг рендерийн үед
+   * уншвал сервер/клиент зөрж (hydration) анхааруулга өгнө.
    */
-  if (isGuest) return <CoursePath courseSlug={null} />;
+  if (isGuest) return <GuestPath />;
 
   if (!user.activeCourseSlug) return <NoCourseYet />;
 
-  return <CoursePath courseSlug={user.activeCourseSlug} />;
+  return <CoursePath courseSlug={user.activeCourseSlug} guest={false} />;
+}
+
+function GuestPath() {
+  return <CoursePath courseSlug={useGuestCourse()} guest />;
 }
 
 function NoCourseYet() {
@@ -62,18 +69,23 @@ function NoCourseYet() {
 }
 
 /**
- * @param courseSlug Курсын slug, эсвэл `null` — ЗОЧНЫ туршилтын зам
- *   (`/api/trial`). `null` нь «курс сонгоогүй» ГЭСЭН УТГАГҮЙ: тэр
- *   тохиолдлыг дуудагч нь `NoCourseYet`-ээр шийддэг.
+ * @param courseSlug Үзүүлэх курсын slug. Зочин курс сонгоогүй бол `null` —
+ *   сервер анхдагч туршилтын курсаа өгнө.
+ * @param guest Нэвтрээгүй эсэх. ЗААВАЛ ТУСДАА туг: зочин ч курс сонгодог
+ *   болсон тул `courseSlug === null` нь «зочин» гэсэн утгагүй болсон.
  */
-function CoursePath({ courseSlug }: { courseSlug: string | null }) {
+function CoursePath({ courseSlug, guest }: { courseSlug: string | null; guest: boolean }) {
   const {
     data: courseData,
     loading: courseLoading,
     error: courseError,
     code: courseErrorCode,
   } = useApiData<{ course: CourseWithUnits; trialLessonIds?: string[] }>(
-    courseSlug === null ? "/api/trial" : `/api/courses/${encodeURIComponent(courseSlug)}`
+    guest
+      ? courseSlug
+        ? `/api/trial?course=${encodeURIComponent(courseSlug)}`
+        : "/api/trial"
+      : `/api/courses/${encodeURIComponent(courseSlug ?? "")}`
   );
   /*
    * ⚠ ЗОЧИНД ЯВЦ БАЙХГҮЙ тул ЭХЛЭЛДЭЭ Л хоосон олонлогоор эхэлнэ —
@@ -81,7 +93,7 @@ function CoursePath({ courseSlug }: { courseSlug: string | null }) {
    * `react-hooks/set-state-in-effect` дүрэм үүнийг зөвөөр хориглодог.
    */
   const [completed, setCompleted] = useState<Set<string> | null>(() =>
-    courseSlug === null ? new Set() : null
+    guest ? new Set() : null
   );
   const [claimed, setClaimed] = useState<Set<string>>(() => new Set());
   const [error, setError] = useState<string | null>(null);
@@ -93,7 +105,7 @@ function CoursePath({ courseSlug }: { courseSlug: string | null }) {
      * аль хэдийн хоосон олонлог — эхний хичээл нээлттэй, бусад нь
      * түгжээтэй харагдана, яг шинэ сурагчийнхтай адил.
      */
-    if (courseSlug === null) return;
+    if (guest) return;
 
     let cancelled = false;
 
@@ -112,7 +124,7 @@ function CoursePath({ courseSlug }: { courseSlug: string | null }) {
     return () => {
       cancelled = true;
     };
-  }, [courseSlug]);
+  }, [courseSlug, guest]);
 
   /*
    * ХИЧЭЭЛЭЭ ДУУСГААД БУЦАЖ ИРЭХЭД тэр зангилаа руу гүйлгэнэ.

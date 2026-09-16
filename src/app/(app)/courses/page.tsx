@@ -10,6 +10,7 @@ import { CourseCard } from "@/components/courses/CourseCard";
 import { ErrorNote, Skeleton } from "@/components/tactiq/ui";
 import { useSchools } from "@/context/SchoolsContext";
 import { UNGROUPED_LABEL } from "@/lib/tactiq/schools";
+import { writeGuestCourse } from "@/lib/tactiq/guestCourse";
 
 import type { CourseStat } from "@/lib/api/courseStats";
 import type { Course } from "@/lib/tactiq/courses";
@@ -60,12 +61,17 @@ export default function CoursesPage() {
     if (busySlug) return;
 
     /*
-     * ⚠ ЗОЧИН курс СОНГОХГҮЙ: сонголт нь хэрэглэгчийн мөрөнд хадгалагддаг.
-     * Түүнийг бүртгэлийн хуудас руу аваачна — курс сонгох гэсэн санаа нь
-     * бүртгүүлэх хамгийн байгалийн мөч.
+     * ⚠ ЗОЧНЫ сонголт нь ХӨТӨЧИД үлдэнэ: хэрэглэгчийн мөр байхгүй тул
+     * `activeCourseSlug` бичих газар алга.
+     *
+     * ⚠ Урьд нь энд шууд бүртгэлийн хуудас руу шиддэг байв. Тэр нь эрт:
+     * зочин юу сурахаа хараагүй байж «бүртгүүл» гэсэн хана мөргөнө. Одоо
+     * сонгосон курсынхаа замыг хараад эхний хичээлүүдийг нь хийж үзнэ —
+     * бүртгэлийн дэлгэц туршилтын хичээл дуусах мөчид гарна.
      */
     if (isGuest) {
-      router.push(`/register?next=${encodeURIComponent("/learn")}`);
+      writeGuestCourse(slug);
+      router.push("/learn");
       return;
     }
 

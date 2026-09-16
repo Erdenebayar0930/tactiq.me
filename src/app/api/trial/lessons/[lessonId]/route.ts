@@ -3,26 +3,43 @@ import { NextResponse } from "next/server";
 import { serverError } from "@/lib/api/auth";
 import { cacheGetOrSet } from "@/lib/api/cache";
 import { getCourseWithLessons, getLessonWithExercises, listCourseMetas } from "@/lib/db/courses";
-import { TRIAL_COURSE_SLUG, TRIAL_LESSON_COUNT } from "@/lib/tactiq/trial";
+import { TRIAL_LESSON_COUNT } from "@/lib/tactiq/trial";
 
 import type { NextRequest } from "next/server";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-/** Туршилтад НЭЭЛТТЭЙ хичээлийн ID-ууд. */
+/**
+ * Туршилтад НЭЭЛТТЭЙ хичээлийн ID-ууд — БҮХ идэвхтэй курсээр.
+ *
+ * ⚠ Урьд нь зөвхөн НЭГ курсын (`TRIAL_COURSE_SLUG`) эхний хичээлүүд
+ * нээлттэй байсан: зочин өөр курс нээхэд бүх зангилаа түгжээтэй, «энэ
+ * сайт дээр шатраас өөр юм хийж болдоггүй юм байна» гэсэн сэтгэгдэл
+ * төрүүлж байв. Одоо курс БҮРИЙН эхний бүлгийн эхний
+ * `TRIAL_LESSON_COUNT` хичээл нээлттэй.
+ *
+ * ⚠ Идэвхтэй курсээр хязгаарлав — ноорхой курсын агуулга гарахгүй.
+ */
 async function trialLessonIds(): Promise<Set<string>> {
   return cacheGetOrSet("trial:lesson-ids", 60_000, async () => {
-    let course = await getCourseWithLessons(TRIAL_COURSE_SLUG);
+    const metas = await listCourseMetas();
+    const active = metas.filter((row) => row.status === "active");
 
-    if (!course || course.units.length === 0) {
-      const all = await listCourseMetas();
-      const fallback = all.find((row) => row.status === "active");
-      course = fallback ? await getCourseWithLessons(fallback.slug) : null;
+    const ids = new Set<string>();
+    /*
+     * ⚠ ДАРААЛАН (Promise.all БИШ): курс бүрт нэг асуулга явах бөгөөд
+     * бүгдийг зэрэг илгээвэл нэвтрэлтгүй хаяг нь сангийн холболтын цөөрмийг
+     * нэг хүсэлтээр дүүргэх боломжтой болно. Үр дүн нь 60 секунд кэшлэгдэнэ.
+     */
+    for (const meta of active) {
+      const course = await getCourseWithLessons(meta.slug);
+      for (const lesson of course?.units[0]?.lessons.slice(0, TRIAL_LESSON_COUNT) ?? []) {
+        ids.add(lesson.id);
+      }
     }
 
-    const lessons = course?.units[0]?.lessons.slice(0, TRIAL_LESSON_COUNT) ?? [];
-    return new Set(lessons.map((lesson) => lesson.id));
+    return ids;
   });
 }
 
@@ -30,8 +47,8 @@ async function trialLessonIds(): Promise<Set<string>> {
  * Зочны хичээлийн агуулга.
  *
  * ⚠ ЖАГСААЛТААР ШАЛГАНА, тоогоор биш. Клиент талын түгжээ нь зөвхөн
- * харагдац — хэн ч дурын хичээлийн ID-г энэ хаяг руу бичиж үзнэ. Эхний
- * гурван хичээлд БАГТААГҮЙ бол 404 буцаана, эс бөгөөс нэвтрэлтгүй хүн
+ * харагдац — хэн ч дурын хичээлийн ID-г энэ хаяг руу бичиж үзнэ. Курсынхаа
+ * эхний хичээлүүдэд БАГТААГҮЙ бол 404 буцаана, эс бөгөөс нэвтрэлтгүй хүн
  * бүх курсын агуулгыг татаж авах боломжтой болно.
  */
 export async function GET(
