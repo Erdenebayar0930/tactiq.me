@@ -5,7 +5,7 @@
  */
 
 /** Нэг мөсний үнэ — хичээл бүрд ойролцоогоор 20 эрдэнэ олддог тул ~1 долоо хоногийн хуримтлал. */
-export const STREAK_FREEZE_COST_GEMS = 150;
+export const STREAK_FREEZE_COST_GEMS = 1500;
 
 /** Хамгийн ихдээ хэдэн мөс зэрэг хадгалж болох — хязгааргүй нөөцлөхөөс сэргийлнэ. */
 export const MAX_STREAK_FREEZES = 2;

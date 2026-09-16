@@ -215,10 +215,10 @@ export function canCare(lastCareAt: Date | null, now: Date = new Date()): boolea
  * = 70 зарцуулаад 150 авна: асаргаа нь БАГА зэрэг ашигтай.
  */
 export const CARE_MILESTONES: { days: number; gems: number; label: string }[] = [
-  { days: 3, gems: 50, label: "3 хоног" },
-  { days: 7, gems: 150, label: "1 долоо хоног" },
-  { days: 14, gems: 350, label: "2 долоо хоног" },
-  { days: 30, gems: 800, label: "1 сар" },
+  { days: 3, gems: 500, label: "3 хоног" },
+  { days: 7, gems: 1500, label: "1 долоо хоног" },
+  { days: 14, gems: 3500, label: "2 долоо хоног" },
+  { days: 30, gems: 8000, label: "1 сар" },
 ];
 
 /** Тухайн дараалалд ХҮРСЭН боловч хараахан аваагүй шагналууд. */

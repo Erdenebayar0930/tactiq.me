@@ -1,11 +1,15 @@
-import { BookOpen, Coins, Pencil, Star } from "lucide-react";
+import { BookOpen, Coins, Pencil } from "lucide-react";
 
 import type { LucideIcon } from "lucide-react";
 
 const number = (value: number) => value.toLocaleString("mn-MN");
 
 /**
- * Картын 4 үзүүлэлт — хичээл, дасгал, XP, зоос — ҮРГЭЛЖ НЭГ МӨРӨНД.
+ * Картын 3 үзүүлэлт — хичээл, дасгал, зоос — ҮРГЭЛЖ НЭГ МӨРӨНД.
+ *
+ * ⚠ XP-г ЗОРИУДААР ХАССАН: сурагчид зоос, XP хоёрыг хольж ойлгож байв.
+ * Шагналын нэг л валют (зоос) харагдана. XP нь (`lessons.xp_reward`) санд
+ * хэвээр бөгөөд лиг, ур чадварын тооцоонд ажилласаар байна.
  *
  * ⚠ ТОГТМОЛ 4 БАГАНА (`flex-wrap` биш). Урьд нь нарийн (~270px) картад
  * зоос нь дараагийн мөрөнд унаж, карт урт, эмх замбараагүй харагдаж байв.
@@ -18,25 +22,22 @@ const number = (value: number) => value.toLocaleString("mn-MN");
 export function CourseStats({
   lessons,
   exercises,
-  xp,
   coins,
   maxCoins,
 }: {
   lessons: number;
   exercises: number;
-  xp: number;
   coins: number;
   maxCoins: number;
 }) {
   const items: { Icon: LucideIcon; color: string; fill?: boolean; value: string; label: string }[] = [
     { Icon: BookOpen, color: "#3b82f6", value: number(lessons), label: "хичээл" },
     { Icon: Pencil, color: "#8b5cf6", value: number(exercises), label: "дасгал" },
-    { Icon: Star, color: "#f59e0b", fill: true, value: number(xp), label: "XP" },
     { Icon: Coins, color: "#f59e0b", value: `${number(coins)}/${number(maxCoins)}`, label: "зоос" },
   ];
 
   return (
-    <dl className="grid grid-cols-[1fr_1fr_1fr_1.4fr] gap-1.5">
+    <dl className="grid grid-cols-[1fr_1fr_1.4fr] gap-1.5">
       {items.map(({ Icon, color, fill, value, label }) => (
         <div key={label} className="min-w-0">
           <div className="flex items-center gap-1">

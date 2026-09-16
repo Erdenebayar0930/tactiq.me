@@ -8,4 +8,4 @@
  */
 
 /** Хичээл дуусгахад олгох зоос — XP (`lessons.xp_reward`) хичээл бүрт өөр ч энэ нь тогтмол. */
-export const LESSON_GEM_REWARD = 5;
+export const LESSON_GEM_REWARD = 50;
