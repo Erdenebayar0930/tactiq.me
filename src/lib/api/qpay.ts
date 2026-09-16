@@ -48,13 +48,58 @@ async function getToken(): Promise<string> {
 
   const data = (await res.json()) as { access_token: string; expires_in?: number };
 
+  /*
+   * ⚠ `expires_in` нь ХУГАЦААНЫ УРТ БИШ, ҮНЭМЛЭХҮЙ ЦАГ (Unix timestamp).
+   *
+   * QPay v2 нь 1789611708 гэх мэт утга буцаадаг — «1.7 тэрбум секундын
+   * дараа дуусна» гэж ойлговол токен МӨНХӨД кэшлэгдэнэ. Тэр үед жинхэнэ
+   * токен нь ~1 цагийн дараа хүчингүй болж, бүх нэхэмжлэл 401-ээр
+   * унана. Дев сервер удаан ажилласны дараа л илэрдэг тул анзаарагдахад
+   * хэцүү алдаа байв.
+   *
+   * ⚠ ХОЁУЛАНГ нь дэмжинэ: хэрэв утга нь ОДООГИЙН цагаас их бол
+   * timestamp, эс бөгөөс урт. Ингэснээр QPay энэ зан төлөвөө засвал ч
+   * код ажиллана.
+   */
+  const nowSec = Math.floor(Date.now() / 1000);
+  const raw = Number(data.expires_in ?? 3600);
+  const expiresAtSec = raw > nowSec ? raw : nowSec + raw;
+
   globalForQpay.__qpayToken = {
     token: data.access_token,
     // 60 секунд эрт сэлгэнэ — хүсэлт нислээр байх зуур токен дуусахаас сэргийлнэ
-    expiresAt: Date.now() + (Number(data.expires_in ?? 3600) - 60) * 1000,
+    expiresAt: (expiresAtSec - 60) * 1000,
   };
 
   return globalForQpay.__qpayToken.token;
+}
+
+/**
+ * Токентой хүсэлт — 401 үед НЭГ УДАА дахин оролдоно.
+ *
+ * ⚠ Кэшлэгдсэн токен хүчингүй болох нь ХЭВИЙН: сервер удаан ажиллах,
+ * QPay талаас цуцлах, цагийн зөрүү. Дахин оролдохгүй бол хэрэглэгч
+ * «алдаа гарлаа» гэж хараад бид кэшээ цэвэрлэх хүртэл хэн ч төлж
+ * чадахгүй.
+ *
+ * ⚠ ЗӨВХӨН НЭГ УДАА: хоёр дахь 401 нь түлхүүр буруу гэсэн үг бөгөөд
+ * дахин оролдох нь зөвхөн саатал нэмнэ.
+ */
+async function authedFetch(path: string, init: RequestInit): Promise<Response> {
+  const send = async (token: string) =>
+    fetch(`${BASE_URL}${path}`, {
+      ...init,
+      headers: { ...init.headers, Authorization: `Bearer ${token}` },
+    });
+
+  let res = await send(await getToken());
+
+  if (res.status === 401) {
+    globalForQpay.__qpayToken = undefined;
+    res = await send(await getToken());
+  }
+
+  return res;
 }
 
 export type QpayInvoice = {
@@ -115,17 +160,13 @@ export async function createInvoice(params: {
     };
   }
 
-  const token = await getToken();
   const callbackUrl = process.env.NEXT_PUBLIC_APP_URL
     ? `${process.env.NEXT_PUBLIC_APP_URL}/api/billing/webhook/qpay?no=${encodeURIComponent(params.senderInvoiceNo)}`
     : undefined;
 
-  const res = await fetch(`${BASE_URL}/invoice`, {
+  const res = await authedFetch("/invoice", {
     method: "POST",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-    },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       invoice_code: INVOICE_CODE,
       sender_invoice_no: params.senderInvoiceNo,
@@ -193,13 +234,9 @@ export async function createInvoice(params: {
 export async function checkPayment(invoiceId: string): Promise<boolean> {
   if (!qpayConfigured || invoiceId.startsWith("mock-")) return false;
 
-  const token = await getToken();
-  const res = await fetch(`${BASE_URL}/payment/check`, {
+  const res = await authedFetch("/payment/check", {
     method: "POST",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-    },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ object_type: "INVOICE", object_id: invoiceId }),
   });
 
