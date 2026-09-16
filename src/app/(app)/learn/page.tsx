@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { BookOpen, Check, ChevronDown, Dumbbell, Lock, Star, Trophy } from "lucide-react";
 
 import { useCurrentUser, useUser } from "@/context/UserContext";
@@ -126,11 +126,16 @@ function CoursePath({ courseSlug }: { courseSlug: string | null }) {
    * хайлтын мөрийг зөвхөн ЭФФЕКТ дотор л уншина — рендерт огт
    * оролцохгүй тул хуудсын горимд нөлөөлөхгүй.
    *
-   * ⚠ `completed` ачаалагдсаны ДАРАА л ажиллана: түүнээс өмнө зам нь
-   * ялгуургаар солигдож, зангилаанууд DOM-д хараахан байхгүй.
+   * ⚠ ХОЁУЛАА ачаалагдсаны ДАРАА л ажиллана. Явц (`completed`) ба курсын
+   * бүтэц (`courseData`) нь ТУСДАА хоёр хүсэлт бөгөөд аль нь түрүүлэхийг
+   * мэдэхгүй. Урьд нь зөвхөн `completed`-ээс хамаардаг байсан тул явц нь
+   * түрүүлж ирэхэд зам нь ялгуур (skeleton) хэвээр, зангилаа DOM-д
+   * байхгүй — эффект чимээгүй буцаад ДАХИН ажилладаггүй байв.
    */
+  const scrolledRef = useRef(false);
   useEffect(() => {
-    if (completed === null) return;
+    if (scrolledRef.current) return;
+    if (completed === null || courseLoading || !courseData) return;
 
     const lessonId = new URLSearchParams(window.location.search).get("lesson");
     if (!lessonId) return;
@@ -139,6 +144,10 @@ function CoursePath({ courseSlug }: { courseSlug: string | null }) {
     // Өөр курсын хичээл байж мэднэ — тэр үед юу ч хийхгүй.
     if (!node) return;
 
+    // ⚠ Нэг л удаа. Дараагийн рендерүүдэд дахин гүйлгэвэл сурагч гараараа
+    // өөр газар очсон байхад хуудас түүнийг буцаан татна.
+    scrolledRef.current = true;
+
     node.scrollIntoView({ block: "center", behavior: "smooth" });
 
     /*
@@ -146,7 +155,7 @@ function CoursePath({ courseSlug }: { courseSlug: string | null }) {
      * ирэхэд) дахин тэр цэг рүү үсрэх нь гэнэтийн санагдана.
      */
     window.history.replaceState(null, "", window.location.pathname);
-  }, [completed]);
+  }, [completed, courseData, courseLoading]);
 
   if (courseLoading || completed === null) {
     return (
