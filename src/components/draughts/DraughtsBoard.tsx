@@ -185,8 +185,20 @@ export function DraughtsBoard({
       : 0,
   };
 
+  /*
+   * ⚠ ӨНДРӨӨР Ч ХЯЗГААРЛАНА, зөвхөн өргөнөөр биш.
+   *
+   * `max-w-[560px]` дангаараа ширээний компьютер дээр асуудал үүсгэдэг:
+   * хөлөг 560px өндөр болж, дээр нь толгой (~90px), доор нь
+   * дасгалжуулагчийн тайлбар (~100px) нэмэгдэхэд ноутбукийн дэлгэцэнд
+   * БАГТАХГҮЙ — тоглогч хөлгөө харахын тулд гүйлгэх шаардлагатай болно.
+   *
+   * ⚠ `100dvh` нь хөтчийн мөрийг хассан ЖИНХЭНЭ өндөр (`100vh` нь гар
+   * утсан дээр худал утга өгдөг). 19rem нь дээрх/доорх элементүүдэд
+   * үлдээсэн зай.
+   */
   return (
-    <div className="relative mx-auto aspect-square w-full max-w-[560px] select-none rounded-lg bg-gradient-to-br from-[#4a2f1c] to-[#1c0f07] p-[3%] shadow-[inset_0_2px_3px_rgba(255,255,255,0.12),inset_0_-3px_8px_rgba(0,0,0,0.65),0_8px_24px_rgba(0,0,0,0.45)]">
+    <div className="relative mx-auto aspect-square w-full max-w-[min(560px,calc(100dvh-19rem))] select-none rounded-lg bg-gradient-to-br from-[#4a2f1c] to-[#1c0f07] p-[3%] shadow-[inset_0_2px_3px_rgba(255,255,255,0.12),inset_0_-3px_8px_rgba(0,0,0,0.65),0_8px_24px_rgba(0,0,0,0.45)]">
       <div
         ref={boardRef}
         onPointerMove={onBoardMove}
