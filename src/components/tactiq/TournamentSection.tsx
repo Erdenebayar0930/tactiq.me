@@ -98,9 +98,9 @@ export function TournamentSection() {
   const hasFreeLeft = quota === null || membership.freeEntriesUsed < quota;
 
   /*
-   * АНГИЛЛЫН ТАБ. Бүх ангиллыг тэмцээнгүй байсан ч харуулна — «Kids 7–10
-   * гэж бий» гэдгийг мэдэх нь өөрөө мэдээлэл. «Бусад» нь зөвхөн танигдаагүй
-   * ангилалтай тэмцээн байвал л гарна.
+   * ТОГЛООМЫН ТӨРЛИЙН ТАБ (Шатар / Даам). Төрөл бүрийг тэмцээнгүй байсан ч
+   * харуулна — «даамын тэмцээн ч болдог юм байна» гэдгийг мэдэх нь өөрөө
+   * мэдээлэл. «Бусад» нь зөвхөн танигдаагүй төрөлтэй тэмцээн байвал л гарна.
    */
   const hasOther = data.tournaments.some(
     (tournament) => tournament.category === OTHER_TOURNAMENT_CATEGORY

@@ -26,7 +26,7 @@ import type { TournamentCategory } from "@/lib/tactiq/tournament";
  *                  seats (null = хязгааргүй), registered, entryFeeMnt,
  *                  status: "upcoming" | "live" | "finished" }
  *
- *   category = "mind-game" | "kids-4-6" | "kids-7-10" | "codely"
+ *   category = "chess" | "checkers"  (тоглоомын төрөл)
  *              (`TOURNAMENT_CATEGORIES`, `lib/tactiq/tournament.ts`)
  */
 

@@ -13,7 +13,12 @@ import Image from "next/image";
 const CHARACTER_SETS = {
   default: [
     { src: "/images/characters/girl-books.webp", w: 337, h: 425 },
-    { src: "/images/characters/boy-pen.webp", w: 288, h: 575 },
+    /*
+     * ⚠ `-2`: хуучин тасдалт нь дэвтрийн баруун талыг тасалж, дээд баруун
+     * буланд хажуугийн дүрийн хормой оруулж ирсэн. Шинэ нэрээр тавьсан
+     * шалтгаан нь service worker — `/images/**` 30 хоног CacheFirst.
+     */
+    { src: "/images/characters/boy-pen-2.webp", w: 287, h: 565 },
     { src: "/images/characters/girl-tablet.webp", w: 257, h: 324 },
     { src: "/images/characters/boy-glasses.webp", w: 233, h: 332 },
     { src: "/images/characters/boy-globe.webp", w: 274, h: 299 },
