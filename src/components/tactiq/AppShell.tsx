@@ -19,7 +19,6 @@ import {
   LayoutDashboard,
   LogOut,
   Menu as MenuIcon,
-  ScrollText,
   Swords,
   Settings,
   X,
@@ -248,7 +247,6 @@ function buildRoleNav(user: PublicUser | null): NavItem[] {
     { href: "/leaderboard", label: t("Тэргүүлэгчид"), Icon: Trophy, color: "amber" },
     { href: "/friends", label: t("Найзууд"), Icon: Handshake, color: "emerald" },
     { href: "/achievements", label: t("Амжилтууд"), Icon: Award, color: "orange" },
-    { href: "/certificates", label: t("Гэрчилгээ"), Icon: ScrollText, color: "violet" },
     ...parent,
     ...teacher,
     ...admin,
@@ -282,7 +280,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
    * ⚠ Гар утасны "Бусад" хуудас.
    *
    * Доод тууз ЯГ 5 зүйлд тохируулагдсан (`buildNav`) тул нэмэлт цэсүүд
-   * (Тэргүүлэгчид, Найзууд, Амжилтууд, Гэрчилгээ, Миний хүүхдүүд…) тэнд
+   * (Тэргүүлэгчид, Найзууд, Амжилтууд, Миний хүүхдүүд…) тэнд
    * багтахгүй. Урьд нь тэдгээр нь ЗӨВХӨН толгой дахь ЖИЖИГ АВАТАР доторх
    * унждаг цэсэнд байсан — өөрөөр хэлбэл гар утаснаас олдохгүй байв.
    * Аватар нь "миний данс" гэсэн утгатай тул хэн ч түүнээс "Найзууд"
