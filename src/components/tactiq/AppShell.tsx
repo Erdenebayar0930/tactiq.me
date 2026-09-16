@@ -354,10 +354,14 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         )}
       </header>
 
-      {/* Нарийн дэлгэц ("апп") — хөндлөн банер реклам. `xl:hidden` нь доорх
-          хажуугийн баганын `xl:block`-той яг эсрэг тул хоёул зэрэг
-          харагдахгүй. */}
-      <div className={`pt-4 xl:hidden print:hidden ${SHELL_WIDTH}`}>
+      {/*
+        Нарийн дэлгэц ("апп") — хөндлөн банер реклам.
+
+        ⚠ РЕКЛАМ ГУРВАН БАЙРШИЛТАЙ бөгөөд тэдгээр нь ЯГ ТАСАРХАЙ: энэ банер
+        `lg`-ээс ДООШ, цэсний доорх нь `lg`…`xl`, баруун багана нь `xl`-ээс
+        ДЭЭШ. Хоёр нь давхцвал нэг дэлгэцэнд хоёр зар гарна.
+      */}
+      <div className={`pt-4 lg:hidden print:hidden ${SHELL_WIDTH}`}>
         <AdSlot slotId={getAdSenseSlotId("banner")} />
       </div>
 
@@ -442,6 +446,16 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
             </ul>
 
             <PremiumPromo />
+
+            {/*
+              ⚠ ЦЭСНИЙ ДООРХ РЕКЛАМ — зөвхөн `lg`…`xl` хооронд. Энэ өргөнд
+              баруун талын тусдаа багана (240px+) багтахгүй ч цэсний доор
+              зай СУЛ байдаг. `xl`-ээс дээш баруун багана гарах тул энэ
+              нуугдана — хоёулаа зэрэг гарвал нэг дэлгэцэнд хоёр зар болно.
+            */}
+            <div className="mt-3 hidden lg:block xl:hidden">
+              <AdSlot slotId={getAdSenseSlotId("sidebar")} />
+            </div>
             </div>
           </div>
         </nav>

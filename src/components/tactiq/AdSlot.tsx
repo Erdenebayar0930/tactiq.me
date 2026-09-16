@@ -5,6 +5,7 @@ import { useEffect } from "react";
 import { Megaphone } from "lucide-react";
 
 import { getAdSenseClientId } from "@/lib/tactiq/ads";
+import { useUser } from "@/context/UserContext";
 
 /**
  * Реклам байршил — хичээлийн жагсаалт зэрэгт "хажууд нь" зар харуулахад.
@@ -12,6 +13,14 @@ import { getAdSenseClientId } from "@/lib/tactiq/ads";
  * ⚠ `NEXT_PUBLIC_ADSENSE_CLIENT_ID` тохируулаагүй л бол ЗӨВХӨН зайны
  * placeholder харуулна (доор). Тохируулмагц ЯГ ЭНЭ газарт бодит AdSense
  * зар гарч ирнэ — өөр кодын өөрчлөлт ШААРДЛАГАГҮЙ.
+ *
+ * ⚠ PREMIUM ХЭРЭГЛЭГЧИД РЕКЛАМ ГАРАХГҮЙ. Шалгалтыг ЭНД, нэг л газарт
+ * хийв: дуудагч бүрд `{!user.isPremium && <AdSlot/>}` гэж бичвэл шинэ
+ * байршил нэмэх бүрд мартах бөгөөд төлбөр төлсөн хүн реклам хараад
+ * «юуны төлөө төлөв?» гэж асуух болно.
+ *
+ * ⚠ Зөвхөн ЗАРЫГ нуух биш, БҮХЭЛДЭЭ юу ч зурахгүй (`null`): хоосон
+ * хүрээ үлдээвэл premium хэрэглэгчийн дэлгэц дээр учиргүй цоорхой гарна.
  *
  * Тохируулах алхам:
  *   1. https://www.google.com/adsense дээр акаунт үүсгээд сайтаа баталгаажуулна
@@ -28,9 +37,17 @@ export function AdSlot({
   className?: string;
 }) {
   const clientId = getAdSenseClientId();
+  const { user } = useUser();
+  /*
+   * ⚠ `user` нь эхний рендерт `null` байж болно (профайл татагдаж
+   * байхад). Тэр үед реклам зурагдаад дараа нь алга болох нь premium
+   * хэрэглэгчийн нүдэнд «анивчилт» болно — тиймээс ТАТАГДТАЛ нь
+   * хүлээнэ.
+   */
+  const hidden = !user || user.isPremium;
 
   useEffect(() => {
-    if (!clientId) return;
+    if (!clientId || hidden) return;
     try {
       const adsbygoogle = (window as unknown as { adsbygoogle?: unknown[] }).adsbygoogle ?? [];
       adsbygoogle.push({});
@@ -38,7 +55,9 @@ export function AdSlot({
     } catch {
       // Скрипт хараахан ачаалаагүй эсвэл сүлжээгээр хаагдсан бол чимээгүй алгасна.
     }
-  }, [clientId]);
+  }, [clientId, hidden]);
+
+  if (hidden) return null;
 
   if (!clientId) {
     return (
