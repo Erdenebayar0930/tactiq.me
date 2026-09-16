@@ -97,11 +97,11 @@ export function CourseCard({
            * зургийн ХАЖУУ талыг тайрдаг байв — баннер дээрх гарчиг,
            * тайлбар таллаа алга болно.
            *
-           * ⚠ `aspect-[5/2]` нь `public/images/covers/*`-ийн харьцаатай
-           * ЯГ тэнцүү (400×160). Шинэ ковер нэмэхдээ ижил харьцаагаар
+           * ⚠ `aspect-[2/1]` нь `public/images/covers/v3/*`-ийн харьцаатай
+           * ЯГ тэнцүү (480×240). Шинэ ковер нэмэхдээ ижил харьцаагаар
            * тасдана — `CourseCover`-ийн тайлбарыг үзнэ үү.
            */
-          className="aspect-[5/2] w-full transition-transform duration-300 group-hover:scale-[1.03]"
+          className="aspect-[2/1] w-full transition-transform duration-300 group-hover:scale-[1.03]"
         />
         {/*
           ⚠ Хугацаа / төлөвийн badge ЗУРАГ ДЭЭР (зүүн дээд). Гарчгийн хажууд

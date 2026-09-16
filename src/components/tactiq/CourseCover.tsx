@@ -40,19 +40,24 @@ import type { ColorKey } from "@/lib/tactiq/theme";
  * (`next.config.ts`), тиймээс ижил нэрээр дарж бичвэл хэрэглэгчид хуучин
  * зургаа үзсээр байна.
  *
- * ⚠ ХЭМЖЭЭ: 400×160 (2.5:1). Коверын хайрцаг нь `h-32` бөгөөд картын
- * өргөнөөр сунадаг тул ойролцоогоор 2.5:1. Үүнээс НАРИЙН зураг өгвөл
- * `object-cover` нь хажуу талыг ТАЙРНА — баннер дээрх гарчиг, тайлбар
- * алдагдана.
+ * ⚠ ХЭМЖЭЭ: 480×240 (2:1). `CourseCard`-ийн коверын хайрцаг нь
+ * `aspect-[2/1]` — ЯГ ИЖИЛ байх ёстой, эс бөгөөс `object-cover` тайрна.
+ * Зургийг дахин тасдвал хоёуланг нь ХАМТ шалгана.
+ *
+ * ⚠ ХАВТАС НЬ ХУВИЛБАРТАЙ (`v3`). Service worker нь `/images/**`-ийг
+ * CacheFirst-ээр 30 хоног барьдаг (`next.config.ts`) тул ижил нэрээр
+ * дарж бичихэд хэрэглэгчид засвар ХҮРЭХГҮЙ. Зураг солих бүрд дугаарыг
+ * өсгөж, файлуудыг шинэ хавтсанд тавина.
  */
+const COVER_DIR = "/images/covers/v3";
+
 const COVER_IMAGES: Record<string, string> = {
-  chess: "/images/covers/chess-2.webp",
-  checkers: "/images/covers/checkers-2.webp",
-  sudoku: "/images/covers/sudoku-2.webp",
-  tangram: "/images/covers/tangram-2.webp",
-  memory: "/images/covers/memory-2.webp",
-  puzzle: "/images/covers/puzzle-2.webp",
-  "kids-coding": "/images/covers/kids-coding-2.webp",
+  chess: `${COVER_DIR}/chess.webp`,
+  checkers: `${COVER_DIR}/checkers.webp`,
+  sudoku: `${COVER_DIR}/sudoku.webp`,
+  tangram: `${COVER_DIR}/tangram.webp`,
+  memory: `${COVER_DIR}/memory.webp`,
+  puzzle: `${COVER_DIR}/puzzle.webp`,
 };
 
 /** Ковер бүрийн налуу дэвсгэрийн хоёр өнгө (эхлэл → төгсгөл). */
