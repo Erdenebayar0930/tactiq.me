@@ -1,4 +1,5 @@
 import { and, desc, eq } from "drizzle-orm";
+import { parsePlayGame } from "@/lib/tactiq/playGame";
 import { NextResponse } from "next/server";
 
 import { requireActiveUser, serverError } from "@/lib/api/auth";
@@ -25,7 +26,7 @@ export async function GET(request: NextRequest) {
 
   try {
     const [room] = await db
-      .select({ id: chessRooms.id })
+      .select({ id: chessRooms.id, game: chessRooms.game })
       .from(chessRooms)
       .where(and(eq(chessRooms.whiteUid, caller.uid), eq(chessRooms.status, "active")))
       .orderBy(desc(chessRooms.createdAt))
@@ -33,7 +34,17 @@ export async function GET(request: NextRequest) {
 
     if (!room) return NextResponse.json({ matched: false });
 
-    return NextResponse.json({ matched: true, roomId: room.id, color: "white" });
+    /*
+     * ⚠ `game`-ийг БУЦААНА: хүлээж байсан тал аль хуудас руу явахаа
+     * эндээс л мэднэ (`roomPath`). Үүнгүй бол даамын хос болсон ч
+     * шатрын хуудас руу шидэгдэж, хоёр тал өөр өрөөнд суух болно.
+     */
+    return NextResponse.json({
+      matched: true,
+      roomId: room.id,
+      game: parsePlayGame(room.game),
+      color: "white",
+    });
   } catch (error) {
     return serverError(error, "Тоглогчийн явцыг шалгахад алдаа гарлаа");
   }

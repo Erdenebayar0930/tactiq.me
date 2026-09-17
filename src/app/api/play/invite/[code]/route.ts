@@ -1,4 +1,5 @@
 import { and, eq } from "drizzle-orm";
+import { parsePlayGame } from "@/lib/tactiq/playGame";
 import { NextResponse } from "next/server";
 
 import { badRequest, notFound, requireActiveUser, serverError } from "@/lib/api/auth";
@@ -44,6 +45,7 @@ export async function GET(
 
     return NextResponse.json({
       code: invite.code,
+      game: parsePlayGame(invite.game),
       host,
       isHost: invite.hostUid === result.caller.uid,
       roomId: invite.roomId,
@@ -88,17 +90,26 @@ export async function POST(
       if (invite.hostUid === caller.uid) return { error: "self" as const };
       if (invite.roomId) return { error: "taken" as const };
 
+      /*
+       * ⚠ Өрөөний тоглоом нь УРИЛГААС ирнэ, клиентээс БИШ: хүлээж авах
+       * хүсэлтэд `game` бичиж илгээвэл найз нь шатрын урилгыг даамын
+       * өрөө болгож хувиргаж чадна.
+       */
       const [room] = await tx
         .insert(chessRooms)
-        .values({ whiteUid: invite.hostUid, blackUid: caller.uid })
-        .returning({ id: chessRooms.id });
+        .values({
+          whiteUid: invite.hostUid,
+          blackUid: caller.uid,
+          game: parsePlayGame(invite.game),
+        })
+        .returning({ id: chessRooms.id, game: chessRooms.game });
 
       await tx
         .update(chessInvites)
         .set({ roomId: room.id, guestUid: caller.uid })
         .where(eq(chessInvites.code, invite.code));
 
-      return { roomId: room.id };
+      return { roomId: room.id, game: parsePlayGame(room.game) };
     });
 
     if ("error" in outcome) {
@@ -115,7 +126,7 @@ export async function POST(
       );
     }
 
-    return NextResponse.json({ roomId: outcome.roomId, color: "black" });
+    return NextResponse.json({ roomId: outcome.roomId, game: outcome.game, color: "black" });
   } catch (error) {
     return serverError(error, "Урилгыг хүлээж авахад алдаа гарлаа");
   }

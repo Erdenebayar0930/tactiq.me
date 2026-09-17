@@ -1,4 +1,5 @@
 import { and, eq, sql } from "drizzle-orm";
+import { parsePlayGame } from "@/lib/tactiq/playGame";
 import { NextResponse } from "next/server";
 
 import { badRequest, notFound, requireActiveUser, serverError } from "@/lib/api/auth";
@@ -76,28 +77,47 @@ export async function POST(
       return NextResponse.json({ ok: true, alreadyFinished: true, user: toPublicUser(row) });
     }
 
+    /*
+     * ⚠ СТАТИСТИК нь ТОГЛООМООР: өрөө нь шатрын ч, даамын ч байж болно
+     * (`chess_rooms.game`). Урьд нь бүх өрөө `chessWins`-д тоологддог
+     * байсан тул даамын онлайн тоглолт сурагчийн ШАТРЫН ялалт болж
+     * бичигдэх байв — профайл дээрх тоо худал болно.
+     */
+    const isDraughts = parsePlayGame(updated.game) === "draughts";
+    const winsCol = isDraughts ? users.draughtsWins : users.chessWins;
+    const lossesCol = isDraughts ? users.draughtsLosses : users.chessLosses;
+    const drawsCol = isDraughts ? users.draughtsDraws : users.chessDraws;
+
     if (winnerUid) {
       const loserUid = winnerUid === updated.whiteUid ? updated.blackUid : updated.whiteUid;
       await db
         .update(users)
-        .set({ chessWins: sql`${users.chessWins} + 1` })
+        .set(isDraughts ? { draughtsWins: sql`${winsCol} + 1` } : { chessWins: sql`${winsCol} + 1` })
         .where(eq(users.uid, winnerUid));
       await db
         .update(users)
-        .set({ chessLosses: sql`${users.chessLosses} + 1` })
+        .set(
+          isDraughts
+            ? { draughtsLosses: sql`${lossesCol} + 1` }
+            : { chessLosses: sql`${lossesCol} + 1` }
+        )
         .where(eq(users.uid, loserUid));
     } else {
-      await db
-        .update(users)
-        .set({ chessDraws: sql`${users.chessDraws} + 1` })
-        .where(eq(users.uid, updated.whiteUid));
-      await db
-        .update(users)
-        .set({ chessDraws: sql`${users.chessDraws} + 1` })
-        .where(eq(users.uid, updated.blackUid));
+      const draw = isDraughts
+        ? { draughtsDraws: sql`${drawsCol} + 1` }
+        : { chessDraws: sql`${drawsCol} + 1` };
+      await db.update(users).set(draw).where(eq(users.uid, updated.whiteUid));
+      await db.update(users).set(draw).where(eq(users.uid, updated.blackUid));
     }
 
     /*
+     * ⚠ МЭДЭГДЭЖ БУЙ ХЯЗГААРЛАЛТ: Elo нь ХОЁР ТОГЛООМД НЭГ (`users.rating`).
+     * Шатарт хүчтэй хүн даамд шинэхэн байж мэднэ — тэр үед үнэлгээ хоёр
+     * тоглоомын алинд ч зөв биш болно. Тусад нь болгоход шинэ багана,
+     * миграци, профайлын хоёр тоо шаардагдана; онлайн даам нь дөнгөж
+     * нэмэгдсэн тул тоглолтын тоо хуримтлагдсаны дараа шийдэхээр
+     * зориудаар хойшлуулав.
+     *
      * Elo — ХОЁУЛАНГ нь НЭГ гүйлгээнд, ИЖИЛ "өмнөх" утгаар (`lib/api/rating.ts`).
      *
      * Тэнцээ үед "winner"/"loser" гэдэг нь зүгээр л дараалал: `draw: true`

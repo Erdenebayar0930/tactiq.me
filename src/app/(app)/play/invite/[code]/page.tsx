@@ -2,15 +2,26 @@
 
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Swords } from "lucide-react";
+import { CircleDot, Swords } from "lucide-react";
 
 import { apiFetch, ApiError } from "@/lib/apiClient";
 import { Mascot } from "@/components/tactiq/Mascot";
 import { ErrorNote, Skeleton } from "@/components/tactiq/ui";
+import { playGameLabel, roomPath } from "@/lib/tactiq/playGame";
 import { t } from "@/lib/i18n/t";
+
+import type { PlayGame } from "@/lib/tactiq/playGame";
 
 type InviteInfo = {
   code: string;
+  /**
+   * "chess" | "draughts" — ЭНЭ ХОЛБООС аль тоглоомынх бэ.
+   *
+   * ⚠ Урилга үүсгэсэн үед шийдэгдсэн бөгөөд хүлээн авагч ӨӨРЧЛӨХ
+   * боломжгүй: клиентээс `game` илгээж чадвал найз нь шатрын урилгыг
+   * даамын өрөө болгож хувиргана.
+   */
+  game: PlayGame;
   host: { uid: string; displayName: string; photoUrl: string } | null;
   isHost: boolean;
   roomId: string | null;
@@ -42,7 +53,7 @@ export default function InvitePage() {
         // Урьсан тал өөрөө холбоосоо дарсан бол лобби руугаа буцаана —
         // тэнд нь хүлээх дэлгэц, "Хуваалцах" товч аль хэдийн байгаа.
         if (data.isHost) {
-          router.replace(data.roomId ? `/play/${data.roomId}` : "/play");
+          router.replace(data.roomId ? roomPath(data.game, data.roomId) : "/play");
           return;
         }
         setInvite(data);
@@ -60,10 +71,11 @@ export default function InvitePage() {
     setBusy(true);
     setError(null);
     try {
-      const data = await apiFetch<{ roomId: string }>(`/api/play/invite/${params.code}`, {
-        method: "POST",
-      });
-      router.replace(`/play/${data.roomId}`);
+      const data = await apiFetch<{ roomId: string; game: PlayGame }>(
+        `/api/play/invite/${params.code}`,
+        { method: "POST" }
+      );
+      router.replace(roomPath(data.game, data.roomId));
     } catch (cause) {
       setError(cause instanceof ApiError ? cause.message : t("Алдаа гарлаа."));
       setBusy(false);
@@ -97,12 +109,26 @@ export default function InvitePage() {
 
   return (
     <div className="mx-auto flex max-w-md flex-col items-center gap-5 py-10 text-center">
-      <span className="grid size-20 place-items-center rounded-3xl bg-sky-500 text-white">
-        <Swords className="size-10" aria-hidden />
+      {/*
+        ⚠ Дүрс, өнгө, бичвэр гурвуулаа ТОГЛООМООР: «шатар тоглохоор урьж
+        байна» гэсэн бичвэр даамын өрөө рүү хөтөлвөл найз нь буруу зүйл
+        хүлээж нээнэ.
+      */}
+      <span
+        className={`grid size-20 place-items-center rounded-3xl text-white ${
+          invite.game === "draughts" ? "bg-amber-500" : "bg-sky-500"
+        }`}
+      >
+        {invite.game === "draughts" ? (
+          <CircleDot className="size-10" aria-hidden />
+        ) : (
+          <Swords className="size-10" aria-hidden />
+        )}
       </span>
 
       <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-        {invite.host?.displayName ?? t("Найз")} чамайг шатар тоглохоор урьж байна
+        {invite.host?.displayName ?? t("Найз")} чамайг {playGameLabel(invite.game).toLowerCase()}{" "}
+        тоглохоор урьж байна
       </h1>
 
       {invite.accepted ? (

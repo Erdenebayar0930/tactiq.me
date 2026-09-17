@@ -47,10 +47,17 @@ const COURSE_PLAY: Record<string, CoursePlay> = {
     hasOnline: true,
   },
   checkers: {
-    href: "/play/draughts",
+    /*
+     * ⚠ `/play/draughts` (ботын хуудас) БИШ, ЛОББИ: даам одоо хоёр хүний
+     * онлайн тоглолт, найзыг урих холбоос хоёуланг дэмждэг
+     * (`lib/tactiq/playGame.ts`). Шууд ботын хуудас руу заавал сурагч
+     * тэр хоёр боломжийг ХЭЗЭЭ Ч олохгүй — лобби нь ботыг мөн санал
+     * болгодог тул юу ч алдагдахгүй.
+     */
+    href: "/play",
     label: "Даам",
     Icon: CircleDot,
-    hasOnline: false,
+    hasOnline: true,
   },
 };
 

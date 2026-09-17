@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { parsePlayGame } from "@/lib/tactiq/playGame";
 
 import { notFound, requireActiveUser, serverError } from "@/lib/api/auth";
 import { getOpponentInfo, getRoomForCaller } from "@/lib/api/chess";
@@ -27,6 +28,7 @@ export async function GET(
 
     return NextResponse.json({
       roomId: found.room.id,
+      game: parsePlayGame(found.room.game),
       color: found.color,
       status: found.room.status,
       winnerUid: found.room.winnerUid,

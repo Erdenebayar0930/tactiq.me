@@ -1389,7 +1389,14 @@ export const pathChests = pgTable(
  * Хэрэглэгч бүрт ЗӨВХӨН НЭГ мөр — дахин "хайх" дарвал `joinedAt` шинэчлэгдэнэ.
  */
 export const chessQueue = pgTable("chess_queue", {
+  /**
+   * ⚠ `uid` нь ЦОРЫН ГАНЦ түлхүүр, (uid, game) БИШ: нэг тоглогч НЭГ л
+   * тоглоом хайна. Хоёуланг зэрэг хайж чадвал хоёр өрөөнд зэрэг
+   * оногдож, нэг талыг нь хаяхад нөгөө тоглогч хоосон өрөөнд хүлээнэ.
+   */
   uid: uidCol("uid").primaryKey(),
+  /** "chess" | "draughts" — хос нь ЗӨВХӨН ижил тоглоомын дараалалаас. */
+  game: varchar("game", { length: 16 }).notNull().default("chess"),
   joinedAt: timestamp("joined_at").notNull().defaultNow(),
 });
 
@@ -1405,6 +1412,15 @@ export const chessRooms = pgTable(
   "chess_rooms",
   {
     id: uuid("id").primaryKey().defaultRandom(),
+    /**
+     * "chess" | "draughts" (`lib/tactiq/playGame.ts`).
+     *
+     * ⚠ ХҮСНЭГТИЙН НЭР нь `chess_*` хэвээр ч агуулга нь ХОЁР тоглоом:
+     * урилга, дараалал, сигналын систем хоёуланд нь ижил тул
+     * хуулбарлахаас илүү нэг багана нэмэх нь зөв. Нэр солих нь бүх
+     * индекс, миграцийг хөндөх бөгөөд үнэ цэнэ нь зөвхөн гоо сайхан.
+     */
+    game: varchar("game", { length: 16 }).notNull().default("chess"),
     /** Урьд нь дараалалд хүлээж байсан тал */
     whiteUid: uidCol("white_uid").notNull(),
     /** `join` дуудлагаараа хосыг үүсгэсэн тал */
@@ -1440,6 +1456,8 @@ export const chessInvites = pgTable(
   {
     /** Холбоост харагдах богино код — `/play/invite/<code>` */
     code: varchar("code", { length: 12 }).primaryKey(),
+    /** "chess" | "draughts" — холбоос аль хуудас руу хөтлөхийг шийднэ. */
+    game: varchar("game", { length: 16 }).notNull().default("chess"),
     hostUid: uidCol("host_uid").notNull(),
     /** Хүлээн авагч — зөвхөн хүлээж авсны дараа */
     guestUid: uidCol("guest_uid"),

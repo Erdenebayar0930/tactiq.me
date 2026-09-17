@@ -11,6 +11,9 @@ import { apiFetch, ApiError } from "@/lib/apiClient";
 import { BOT_DIFFICULTIES } from "@/lib/chess/bot";
 import { DRAUGHTS_BOT_DIFFICULTIES } from "@/lib/draughts/bot";
 import { inviteUrl } from "@/lib/chess/invite";
+import { playGameLabel, roomPath } from "@/lib/tactiq/playGame";
+
+import type { PlayGame } from "@/lib/tactiq/playGame";
 import { DIFFICULTY_LABELS } from "@/lib/tactiq/theme";
 import { Mascot } from "@/components/tactiq/Mascot";
 import { TournamentSection } from "@/components/tactiq/TournamentSection";
@@ -72,7 +75,16 @@ export default function PlayPage() {
   const isDraughtsCourse = user.activeCourseSlug === "checkers";
   const showChess = !isDraughtsCourse;
   const showDraughts = isDraughtsCourse || noCourse;
-  const showOnline = courseHasOnline(user.activeCourseSlug) && showChess;
+  const showOnline = courseHasOnline(user.activeCourseSlug);
+  /**
+   * ОНЛАЙН хос ямар тоглоомоор үүсэх вэ.
+   *
+   * ⚠ Курсээс шийднэ, хэрэглэгчээс асуухгүй: даам сурч байгаа хүнд
+   * «шатар эсвэл даам?» гэсэн сонголт нэмэх нь нэг дарж болох зүйлийг
+   * хоёр дарж болох зүйл болгоно. Курс сонгоогүй хүнд шатар — тэр нь
+   * тоглогч хамгийн их байдаг тоглоом.
+   */
+  const onlineGame: PlayGame = isDraughtsCourse ? "draughts" : "chess";
   const [status, setStatus] = useState<QueueStatus>("idle");
   const [error, setError] = useState<string | null>(null);
   const [onlineCount, setOnlineCount] = useState<number | null>(null);
@@ -133,12 +145,17 @@ export default function PlayPage() {
     const tick = async () => {
       if (stopped.current) return;
       try {
-        const data = await apiFetch<{ matched: boolean; roomId?: string }>(
+        const data = await apiFetch<{ matched: boolean; roomId?: string; game?: PlayGame }>(
           "/api/play/queue/status"
         );
         if (stopped.current) return;
         if (data.matched && data.roomId) {
-          router.push(`/play/${data.roomId}`);
+          /*
+           * ⚠ Хаягийг СЕРВЕРИЙН `game`-ээс тооцно, `onlineGame`-ээс БИШ:
+           * хүлээж байх хооронд хэрэглэгч курсээ сольсон байж мэднэ.
+           * Тэр үед өрөө нь хуучин тоглоомынх хэвээр байна.
+           */
+          router.push(roomPath(data.game ?? onlineGame, data.roomId));
           return;
         }
       } catch {
@@ -158,13 +175,15 @@ export default function PlayPage() {
     setError(null);
 
     try {
-      const data = await apiFetch<{ matched: boolean; roomId?: string; color?: string }>(
-        "/api/play/queue/join",
-        { method: "POST" }
-      );
+      const data = await apiFetch<{
+        matched: boolean;
+        roomId?: string;
+        game?: PlayGame;
+        color?: string;
+      }>("/api/play/queue/join", { method: "POST", body: { game: onlineGame } });
 
       if (data.matched && data.roomId) {
-        router.push(`/play/${data.roomId}`);
+        router.push(roomPath(data.game ?? onlineGame, data.roomId));
         return;
       }
 
@@ -205,9 +224,7 @@ export default function PlayPage() {
       </h1>
 
       <p className="text-sm text-gray-500 dark:text-gray-400">
-        {isDraughtsCourse
-          ? t("Дам одоогоор зөвхөн ботын эсрэг тоглогдоно.")
-          : t("Санамсаргүй тоглогчтой шууд (P2P) холбогдоно.")}
+        {t("Санамсаргүй тоглогчтой шууд (P2P) холбогдоно, эсвэл найзаа урина.")}
       </p>
 
       {showOnline && onlineCount !== null && (
@@ -245,7 +262,7 @@ export default function PlayPage() {
             </button>
           )}
 
-          {showOnline && <FriendInvite />}
+          {showOnline && <FriendInvite game={onlineGame} />}
 
           {showChess && (
             <BotRow
@@ -289,7 +306,7 @@ export default function PlayPage() {
  * компьютер дээр хуулж авна. Найз нь холбоосыг дармагц өрөө үүсч, энэ
  * дэлгэц polling-оороо мэдээд хоёуланг нь хөлөг рүү аваачна.
  */
-function FriendInvite() {
+function FriendInvite({ game }: { game: PlayGame }) {
   const router = useRouter();
   const [code, setCode] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -311,8 +328,10 @@ function FriendInvite() {
 
     const tick = async () => {
       try {
-        const data = await apiFetch<{ roomId: string | null }>(`/api/play/invite/${code}`);
-        if (!cancelled && data.roomId) router.push(`/play/${data.roomId}`);
+        const data = await apiFetch<{ roomId: string | null; game?: PlayGame }>(
+          `/api/play/invite/${code}`
+        );
+        if (!cancelled && data.roomId) router.push(roomPath(data.game ?? game, data.roomId));
       } catch {
         // Түр зуурын алдаа — дараагийн тик дахин оролдоно.
       }
@@ -323,13 +342,16 @@ function FriendInvite() {
       cancelled = true;
       clearInterval(interval);
     };
-  }, [code, router]);
+  }, [code, router, game]);
 
   const create = async () => {
     setBusy(true);
     setError(null);
     try {
-      const data = await apiFetch<{ code: string }>("/api/play/invite", { method: "POST" });
+      const data = await apiFetch<{ code: string }>("/api/play/invite", {
+        method: "POST",
+        body: { game },
+      });
       setCode(data.code);
     } catch (cause) {
       setError(cause instanceof ApiError ? cause.message : t("Алдаа гарлаа."));
@@ -353,7 +375,16 @@ function FriendInvite() {
   const share = async () => {
     const url = inviteUrl(code!);
     try {
-      await navigator.share({ title: t("Шатар тоглоцгооё"), text: t("Надтай шатар тоглоё!"), url });
+      /*
+       * ⚠ Бичвэр нь ТОГЛООМООР: «Надтай шатар тоглоё!» гэсэн урилга
+       * даамын өрөө рүү хөтөлвөл найз нь буруу зүйл хүлээж нээнэ.
+       */
+      const name = playGameLabel(game);
+      await navigator.share({
+        title: `${name} ${t("тоглоцгооё")}`,
+        text: `${t("Надтай")} ${name.toLowerCase()} ${t("тоглоё!")}`,
+        url,
+      });
     } catch {
       // Хэрэглэгч хуваалцахаас татгалзсан — алдаа биш.
     }
