@@ -7,6 +7,7 @@ import { CalendarClock, Check, Medal, ScrollText, Trophy, Users } from "lucide-r
 import { useUser } from "@/context/UserContext";
 import { InvoiceCard } from "@/components/tactiq/QpayInvoice";
 import { gameTheme } from "@/lib/tactiq/gameTheme";
+import { parseTournamentFormat, tournamentTypeLabel } from "@/lib/tactiq/tournamentFormat";
 import { mnDay, mnTime } from "@/lib/tactiq/dateMn";
 import { ErrorNote } from "@/components/tactiq/ui";
 import { apiFetch, ApiError } from "@/lib/apiClient";
@@ -53,6 +54,8 @@ type Tournament = {
   game: string;
   /** "open" | "members" | "mind" — оролцох эрх (`tournamentAccessLabel`). */
   access: string;
+  /** "arena" | "swiss" | "knockout" | "team" — хурд нь цагийн хяналтаас. */
+  format: string;
   seats: number | null;
   registered: number;
   entryFeeMnt: number;
@@ -370,123 +373,152 @@ export function TournamentSection({ defaultOpen = false }: { defaultOpen?: boole
                   <li
                     key={tournament.id}
                     /*
-                      ⚠ ЗҮҮН ЗАХЫН ӨНГӨТ ЗУРВАС (`border-l-4`): гар утсан дээр
-                      мөрүүд нягт байдаг тул хаанаас хаа хүртэл нэг тэмцээн
-                      болохыг өнгө нь тусгаарлана. Мөн шатар/даамыг ХОЛООС
-                      харахад л ялгана.
+                      ⚠ ГАР УТСАН ДЭЭР БАГАНА, ширээн дээр МӨР
+                      (`flex-col sm:flex-row`).
+
+                      Урьд нь бүх зүйл (цаг, дүрс, нэр, шошгууд, товч) НЭГ
+                      мөрөнд `flex-wrap`-аар байсан. 390px дэлгэцэнд тэр нь
+                      нэрийг «Оюун…» болтол хумьж, шошгуудыг дараалуулан
+                      доош унагаж, товч нь мөрийн хагасыг эзэлж байв.
+
+                      ⚠ ЗҮҮН ЗАХЫН ӨНГӨТ ЗУРВАС: мөрүүд нягт байдаг тул
+                      хаанаас хаа хүртэл нэг тэмцээн болохыг өнгө тусгаарлана.
                     */
-                    className={`surface flex flex-wrap items-center gap-3 border-l-4 p-3 ${
+                    className={`surface flex flex-col gap-2 border-l-4 p-3 sm:flex-row sm:items-center sm:gap-3 ${
                       gameTheme(tournament.game).border
                     }`}
                   >
                     {/*
-                      ⚠ ЦАГ нь мөрийн ЗҮҮН ЗАХАД, тогтмол өргөнтэй: ингэснээр
-                      мөрүүд цагийн БАГАНА үүсгэж, «цаг цагаараа доошоо»
-                      уншигдана. Дотор нь бичвэл цаг бүр өөр байрлалд унаж,
-                      хуваарь биш зүгээр нэг жагсаалт болно.
+                      ДЭЭД ХЭСЭГ — цаг, дүрс, нэр. Гар утсан дээр ч энэ гурав
+                      НЭГ мөрөнд зэрэгцэнэ: цаг нь хамгийн чухал бөгөөд нэртэй
+                      нь хамт уншигдах ёстой.
                     */}
-                    <span className="num w-12 shrink-0 text-sm font-extrabold text-gray-900 tabular-nums dark:text-white">
-                      {mnTime(startsAt)}
-                    </span>
+                    <div className="flex min-w-0 flex-1 items-center gap-3">
+                      {/*
+                        ⚠ ЦАГ нь ТОГТМОЛ ӨРГӨНТЭЙ (`w-12`): мөрүүд цагийн
+                        БАГАНА үүсгэж, «цаг цагаараа доошоо» уншигдана.
+                      */}
+                      <span className="num w-12 shrink-0 text-base font-extrabold tabular-nums text-gray-900 dark:text-white">
+                        {mnTime(startsAt)}
+                      </span>
 
-                    <span
-                      className={`grid size-10 shrink-0 place-items-center rounded-xl ${
-                        gameTheme(tournament.game).tile
-                      }`}
-                    >
-                      {/* ⚠ Тоглоомын дүрс — цомын дүрс БИШ: цом нь бүх тэмцээнд
-                          ижил тул юу ч ялгадаггүй. */}
-                      {(() => {
-                        const Icon = gameTheme(tournament.game).Icon;
-                        return <Icon className="size-5" aria-hidden />;
-                      })()}
-                    </span>
+                      <span
+                        className={`grid size-9 shrink-0 place-items-center rounded-xl ${
+                          gameTheme(tournament.game).tile
+                        }`}
+                      >
+                        {/* ⚠ Тоглоомын дүрс — цомын дүрс БИШ: цом нь бүх
+                            тэмцээнд ижил тул юу ч ялгадаггүй. */}
+                        {(() => {
+                          const Icon = gameTheme(tournament.game).Icon;
+                          return <Icon className="size-5" aria-hidden />;
+                        })()}
+                      </span>
 
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate font-bold text-gray-900 dark:text-white">{tournament.name}</p>
-                      <p className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-gray-500 dark:text-gray-400">
+                      <div className="min-w-0 flex-1">
                         {/*
-                          ⚠ ТОГЛООМЫН ШОШГО нь ҮРГЭЛЖ харагдана («Бүгд» табд ч,
-                          ангиллын табд ч): өнгө, дүрс хоёр нь өнгө сохор
-                          хэрэглэгчид, нарны доорх дэлгэцэнд хүрэлцэхгүй.
+                          ⚠ `truncate` ХЭВЭЭР ч одоо нэрэнд БҮТЭН мөр
+                          хүрэлцэнэ — шошгууд доош гарсан тул «Оюун…» болж
+                          хумигдахаа больсон.
                         */}
-                        <span
-                          className={`rounded-full px-1.5 py-0.5 text-[10px] font-bold ${
-                            gameTheme(tournament.game).chip
-                          }`}
-                        >
-                          {gameTheme(tournament.game).label}
-                        </span>
+                        <p className="truncate font-bold text-gray-900 dark:text-white">
+                          {tournament.name}
+                        </p>
+
                         {/*
-                          ⚠ ЭРХИЙН ШОШГО — «Гишүүнд үнэгүй» / «Mind · чансаа».
-                          Бүртгүүлэх товч дарахаас ӨМНӨ харагдах ёстой: 403
-                          хариу авч байж мэдэх нь хамгийн дор.
+                          ХЭЛБЭР ба ХУРД — нэрийн доор, НЭГ мөрөнд.
+
+                          ⚠ Хурд нь ЦАГИЙН ХЯНАЛТААС тооцогдоно
+                          (`lib/tactiq/tournamentFormat.ts`): хадгалбал админ
+                          «Bullet» гэж сонгоод «30+0» бичих боломжтой болж,
+                          хоёр нь үүрд зөрнө.
                         */}
-                        {accessLabel && (
-                          <span className="rounded-full bg-violet-100 px-1.5 py-0.5 text-[10px] font-bold text-violet-700 dark:bg-violet-500/20 dark:text-violet-200">
-                            {accessLabel}
-                          </span>
-                        )}
-                        {category === "all" &&
-                          tournamentCategoryLabel(tournament.category) !==
-                            gameTheme(tournament.game).label && (
-                            <span className="rounded-full bg-gray-100 px-1.5 py-0.5 text-[10px] font-bold text-gray-600 dark:bg-white/10 dark:text-gray-300">
-                              {tournamentCategoryLabel(tournament.category)}
-                            </span>
+                        <p className="truncate text-xs font-semibold text-gray-600 dark:text-gray-300">
+                          {tournamentTypeLabel(
+                            parseTournamentFormat(tournament.format),
+                            tournament.timeControl
                           )}
-                        {/*
-                          ⚠ Огноо ЭНД ДАХИН БИЧИГДЭХГҮЙ: өдөр нь бүлгийн
-                          толгойд, цаг нь мөрийн зүүн баганад аль хэдийн бий.
-                          Гурав дахин бичвэл жинхэнэ мэдээлэл (цагийн хяналт,
-                          оролцогчийн тоо) дунд нь живнэ.
-                        */}
-                        <span className="inline-flex items-center gap-1">
-                          <CalendarClock className="size-3.5" aria-hidden />
-                          {tournament.durationMin} {t("мин")}
-                        </span>
-                        {tournament.timeControl && <span>{tournament.timeControl}</span>}
-                        <span className="inline-flex items-center gap-1">
-                          <Users className="size-3.5" aria-hidden />
-                          {tournament.registered}
-                          {tournament.seats !== null && `/${tournament.seats}`}
-                        </span>
-                      </p>
+                        </p>
+                      </div>
                     </div>
 
-                    {tournament.isRegistered ? (
-                      canEnter ? (
+                    {/*
+                      ШОШГО ба ТООНУУД — гар утсан дээр өөрийн мөрөнд, цагийн
+                      баганатай тэгшилж (`pl-15`).
+
+                      ⚠ Цагийн багана нь 48px + 12px зай = 60px; шошгуудыг
+                      тэр хэмжээгээр шахах нь тэднийг «нэрийн доорх мэдээлэл»
+                      болгож харуулна — зүүн захаас эхлүүлбэл тусдаа блок шиг
+                      харагдана.
+                    */}
+                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1 pl-15 sm:pl-0">
+                      <span
+                        className={`rounded-full px-1.5 py-0.5 text-[10px] font-bold ${
+                          gameTheme(tournament.game).chip
+                        }`}
+                      >
+                        {gameTheme(tournament.game).label}
+                      </span>
+
+                      {accessLabel && (
+                        <span className="rounded-full bg-violet-100 px-1.5 py-0.5 text-[10px] font-bold text-violet-700 dark:bg-violet-500/20 dark:text-violet-200">
+                          {accessLabel}
+                        </span>
+                      )}
+
+                      <span className="inline-flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
+                        <CalendarClock className="size-3.5 shrink-0" aria-hidden />
+                        {tournament.durationMin} {t("мин")}
+                      </span>
+
+                      <span className="inline-flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
+                        <Users className="size-3.5 shrink-0" aria-hidden />
+                        {tournament.registered}
+                        {tournament.seats !== null && `/${tournament.seats}`}
+                      </span>
+                    </div>
+
+                    {/*
+                      ТОВЧ — гар утсан дээр БҮТЭН ӨРГӨН, ширээн дээр өөрийн
+                      хэмжээгээр. Нарийн дэлгэцэнд жижиг товч нь хуруугаар
+                      онохоос хэцүү бөгөөд нэрний зайг булаадаг.
+                    */}
+                    <div className="shrink-0 sm:ml-auto">
+                      {tournament.isRegistered ? (
+                        canEnter ? (
+                          <button
+                            type="button"
+                            onClick={() => void enter(tournament.id)}
+                            disabled={busy}
+                            className="w-full rounded-xl bg-brand-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-600 disabled:opacity-60 sm:w-auto"
+                          >
+                            {busy ? t("Түр хүлээнэ үү…") : t("Тэмцээнд орох")}
+                          </button>
+                        ) : (
+                          <span className="inline-flex w-full items-center justify-center gap-1 rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-700 sm:w-auto dark:bg-emerald-500/15 dark:text-emerald-300">
+                            <Check className="size-3.5" aria-hidden />
+                            {t("Бүртгэгдсэн")}
+                          </span>
+                        )
+                      ) : full ? (
+                        <span className="inline-flex w-full justify-center rounded-full bg-gray-100 px-3 py-1.5 text-xs font-bold text-gray-500 sm:w-auto dark:bg-white/10 dark:text-gray-400">
+                          {t("Дүүрсэн")}
+                        </span>
+                      ) : (
                         <button
                           type="button"
-                          onClick={() => void enter(tournament.id)}
-                          disabled={busy}
-                          className="rounded-xl bg-brand-500 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-600 disabled:opacity-60"
+                          onClick={() => void register(tournament)}
+                          disabled={busyId !== null}
+                          className="w-full rounded-xl bg-amber-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-amber-600 disabled:opacity-60 sm:w-auto"
                         >
-                          {busy ? t("Түр хүлээнэ үү…") : t("Тэмцээнд орох")}
+                          {busy
+                            ? t("Түр хүлээнэ үү…")
+                            : free
+                              ? t("Үнэгүй бүртгүүлэх")
+                              : `${t("Бүртгүүлэх")} · ${money(tournament.entryFeeMnt)}`}
                         </button>
-                      ) : (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300">
-                          <Check className="size-3.5" aria-hidden />
-                          {t("Бүртгэгдсэн")}
-                        </span>
-                      )
-                    ) : full ? (
-                      <span className="rounded-full bg-gray-100 px-3 py-1.5 text-xs font-bold text-gray-500 dark:bg-white/10 dark:text-gray-400">
-                        {t("Дүүрсэн")}
-                      </span>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={() => void register(tournament)}
-                        disabled={busyId !== null}
-                        className="rounded-xl bg-amber-500 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-600 disabled:opacity-60"
-                      >
-                        {busy
-                          ? t("Түр хүлээнэ үү…")
-                          : free
-                            ? t("Үнэгүй бүртгүүлэх")
-                            : `${t("Бүртгүүлэх")} · ${money(tournament.entryFeeMnt)}`}
-                      </button>
-                    )}
+                      )}
+                    </div>
                   </li>
                   );
                 })}

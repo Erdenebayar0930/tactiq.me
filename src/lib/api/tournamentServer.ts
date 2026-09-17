@@ -7,6 +7,9 @@ import {
   tournamentBaseUrl,
 } from "@/lib/tactiq/tournament";
 
+import { parseTournamentFormat } from "@/lib/tactiq/tournamentFormat";
+
+import type { TournamentFormat } from "@/lib/tactiq/tournamentFormat";
 import type { TournamentAccess, TournamentCategory } from "@/lib/tactiq/tournament";
 
 /**
@@ -47,6 +50,14 @@ export type RemoteTournament = {
   durationMin: number;
   /** "chess" | "checkers" — хуваарь дээрх дүрс. */
   game: string;
+  /**
+   * ХЭЛБЭР: "arena" | "swiss" | "knockout" | "team".
+   *
+   * ⚠ ХУРД (bullet/blitz/rapid/classical) нь ЭНД БАЙХГҮЙ — цагийн
+   * хяналтаас тооцогдоно (`lib/tactiq/tournamentFormat.ts`). Хоёуланг
+   * дамжуулбал тэд зөрөх боломжтой болно.
+   */
+  format: TournamentFormat;
   /**
    * ХЭН ОРОЛЦОХ ВЭ: "open" | "members" | "mind".
    *
@@ -102,6 +113,7 @@ function parseTournament(raw: unknown): RemoteTournament | null {
     durationMin: isInt(r.durationMin, 1) ? Math.min(r.durationMin, 24 * 60) : 60,
     game: r.game === "checkers" || r.game === "draughts" ? "checkers" : "chess",
     access: parseTournamentAccess(r.access),
+    format: parseTournamentFormat(r.format),
     seats: r.seats as number | null,
     registered: r.registered,
     entryFeeMnt: r.entryFeeMnt,

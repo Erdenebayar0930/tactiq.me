@@ -8,6 +8,14 @@ import { ErrorNote, Skeleton } from "@/components/tactiq/ui";
 import { gameTheme } from "@/lib/tactiq/gameTheme";
 import { mnDateTime } from "@/lib/tactiq/dateMn";
 import { TOURNAMENT_ACCESS, tournamentAccessLabel } from "@/lib/tactiq/tournament";
+import {
+  FORMAT_INFO,
+  SPEED_INFO,
+  TOURNAMENT_FORMATS,
+  parseTournamentFormat,
+  speedFromTimeControl,
+  tournamentTypeLabel,
+} from "@/lib/tactiq/tournamentFormat";
 import { t } from "@/lib/i18n/t";
 
 /**
@@ -43,6 +51,8 @@ type Series = {
   startTime: string;
   weekdays: number;
   active: boolean;
+  /** "arena" | "swiss" | "knockout" | "team". */
+  format: string;
 };
 
 type Tournament = {
@@ -57,6 +67,7 @@ type Tournament = {
   registered: number;
   entryFeeMnt: number;
   status: string;
+  format: string;
 };
 
 /** Бит 0 = Ням … 6 = Бям (`Date.getUTCDay()`-тэй ижил дараалал). */
@@ -72,6 +83,7 @@ const BLANK = {
   id: "",
   name: "",
   game: "chess",
+  format: "arena",
   access: "open",
   timeControl: "3+2",
   durationMin: 60,
@@ -263,6 +275,15 @@ function OneOffSection({
             placeholder="3+2"
             className={inputClass}
           />
+          {/*
+            ⚠ ХУРД нь ЭНДЭЭС тооцогдоно — админ юу бичихээ хараад мэдэх
+            ёстой. «30+0» бичээд «Bullet» гэж бодох нь хамгийн түгээмэл
+            андуурал.
+          */}
+          <span className="block text-[11px] font-semibold text-gray-400">
+            {SPEED_INFO[speedFromTimeControl(form.timeControl)].emoji}{" "}
+            {SPEED_INFO[speedFromTimeControl(form.timeControl)].label}
+          </span>
         </Field>
         <SharedFields form={form} setForm={setForm} />
       </div>
@@ -389,6 +410,15 @@ function SeriesSection({
             placeholder="3+2"
             className={inputClass}
           />
+          {/*
+            ⚠ ХУРД нь ЭНДЭЭС тооцогдоно — админ юу бичихээ хараад мэдэх
+            ёстой. «30+0» бичээд «Bullet» гэж бодох нь хамгийн түгээмэл
+            андуурал.
+          */}
+          <span className="block text-[11px] font-semibold text-gray-400">
+            {SPEED_INFO[speedFromTimeControl(form.timeControl)].emoji}{" "}
+            {SPEED_INFO[speedFromTimeControl(form.timeControl)].label}
+          </span>
         </Field>
         <SharedFields form={form} setForm={setForm} />
       </div>
@@ -466,6 +496,8 @@ function SeriesSection({
                 </span>
                 <span className="num text-xs text-gray-500 dark:text-gray-400">
                   {utcTimeToLocal(row.startTime)} · {daysLabel(row.weekdays)}
+                  {" · "}
+                  {tournamentTypeLabel(parseTournamentFormat(row.format), row.timeControl)}
                 </span>
                 <button
                   type="button"
@@ -541,6 +573,30 @@ function SharedFields<T extends typeof BLANK>({
             </option>
           ))}
         </select>
+      </Field>
+      {/*
+        ⚠ ХЭЛБЭР — «Arena / Швейцар / Хасагдах / Багийн». ХУРД
+        (Bullet/Blitz/Rapid/Classical) нь ЭНД БАЙХГҮЙ: цагийн хяналтаас
+        тооцогдоно (`lib/tactiq/tournamentFormat.ts`). Талбар болговол
+        админ «Bullet» гэж сонгоод «30+0» бичих боломжтой болж, хоёр нь
+        үүрд зөрнө.
+      */}
+      <Field label={t("Хэлбэр")}>
+        <select
+          value={form.format}
+          onChange={(event) => setForm({ ...form, format: event.target.value })}
+          className={inputClass}
+        >
+          {TOURNAMENT_FORMATS.map((format) => (
+            <option key={format} value={format}>
+              {FORMAT_INFO[format].emoji} {FORMAT_INFO[format].label}
+            </option>
+          ))}
+        </select>
+        {/* ⚠ Хэлбэр бүр ӨӨР дүрэмтэй — админ юу сонгосноо мэдэх ёстой. */}
+        <span className="block text-[11px] leading-snug text-gray-400">
+          {FORMAT_INFO[parseTournamentFormat(form.format)].hint}
+        </span>
       </Field>
       <Field label={t("Оролцох эрх")}>
         <select
