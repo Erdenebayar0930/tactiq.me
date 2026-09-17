@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { Bot, Check, CircleDot, Copy, Share2, UserPlus } from "lucide-react";
@@ -12,10 +11,11 @@ import { apiFetch, ApiError } from "@/lib/apiClient";
 import { BOT_DIFFICULTIES } from "@/lib/chess/bot";
 import { DRAUGHTS_BOT_DIFFICULTIES } from "@/lib/draughts/bot";
 import { inviteUrl } from "@/lib/chess/invite";
-import { playGameLabel, playGameRobot, roomPath } from "@/lib/tactiq/playGame";
+import { playGameLabel, roomPath } from "@/lib/tactiq/playGame";
 
 import type { PlayGame } from "@/lib/tactiq/playGame";
 import { DIFFICULTY_LABELS } from "@/lib/tactiq/theme";
+import { GameRobot } from "@/components/tactiq/GameRobot";
 import { Mascot } from "@/components/tactiq/Mascot";
 import { TournamentSection } from "@/components/tactiq/TournamentSection";
 import { ErrorNote } from "@/components/tactiq/ui";
@@ -86,7 +86,6 @@ export default function PlayPage() {
    * тоглогч хамгийн их байдаг тоглоом.
    */
   const onlineGame: PlayGame = isDraughtsCourse ? "draughts" : "chess";
-  const robot = playGameRobot(onlineGame);
   const [status, setStatus] = useState<QueueStatus>("idle");
   const [error, setError] = useState<string | null>(null);
   const [onlineCount, setOnlineCount] = useState<number | null>(null);
@@ -215,15 +214,7 @@ export default function PlayPage() {
         бараг ижил харагддаг байв. Робот нь тоглоомынхоо хөлөгтэй
         (`playGameRobot`) тул нэг харцад л ялгагдана.
       */}
-      <Image
-        src={robot.src}
-        alt=""
-        aria-hidden
-        width={robot.width}
-        height={robot.height}
-        className="h-28 w-auto select-none drop-shadow-md"
-        priority
-      />
+      <GameRobot game={onlineGame} className="h-28 w-auto" />
 
       <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
         {isDraughtsCourse ? t("Даам тоглох") : t("Шатар тоглох")}
@@ -244,7 +235,12 @@ export default function PlayPage() {
 
       {status === "searching" ? (
         <div className="flex flex-col items-center gap-4">
-          <Mascot mood="think" className="size-24" />
+          {/*
+            ⚠ Ерөнхий mascot БИШ, тоглоомынхоо робот: хэрэглэгч хэдэн
+            секунд хүлээж байхдаа «би юу хайж байна?» гэдгээ дүрснээс
+            мэдэх ёстой. Титэмтэй ерөнхий дүр нь түүнийг хэлдэггүй.
+          */}
+          <GameRobot game={onlineGame} className="h-24 w-auto" />
           <p className="animate-pulse font-semibold text-gray-700 dark:text-gray-200">
             {t("Тоглогч хайж байна…")}
           </p>

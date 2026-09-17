@@ -2,9 +2,9 @@
 
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import Image from "next/image";
 
 import { apiFetch, ApiError } from "@/lib/apiClient";
+import { GameRobot } from "@/components/tactiq/GameRobot";
 import { Mascot } from "@/components/tactiq/Mascot";
 import { ErrorNote, Skeleton } from "@/components/tactiq/ui";
 import { playGameLabel, playGameRobot, roomPath } from "@/lib/tactiq/playGame";
@@ -107,8 +107,6 @@ export default function InvitePage() {
     );
   }
 
-  const robot = playGameRobot(invite.game);
-
   return (
     <div className="mx-auto flex max-w-md flex-col items-center gap-5 py-10 text-center">
       {/*
@@ -117,15 +115,7 @@ export default function InvitePage() {
         хүлээж нээнэ.
       */}
       {/* Лоббитой ИЖИЛ робот — найз холбоос дарахад ямар тоглоом болохыг нэг харцад мэднэ. */}
-      <Image
-        src={robot.src}
-        alt=""
-        aria-hidden
-        width={robot.width}
-        height={robot.height}
-        className="h-28 w-auto select-none drop-shadow-md"
-        priority
-      />
+      <GameRobot game={invite.game} className="h-28 w-auto" />
 
       <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
         {invite.host?.displayName ?? t("Найз")} чамайг {playGameLabel(invite.game).toLowerCase()}{" "}

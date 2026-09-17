@@ -10,6 +10,7 @@ import { Draughts } from "@/lib/draughts/engine";
 import { DraughtsBoard } from "@/components/draughts/DraughtsBoard";
 import { MatchHeader } from "@/components/chess/MatchHeader";
 import { GameOverAd } from "@/components/tactiq/GameOverAd";
+import { GameRobot } from "@/components/tactiq/GameRobot";
 import { Mascot } from "@/components/tactiq/Mascot";
 import { ErrorNote, Skeleton } from "@/components/tactiq/ui";
 import { useCurrentUser, useUser } from "@/context/UserContext";
@@ -265,7 +266,7 @@ export default function DraughtsRoomPage() {
 
       {state === "connecting" && (
         <div className="flex flex-col items-center gap-3 py-4 text-center">
-          <Mascot mood="think" className="size-20" />
+          <GameRobot game="draughts" className="h-20 w-auto" />
           <p className="text-sm text-gray-500 dark:text-gray-400">
             {t("Өрсөлдөгчтэй шууд холбогдож байна…")}
           </p>
