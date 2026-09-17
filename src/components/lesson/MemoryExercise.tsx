@@ -223,26 +223,30 @@ export default function MemoryExercise({
 /**
  * Хөзрийн НҮҮР — зураг (`img:<түлхүүр>`) эсвэл текст/эможи.
  *
- * ⚠ ЗУРАГТАЙ хөзөр нь өнгөт дугуйгүй: далбааны цагаан тал (Япон, Польш,
- * Дани…) өнгөт дугуй дээр бохир харагдана. Тиймээс зургийг цагаан
- * хавтан дээр, нимгэн хүрээтэй тавина.
+ * ⚠ ТУНГАЛАГ дэвсгэртэй зураг (амьтад) нь ХОСЫН ӨНГӨТ дугуй дээр сууна:
+ * дугуй нь зургийг хөзрийн цагаан нүүрнээс салгаж, жижиг дэлгэц дээр ч
+ * тод харуулна.
  *
- * ⚠ Хосын өнгө нь ЗӨВХӨН текст хөзөрт үлдэв: зурагт хөзөр өөрөө өнгөтэй
- * тул нэмэлт өнгө нь ялгахад тус болохгүй, харин бүдгэрүүлнэ.
+ * ⚠ ЦАГААН дэвсгэртэй зураг (`boxed`) нь өнгөт дугуйгүй: зургийн
+ * цагаан тал дугуйны өнгө дээр дөрвөлжин толбо шиг харагдана.
  */
 function CardFace({ value, pairId }: { value: string; pairId: number }) {
   const art = itemArt(value);
 
   if (art) {
     return (
-      <span className="grid size-[86%] place-items-center overflow-hidden rounded-xl bg-white ring-1 ring-gray-200 dark:ring-white/20">
+      <span
+        className={`grid size-[86%] place-items-center overflow-hidden rounded-2xl ${
+          art.boxed ? "bg-white ring-1 ring-gray-200 dark:ring-white/20" : FACE_TINTS[pairId % FACE_TINTS.length]
+        }`}
+      >
         <Image
           src={art.src}
           alt=""
           aria-hidden
-          width={192}
-          height={132}
-          className="h-auto w-full select-none object-contain"
+          width={256}
+          height={256}
+          className="size-[92%] select-none object-contain"
         />
       </span>
     );
