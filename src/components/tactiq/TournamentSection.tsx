@@ -109,7 +109,20 @@ const money = (amount: number) => `${amount.toLocaleString("mn-MN")}₮`;
 export function TournamentSection({
   defaultOpen = false,
   withSponsors = false,
-}: { defaultOpen?: boolean; withSponsors?: boolean } = {}) {
+  withRules = true,
+}: {
+  defaultOpen?: boolean;
+  withSponsors?: boolean;
+  /**
+   * ДҮРМИЙГ энд харуулах эсэх.
+   *
+   * ⚠ Тэмцээний хуудсан дээр `false`: тэнд дүрэм нь «Дасгалжуулагч»
+   * табд байдаг. Хоёр газар зурвал ижил текст нэг хуудсанд хоёр удаа
+   * гарна. Харин ЛОББИД (`/play`) `true` байх ёстой — тэндээс
+   * бүртгүүлсэн хүн дүрмийг хаанаас ч харахгүй.
+   */
+  withRules?: boolean;
+} = {}) {
   const { apply } = useUser();
   const [data, setData] = useState<ListResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -643,7 +656,7 @@ export function TournamentSection({
       */}
       {withSponsors && <TournamentSponsors />}
 
-      <TournamentRules />
+      {withRules && <TournamentRules />}
     </section>
   );
 }

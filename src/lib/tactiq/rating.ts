@@ -103,3 +103,21 @@ export function ratingTitle(rating: number): string {
   if (rating < 2000) return "Мастер";
   return "Их мастер";
 }
+
+/**
+ * PLACEMENT-ийн урт — хэдэн тоглолт хүртэл чансаа «тодорхойгүй» вэ.
+ *
+ * ⚠ Тусдаа `provisional` БАГАНА БАЙХГҮЙ, зориуд: тоо нь
+ * `ratingGames`-ээс гарна. Хоёр эх сурвалж байвал тэд зөрөх бөгөөд
+ * аль нь зөв гэдгийг хэн ч мэдэхгүй болно
+ * (`docs/rating-system.md` §12.1).
+ *
+ * ⚠ ЖАГСААЛТАД ОРОХ хязгаар нь мөн энэ: 2 тоглолттой хүн санамсаргүй
+ * 1900 болж тэргүүнд гарвал бүх жагсаалтын итгэл унана.
+ */
+export const PROVISIONAL_GAMES = 10;
+
+/** Чансаа нь хараахан тодорхойгүй эсэх. */
+export function isProvisional(gamesPlayed: number): boolean {
+  return gamesPlayed < PROVISIONAL_GAMES;
+}
