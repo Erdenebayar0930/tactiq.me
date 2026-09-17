@@ -5,7 +5,6 @@ import { ExternalLink, Trophy } from "lucide-react";
 
 import { apiFetch, ApiError } from "@/lib/apiClient";
 import { TournamentSection } from "@/components/tactiq/TournamentSection";
-import { TournamentSponsors } from "@/components/tactiq/TournamentSponsors";
 import { ErrorNote } from "@/components/tactiq/ui";
 import { tournamentEnabled } from "@/lib/tactiq/tournament";
 import { t } from "@/lib/i18n/t";
@@ -71,10 +70,12 @@ export default function TournamentPage() {
         хэрэглэгч энэ хуудсыг зориуд нээсэн. Баннер нь зөвхөн лоббид
         (`/play`) хэрэгтэй.
       */}
-      <TournamentSection defaultOpen />
-
-      {/* ИВЭЭН ТЭТГЭГЧИД — зар нь premium хэрэглэгчид гарахгүй (`AdSlot`). */}
-      <TournamentSponsors />
+      {/*
+        ⚠ ИВЭЭН ТЭТГЭГЧДИЙГ `TournamentSection` дотроос гаргана: жагсаалт
+        нь аль хэдийн `/api/tournament/list`-ийг татдаг тул энд ДАХИН
+        татвал ижил өгөгдлийн төлөө хоёр хүсэлт явна.
+      */}
+      <TournamentSection defaultOpen withSponsors />
 
       {/*
         ⚠ Тэмцээний сайт руу ГАРААР орох зам: тоглолт нь тэнд явагддаг

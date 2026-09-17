@@ -6,7 +6,9 @@ import { CalendarClock, Check, Medal, ScrollText, Trophy, Users } from "lucide-r
 
 import { useUser } from "@/context/UserContext";
 import { InvoiceCard } from "@/components/tactiq/QpayInvoice";
+import { SponsorStrip, hasSponsor } from "@/components/tactiq/SponsorStrip";
 import { TournamentCalendar } from "@/components/tactiq/TournamentCalendar";
+import { TournamentSponsors } from "@/components/tactiq/TournamentSponsors";
 import { gameTheme } from "@/lib/tactiq/gameTheme";
 import { parseTournamentFormat, tournamentTypeLabel } from "@/lib/tactiq/tournamentFormat";
 import { mnDay, mnTime } from "@/lib/tactiq/dateMn";
@@ -58,6 +60,11 @@ type Tournament = {
   access: string;
   /** "arena" | "swiss" | "knockout" | "team" — хурд нь цагийн хяналтаас. */
   format: string;
+  /** ИВЭЭН ТЭТГЭГЧ — хоосон бол туузыг огт зурахгүй (`SponsorStrip`). */
+  sponsorName: string;
+  sponsorLogo: string;
+  sponsorUrl: string;
+  prize: string;
   /**
    * ДАВТАМЖТАЙ (өдөр бүр автоматаар) эсэх.
    *
@@ -99,7 +106,10 @@ const ENTER_WINDOW_MS = 10 * 60 * 1000;
 
 const money = (amount: number) => `${amount.toLocaleString("mn-MN")}₮`;
 
-export function TournamentSection({ defaultOpen = false }: { defaultOpen?: boolean } = {}) {
+export function TournamentSection({
+  defaultOpen = false,
+  withSponsors = false,
+}: { defaultOpen?: boolean; withSponsors?: boolean } = {}) {
   const { apply } = useUser();
   const [data, setData] = useState<ListResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -520,6 +530,21 @@ export function TournamentSection({ defaultOpen = false }: { defaultOpen?: boole
                     </div>
 
                     {/*
+                      ИВЭЭН ТЭТГЭГЧ — өөрийн мөрөнд, цагийн баганатай
+                      тэгшилсэн.
+
+                      ⚠ Шошгуудын ДУНД тавихгүй: ивээн тэтгэгчийн нэр,
+                      шагнал нь урт бичвэр тул шошгын эгнээнд орвол
+                      тоонууд (хугацаа, оролцогч) шахагдаж, гар утсан
+                      дээр тэд дараагийн мөрөнд унана.
+                    */}
+                    {hasSponsor(tournament) && (
+                      <div className="pl-15 sm:pl-0 sm:max-w-56">
+                        <SponsorStrip item={tournament} />
+                      </div>
+                    )}
+
+                    {/*
                       ТОВЧ — гар утсан дээр БҮТЭН ӨРГӨН, ширээн дээр өөрийн
                       хэмжээгээр. Нарийн дэлгэцэнд жижиг товч нь хуруугаар
                       онохоос хэцүү бөгөөд нэрний зайг булаадаг.
@@ -568,6 +593,13 @@ export function TournamentSection({ defaultOpen = false }: { defaultOpen?: boole
           ))}
         </div>
       )}
+
+      {/*
+        ⚠ ИВЭЭН ТЭТГЭГЧИД нь ЭНД: жагсаалтын өгөгдлөөс (`upcoming`)
+        бодит дэмжигчдийг шүүж авна. Тусдаа компонентоос татвал ижил
+        жагсаалтын төлөө хоёр хүсэлт явна.
+      */}
+      {withSponsors && <TournamentSponsors sponsors={data.upcoming ?? []} />}
 
       <TournamentRules />
     </section>

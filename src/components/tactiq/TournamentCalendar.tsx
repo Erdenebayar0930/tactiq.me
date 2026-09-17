@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
+import { SponsorStrip, hasSponsor } from "@/components/tactiq/SponsorStrip";
 import { gameTheme } from "@/lib/tactiq/gameTheme";
 import { mnDay, mnTime } from "@/lib/tactiq/dateMn";
 import { parseTournamentFormat, tournamentTypeLabel } from "@/lib/tactiq/tournamentFormat";
@@ -41,6 +42,11 @@ export type CalendarItem = {
   recurring: boolean;
   /** ОДОО бүртгүүлж болох эсэх — давтамжтай нь зөвхөн тухайн өдөр. */
   open: boolean;
+  /** ИВЭЭН ТЭТГЭГЧ — хоосон бол туузыг огт зурахгүй. */
+  sponsorName: string;
+  sponsorLogo: string;
+  sponsorUrl: string;
+  prize: string;
 };
 
 /** Ням гарагаас (`getDay()` = 0) эхэлсэн гарагийн товчлол. */
@@ -241,6 +247,12 @@ export function TournamentCalendar({ items }: { items: CalendarItem[] }) {
                       {tournamentTypeLabel(parseTournamentFormat(item.format), item.timeControl)}
                       {accessLabel ? ` · ${accessLabel}` : ""}
                     </p>
+                    {/* ⚠ `compact`: хуанлийн мөр нарийн тул лого жижиг, нэг мөрөнд. */}
+                    {hasSponsor(item) && (
+                      <div className="mt-1">
+                        <SponsorStrip item={item} compact />
+                      </div>
+                    )}
                   </div>
 
                   {/*

@@ -1,8 +1,11 @@
 import { HeartHandshake } from "lucide-react";
 
 import { AdSlot } from "@/components/tactiq/AdSlot";
+import { SponsorStrip } from "@/components/tactiq/SponsorStrip";
 import { getAdSenseSlotId } from "@/lib/tactiq/ads";
 import { t } from "@/lib/i18n/t";
+
+import type { Sponsor } from "@/components/tactiq/SponsorStrip";
 
 /**
  * «ТЭМЦЭЭНИЙГ ИВЭЭН ТЭТГЭГЧИД» — зарын блок.
@@ -19,7 +22,21 @@ import { t } from "@/lib/i18n/t";
  * хүрээнд тавьж, зар байхгүй бол блок бүхэлдээ зай эзлэхгүй болгов
  * (`AdSlot` нь `null` буцаахад доторх зай нь өөрөө хумигдана).
  */
-export function TournamentSponsors() {
+export function TournamentSponsors({ sponsors = [] }: { sponsors?: Sponsor[] }) {
+  /*
+   * БОДИТ ИВЭЭН ТЭТГЭГЧИД — давхардлыг нэрээр арилгана.
+   *
+   * ⚠ Нэг ивээн тэтгэгч ОЛОН тэмцээнийг дэмжиж болно (өдөр бүрийн блиц
+   * = 14 биелэл). Шүүхгүй бол тэдний нэр 14 удаа дараалан гарч, блок
+   * нь ивээн тэтгэгчийн жагсаалт биш тэмцээний жагсаалт болно.
+   */
+  const unique = new Map<string, Sponsor>();
+  for (const item of sponsors) {
+    if (!item.sponsorName) continue;
+    if (!unique.has(item.sponsorName)) unique.set(item.sponsorName, item);
+  }
+  const list = [...unique.values()];
+
   return (
     <section className="w-full">
       <div className="flex items-center gap-2 pb-2">
@@ -28,6 +45,24 @@ export function TournamentSponsors() {
           {t("Тэмцээнийг ивээн тэтгэгчид")}
         </h2>
       </div>
+
+      {/*
+        БОДИТ ИВЭЭН ТЭТГЭГЧИД — зарын ӨМНӨ.
+
+        ⚠ Тэднийг зарын ДООР тавьж болохгүй: шагналаа тавьсан бодит
+        дэмжигчийг Google-ийн автомат зарын дор байрлуулах нь тэднийг
+        хоёрдугаар зэрэглэлд оруулна. Мөн хэрэглэгч зар хүртэл гүйлгэж
+        хүрдэггүй.
+      */}
+      {list.length > 0 && (
+        <ul className="mb-2 space-y-1.5">
+          {list.map((item) => (
+            <li key={item.sponsorName}>
+              <SponsorStrip item={item} />
+            </li>
+          ))}
+        </ul>
+      )}
 
       {/*
         ⚠ Зарын нэгж нь ТЭМЦЭЭНИЙ хуудсын өөрийн `slotId`-тай: AdSense-ийн

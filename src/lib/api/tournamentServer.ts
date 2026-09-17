@@ -77,6 +77,20 @@ export type RemoteTournament = {
    * (`/api/tournament/list`).
    */
   recurring: boolean;
+  /**
+   * ИВЭЭН ТЭТГЭГЧ — хоосон бол ивээн тэтгэгчгүй тэмцээн.
+   *
+   * ⚠ ЛОГОНЫ ХАЯГ нь ЭНД ДАХИН шалгагдана: тэмцээний сервер нь
+   * Firebase Storage / аппын зам гэж хязгаарладаг ч энэ нь ГАДНЫ
+   * сервер. Хэн нэгэн түүнийг гүйцэтгэвэл (эсвэл тохиргоо алдаатай
+   * бол) дурын домэйны зураг хөтөч рүү очно — CSP хааж, лого хоосон
+   * хайрцаг болно. Тиймээс танихгүй хаягийг ЭНД хоосон болгоно.
+   */
+  sponsorName: string;
+  sponsorLogo: string;
+  sponsorUrl: string;
+  /** Шагналын чөлөөт тайлбар — «1-р шагнал: 100,000₮». */
+  prize: string;
   seats: number | null;
   registered: number;
   entryFeeMnt: number;
@@ -99,6 +113,35 @@ let listCache: { at: number; data: RemoteTournament[] } | null = null;
 
 const isInt = (value: unknown, min: number): value is number =>
   typeof value === "number" && Number.isInteger(value) && value >= min;
+
+/** Гадны текст — төрөл, урт хоёуланг барина. */
+const text = (value: unknown, max: number): string =>
+  typeof value === "string" ? value.slice(0, max) : "";
+
+/**
+ * ⚠ ЛОГОНЫ ХАЯГ — CSP-д зөвшөөрөгдсөн эх сурвалж эсэхийг ДАХИН шалгана.
+ *
+ * Тэмцээний сервер нь ижил хязгаарлалттай ч тэр нь ГАДНЫ сервер: түүнийг
+ * гүйцэтгэсэн, эсвэл тохиргоог сольсон тохиолдолд дурын домэйны зураг
+ * хөтөч рүү хүрнэ. CSP түүнийг ЧИМЭЭГҮЙ хааж, хэрэглэгч хоосон хайрцаг
+ * харна — тиймээс танихгүйг ХООСОН болгоод логог огт зурахгүй.
+ */
+function safeLogo(url: string): string {
+  if (url.startsWith("/")) return url;
+  if (url.startsWith("https://firebasestorage.googleapis.com/")) return url;
+  if (url.startsWith("https://storage.googleapis.com/")) return url;
+  return "";
+}
+
+/**
+ * ⚠ ИВЭЭН ТЭТГЭГЧИЙН ХОЛБООС — зөвхөн `https:`.
+ *
+ * `javascript:` схем нь хэрэглэгч дарахад код гүйцэтгэдэг (XSS). Гадны
+ * серверээс ирсэн мөрийг шууд `href`-д тавивал тэр эрсдэл бодит болно.
+ */
+function safeLink(url: string): string {
+  return url.startsWith("https://") ? url : "";
+}
 
 /** Гадны өгөгдлийг ИТГЭХГҮЙ — хэлбэр буруу бол тэр тэмцээнийг алгасна. */
 function parseTournament(raw: unknown): RemoteTournament | null {
@@ -125,6 +168,10 @@ function parseTournament(raw: unknown): RemoteTournament | null {
     access: parseTournamentAccess(r.access),
     format: parseTournamentFormat(r.format),
     recurring: r.recurring === true,
+    sponsorName: text(r.sponsorName, 80),
+    sponsorLogo: safeLogo(text(r.sponsorLogo, 400)),
+    sponsorUrl: safeLink(text(r.sponsorUrl, 400)),
+    prize: text(r.prize, 300),
     seats: r.seats as number | null,
     registered: r.registered,
     entryFeeMnt: r.entryFeeMnt,

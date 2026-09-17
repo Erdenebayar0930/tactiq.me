@@ -89,6 +89,10 @@ const BLANK = {
   durationMin: 60,
   seats: "",
   entryFeeMnt: 0,
+  sponsorName: "",
+  sponsorLogo: "",
+  sponsorUrl: "",
+  prize: "",
 };
 
 export default function AdminTournamentsPage() {
@@ -636,6 +640,53 @@ function SharedFields<T extends typeof BLANK>({
           min={0}
           value={form.entryFeeMnt}
           onChange={(event) => setForm({ ...form, entryFeeMnt: Number(event.target.value) })}
+          className={inputClass}
+        />
+      </Field>
+
+      {/*
+        ИВЭЭН ТЭТГЭГЧ — БҮГД СОНГОМОЛ.
+
+        ⚠ Нэр хоосон бол тууз ОГТ гарахгүй (`SponsorStrip`): лого,
+        холбоос нь нэргүйгээр утгагүй тул нэрийг гол дохио болгов.
+      */}
+      <Field label={t("Ивээн тэтгэгч (сонгомол)")}>
+        <input
+          value={form.sponsorName}
+          onChange={(event) => setForm({ ...form, sponsorName: event.target.value })}
+          placeholder="Хаан банк"
+          className={inputClass}
+        />
+      </Field>
+      <Field label={t("Шагнал")}>
+        <input
+          value={form.prize}
+          onChange={(event) => setForm({ ...form, prize: event.target.value })}
+          placeholder="1-р шагнал: 100,000₮"
+          className={inputClass}
+        />
+      </Field>
+      <Field label={t("Логоны хаяг")}>
+        <input
+          value={form.sponsorLogo}
+          onChange={(event) => setForm({ ...form, sponsorLogo: event.target.value })}
+          placeholder="/images/sponsors/khan.webp"
+          className={inputClass}
+        />
+        {/*
+          ⚠ ХЯЗГААРЛАЛТЫГ ЭНД БИЧНЭ: аппын CSP нь дурын домэйны зургийг
+          ЧИМЭЭГҮЙ хаадаг. Админд хэлэхгүй бол «яагаад лого гарахгүй
+          байна» гэж хайх бөгөөд консолоос өөр газар алдаа гарахгүй.
+        */}
+        <span className="block text-[11px] leading-snug text-gray-400">
+          {t("Зөвхөн аппын өөрийн зам (/images/…) эсвэл Firebase Storage-ийн хаяг.")}
+        </span>
+      </Field>
+      <Field label={t("Ивээн тэтгэгчийн холбоос")}>
+        <input
+          value={form.sponsorUrl}
+          onChange={(event) => setForm({ ...form, sponsorUrl: event.target.value })}
+          placeholder="https://..."
           className={inputClass}
         />
       </Field>
