@@ -17,6 +17,7 @@ import { localized, localizedOptions } from "@/lib/i18n/content";
 import { ProgressBar, Skeleton } from "@/components/tactiq/ui";
 import { Confetti } from "@/components/tactiq/Confetti";
 import { Mascot } from "@/components/tactiq/Mascot";
+import { CelebrationVideo } from "@/components/tactiq/CelebrationVideo";
 
 import type { Exercise, Lesson } from "@/lib/tactiq/courses";
 import type { PublicUser } from "@/lib/api/publicUser";
@@ -643,16 +644,63 @@ function ChoiceExercise({
  * худал амлалт болно. Оронд нь «хадгалагдахгүй» гэдгийг шулуухан хэлээд
  * бүртгүүлэх нэг товч өгнө — яг энэ мөчид сонирхол нь оргил дээрээ байна.
  */
+/**
+ * БАЯРЫН ХҮРЭЭ — хоёр дэлгэц (зочин ба нэвтэрсэн) ИЖИЛ харагдана.
+ *
+ * ⚠ НЭГ Л ГАЗАР: урьд нь хоёр дэлгэц тус тусдаа `Mascot`, `Confetti`,
+ * гарчиг бичдэг байсан тул нэгийг гоёход нөгөө нь хоцорч, зочин
+ * «дутуу» хувилбар хардаг байв — тэр нь бүртгүүлэх шийдвэр гаргах
+ * хамгийн чухал мөч.
+ *
+ * ⚠ Видео нь ДУГУЙ хүрээнд: дөрвөлжин видео нь картын дотор өөр нэг
+ * карт шиг харагдаж, хоёр хүрээ мөргөлдөнө.
+ */
+function CelebrationShell({
+  title,
+  subtitle,
+  children,
+}: {
+  title: string;
+  subtitle: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="relative mx-auto max-w-md px-4 py-6">
+      {/* Салют — хичээл дуусгасан мөчийг тэмдэглэнэ (`Confetti.tsx`) */}
+      <Confetti />
+
+      <div className="surface overflow-hidden text-center">
+        {/*
+          ⚠ ТОЛГОЙН ГРАДИЕНТ нь видеоны цайвар дэвсгэртэй НИЙЛНЭ: видео нь
+          бараг цагаан дэвсгэртэй тул цагаан карт дээр «хөвж» байгаа юм
+          шиг харагддаг байв. Өнгөт толгой нь түүнийг хүрээлж, баярын
+          өнгө аяс өгнө.
+        */}
+        <div className="relative bg-gradient-to-b from-brand-500 to-brand-600 px-6 pb-6 pt-7">
+          {/*
+            ⚠ 160px (`size-40`): 144px дээр видеоны дотор бичигдсэн «Баяр
+            хүргэе!» гэсэн текст уншигдахгүй жижиг болно. Тэр текст нь
+            видеоны гол агуулга тул уншигдах ёстой.
+          */}
+          <div className="mx-auto size-40 overflow-hidden rounded-full ring-4 ring-white/70 sm:size-44 dark:ring-white/25">
+            <CelebrationVideo className="size-full object-cover" />
+          </div>
+
+          <h1 className="mt-4 text-2xl font-extrabold text-white">{title}</h1>
+          <p className="mt-1 text-sm text-white/85">{subtitle}</p>
+        </div>
+
+        <div className="flex flex-col items-center gap-4 p-6">{children}</div>
+      </div>
+    </div>
+  );
+}
+
 function GuestCompletionScreen({ lesson }: { lesson: Lesson }) {
   return (
-    <div className="relative mx-auto flex max-w-md flex-col items-center gap-4 p-8 text-center">
-      <Confetti />
-      <Mascot mood="cheer" className="size-28" />
-      <h1 className="text-xl font-bold text-gray-900 dark:text-white">{t("Хичээл дууслаа!")}</h1>
-      <p className="text-sm text-gray-500 dark:text-gray-400">{lesson.title}</p>
-
+    <CelebrationShell title={t("Хичээл дууслаа!")} subtitle={lesson.title}>
       <p className="rounded-xl bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-800 dark:bg-amber-500/15 dark:text-amber-200">
-        Онооо хадгалахын тулд бүртгүүлээрэй. Бүртгүүлбэл ахиц, дараалал,
+        Оноогоо хадгалахын тулд бүртгүүлээрэй. Бүртгүүлбэл ахиц, дараалал,
         бэлгийн хайрцаг, гэрчилгээ бүгд нээгдэнэ.
       </p>
 
@@ -674,7 +722,7 @@ function GuestCompletionScreen({ lesson }: { lesson: Lesson }) {
       >
         {t("Замд буцах")}
       </Link>
-    </div>
+    </CelebrationShell>
   );
 }
 
@@ -686,16 +734,20 @@ function CompletionScreen({
   result: LessonResult;
 }) {
   return (
-    <div className="relative mx-auto flex max-w-md flex-col items-center gap-4 p-8 text-center">
-      {/* Салют — хичээл дуусгасан мөчийг тэмдэглэнэ (`Confetti.tsx`) */}
-      <Confetti />
-      <Mascot mood="cheer" className="size-28" />
-      <PartyPopper className="size-8 text-amber-500" aria-hidden />
-      <h1 className="text-xl font-bold text-gray-900 dark:text-white">{t("Хичээл дууслаа!")}</h1>
-      <p className="text-sm text-gray-500 dark:text-gray-400">{lesson.title}</p>
-      <p className="num text-3xl font-extrabold text-brand-600 dark:text-brand-400">
-        +{result.xpEarned} оноо
+    <CelebrationShell title={t("Хичээл дууслаа!")} subtitle={lesson.title}>
+      {/*
+        ⚠ ОНОО нь МЕДАЛЬ хэлбэртэй: урьд нь зүгээр нэг том тоо байсан тул
+        гарчиг, хичээлийн нэр, оноо гурав нь ижил жинтэй харагдаж, хамгийн
+        чухал нь (шагнал) тодроогүй.
+      */}
+      <p className="inline-flex items-center gap-2 rounded-full bg-amber-100 px-5 py-2 dark:bg-amber-500/20">
+        <PartyPopper className="size-5 text-amber-600 dark:text-amber-300" aria-hidden />
+        <span className="num text-2xl font-extrabold text-amber-700 dark:text-amber-200">
+          +{result.xpEarned}
+        </span>
+        <span className="text-sm font-bold text-amber-700 dark:text-amber-200">{t("оноо")}</span>
       </p>
+
       {result.alreadyCompleted && (
         <p className="text-xs text-gray-400">
           {t("Энэ хичээлийг өмнө нь дуусгасан тул оноо дахин олгогдоогүй.")}
@@ -708,6 +760,7 @@ function CompletionScreen({
           нэмэгдлээ.
         </p>
       )}
+
       {/*
         ⚠ Замд БУЦААД дөнгөж хийсэн зангилаа дээрээ очно: `?lesson=` -ыг
         `learn/page.tsx` уншиж тэр цэг рүү гүйлгэнэ. Урт зам дээр
@@ -715,10 +768,10 @@ function CompletionScreen({
       */}
       <Link
         href={`/learn?lesson=${encodeURIComponent(lesson.id)}`}
-        className="rounded-xl bg-brand-500 px-5 py-2.5 font-semibold text-white hover:bg-brand-600"
+        className="w-full rounded-xl bg-brand-500 px-5 py-3 font-semibold text-white hover:bg-brand-600"
       >
         {t("Замд буцах")}
       </Link>
-    </div>
+    </CelebrationShell>
   );
 }
