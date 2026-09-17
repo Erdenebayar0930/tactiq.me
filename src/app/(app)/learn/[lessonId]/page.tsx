@@ -362,7 +362,13 @@ function Player({ lesson, apply }: { lesson: Lesson; apply: Apply }) {
      * ⚠ Тоглох дэлгэцийн анхдагч (22rem) -аас ИХ: тэнд явцын мөр, дүр,
      * «Үргэлжлүүлэх» товч байхгүй.
      */
-    <div className="mx-auto max-w-lg space-y-5" style={{ "--board-reserve": "24rem" } as CSSProperties}>
+    /*
+     * ⚠ `max-w-xl` (576px), `max-w-lg` (512) БИШ: хөлгийн ӨРГӨН нь энэ
+     * баганаас хамаардаг тул `lg` үед хөлөг 512px-ээс том болж чадахгүй
+     * байв — хөлгийн дээд хязгаар (680px) хэзээ ч хүрэхгүй. Тоглох
+     * дэлгэц аль хэдийн `xl` (`play/draughts`).
+     */
+    <div className="mx-auto max-w-xl space-y-5" style={{ "--board-reserve": "24rem" } as CSSProperties}>
       <div className="flex items-center gap-3">
         <button
           type="button"

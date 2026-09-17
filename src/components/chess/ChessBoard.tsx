@@ -1,6 +1,15 @@
 "use client";
 
 import { useRef, useState } from "react";
+import {
+  BOARD_COORD,
+  BOARD_DARK,
+  BOARD_FRAME,
+  BOARD_GRAIN,
+  BOARD_LAST_MOVE,
+  BOARD_LIGHT,
+  BOARD_SIZE,
+} from "@/lib/tactiq/boardTheme";
 
 import type { PointerEvent as ReactPointerEvent } from "react";
 import type { Color, PieceSymbol, Square } from "chess.js";
@@ -64,11 +73,6 @@ function squareToIndices(square: Square): { row: number; col: number } {
  * байсныг зурган ишлэлтэй харьцуулаад олж, ЭРС багасгасан (0.02-0.035,
  * 14-16px давтамж) — ойрхон харахад л мэдрэгдэх зэрэгт хүргэсэн.
  */
-const GRAIN: Record<"light" | "dark", string> = {
-  light:
-    "repeating-linear-gradient(100deg, rgba(90,55,20,0.035) 0px, rgba(90,55,20,0.035) 1px, transparent 1px, transparent 15px)",
-  dark: "repeating-linear-gradient(100deg, rgba(0,0,0,0.07) 0px, rgba(0,0,0,0.07) 1px, transparent 1px, transparent 16px)",
-};
 
 export function ChessBoard({
   board,
@@ -191,9 +195,9 @@ export function ChessBoard({
    * зүйл.
    */
   return (
-    <div className="relative mx-auto aspect-square w-full max-w-[min(620px,calc(100dvh-var(--board-reserve,22rem)))] select-none rounded-lg bg-gradient-to-br from-[#4a2f1c] to-[#1c0f07] p-[6%] shadow-[inset_0_2px_3px_rgba(255,255,255,0.12),inset_0_-3px_8px_rgba(0,0,0,0.65),0_8px_24px_rgba(0,0,0,0.45)]">
+    <div className={`relative mx-auto aspect-square select-none ${BOARD_SIZE} ${BOARD_FRAME}`}>
       {/* Мөрийн дугаар (1-8) — хүрээний баруун захад, хөлөгтэй ижил чиглэлтэй эргэдэг */}
-      <div className="pointer-events-none absolute inset-y-[6%] right-0 flex w-[6%] flex-col text-[2.4vw] font-semibold text-amber-100/80 sm:text-xs">
+      <div className={`pointer-events-none absolute inset-y-[4%] right-0 flex w-[4%] flex-col text-[2.4vw] font-semibold sm:text-xs ${BOARD_COORD}`}>
         {rows.map((row) => (
           <span key={row} className="flex flex-1 items-center justify-center">
             {8 - row}
@@ -201,7 +205,7 @@ export function ChessBoard({
         ))}
       </div>
       {/* Баганын үсэг (a-h) — хүрээний доод захад */}
-      <div className="pointer-events-none absolute inset-x-[6%] bottom-0 flex h-[6%] text-[2.4vw] font-semibold text-amber-100/80 sm:text-xs">
+      <div className={`pointer-events-none absolute inset-x-[4%] bottom-0 flex h-[4%] text-[2.4vw] font-semibold sm:text-xs ${BOARD_COORD}`}>
         {cols.map((col) => (
           <span key={col} className="flex flex-1 items-center justify-center">
             {FILES[col]}
@@ -213,7 +217,11 @@ export function ChessBoard({
         ref={boardRef}
         onPointerMove={onBoardMove}
         onPointerUp={onBoardUp}
-        className="relative size-full touch-none overflow-hidden rounded-sm shadow-[inset_0_0_0_2px_rgba(0,0,0,0.5)]"
+        /*
+          ⚠ Дотоод хүрээ нь НИМГЭН, ЗӨӨЛӨН: хар 2px хүрээ нь цайвар
+          хөлгийн зах дээр хар шугам болж, нүд татдаг байв.
+        */
+        className="relative size-full touch-none overflow-hidden rounded-md shadow-[inset_0_0_0_1px_rgba(90,65,35,0.35)]"
       >
         <div className="grid size-full grid-cols-8 grid-rows-8">
           {rows.map((row) =>
@@ -231,12 +239,12 @@ export function ChessBoard({
                 <div
                   key={square}
                   data-square={square}
-                  style={{ backgroundImage: GRAIN[isLight ? "light" : "dark"] }}
+                  style={{ backgroundImage: BOARD_GRAIN[isLight ? "light" : "dark"] }}
                   className={`relative flex items-center justify-center ${
-                    isLight ? "bg-[#e8cea0]" : "bg-[#7a4a26]"
+                    isLight ? BOARD_LIGHT : BOARD_DARK
                   }`}
                 >
-                  {isLastMove && <div className="absolute inset-0 bg-[#a9c860]/75" />}
+                  {isLastMove && <div className={`absolute inset-0 ${BOARD_LAST_MOVE}`} />}
                   {isChecked && <div className="absolute inset-0 bg-rose-500/60" />}
 
                   {isTarget && (
