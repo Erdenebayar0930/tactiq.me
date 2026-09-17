@@ -6,7 +6,7 @@ import { CalendarClock, Check, Medal, ScrollText, Trophy, Users } from "lucide-r
 
 import { useUser } from "@/context/UserContext";
 import { InvoiceCard } from "@/components/tactiq/QpayInvoice";
-import { SponsorStrip, hasSponsor } from "@/components/tactiq/SponsorStrip";
+import { SponsorStrip } from "@/components/tactiq/SponsorStrip";
 import { TournamentCalendar } from "@/components/tactiq/TournamentCalendar";
 import { TournamentSponsors } from "@/components/tactiq/TournamentSponsors";
 import { gameTheme } from "@/lib/tactiq/gameTheme";
@@ -422,10 +422,17 @@ export function TournamentSection({
                       ⚠ ЗҮҮН ЗАХЫН ӨНГӨТ ЗУРВАС: мөрүүд нягт байдаг тул
                       хаанаас хаа хүртэл нэг тэмцээн болохыг өнгө тусгаарлана.
                     */
-                    className={`surface flex flex-col gap-2 border-l-4 p-3 sm:flex-row sm:items-center sm:gap-3 ${
+                    /*
+                      ⚠ `p-3` -г ХАСАВ, `overflow-hidden` нэмэв: ивээн
+                      тэтгэгчийн ХӨЛ нь мөрийн БҮТЭН өргөнийг эзэлж,
+                      захаараа бөөрөнхийлөгдөх ёстой. Гадна зай (padding)
+                      нь дотоод блокуудад өгөгдөнө.
+                    */
+                    className={`surface flex flex-col overflow-hidden border-l-4 ${
                       gameTheme(tournament.game).border
                     }`}
                   >
+                    <div className="flex flex-col gap-2 p-3 sm:flex-row sm:items-center sm:gap-3">
                     {/*
                       ДЭЭД ХЭСЭГ — цаг, дүрс, нэр. Гар утсан дээр ч энэ гурав
                       НЭГ мөрөнд зэрэгцэнэ: цаг нь хамгийн чухал бөгөөд нэртэй
@@ -530,21 +537,6 @@ export function TournamentSection({
                     </div>
 
                     {/*
-                      ИВЭЭН ТЭТГЭГЧ — өөрийн мөрөнд, цагийн баганатай
-                      тэгшилсэн.
-
-                      ⚠ Шошгуудын ДУНД тавихгүй: ивээн тэтгэгчийн нэр,
-                      шагнал нь урт бичвэр тул шошгын эгнээнд орвол
-                      тоонууд (хугацаа, оролцогч) шахагдаж, гар утсан
-                      дээр тэд дараагийн мөрөнд унана.
-                    */}
-                    {hasSponsor(tournament) && (
-                      <div className="pl-15 sm:pl-0 sm:max-w-56">
-                        <SponsorStrip item={tournament} />
-                      </div>
-                    )}
-
-                    {/*
                       ТОВЧ — гар утсан дээр БҮТЭН ӨРГӨН, ширээн дээр өөрийн
                       хэмжээгээр. Нарийн дэлгэцэнд жижиг товч нь хуруугаар
                       онохоос хэцүү бөгөөд нэрний зайг булаадаг.
@@ -584,7 +576,19 @@ export function TournamentSection({
                               : `${t("Бүртгүүлэх")} · ${money(tournament.entryFeeMnt)}`}
                         </button>
                       )}
+                      </div>
                     </div>
+
+                    {/*
+                      ИВЭЭН ТЭТГЭГЧ ба ШАГНАЛЫН САН — ТЭМЦЭЭНИЙХЭЭ ДООР.
+
+                      ⚠ Мөрийн ДОТОР, шошгын эгнээнд БИШ: ивээн тэтгэгч
+                      нь тухайн тэмцээнийг л дэмждэг тул тэдгээрийн холбоо
+                      харагдах ёстой. Урт бичвэр тул бүтэн өргөнтэй хөл
+                      болгов — шошгын эгнээнд орвол хугацаа, оролцогчийн
+                      тоо шахагдана.
+                    */}
+                    <SponsorStrip item={tournament} />
                   </li>
                   );
                 })}
@@ -595,11 +599,10 @@ export function TournamentSection({
       )}
 
       {/*
-        ⚠ ИВЭЭН ТЭТГЭГЧИД нь ЭНД: жагсаалтын өгөгдлөөс (`upcoming`)
-        бодит дэмжигчдийг шүүж авна. Тусдаа компонентоос татвал ижил
-        жагсаалтын төлөө хоёр хүсэлт явна.
+        ⚠ Энэ блок нь ЗӨВХӨН ЗАРЫН байршил: бодит ивээн тэтгэгчид
+        өөрсдийн тэмцээний доор харагдана (`SponsorStrip`).
       */}
-      {withSponsors && <TournamentSponsors sponsors={data.upcoming ?? []} />}
+      {withSponsors && <TournamentSponsors />}
 
       <TournamentRules />
     </section>
