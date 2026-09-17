@@ -179,9 +179,38 @@ export function TournamentSection({
    * өдөр хоёр тусдаа бүлэг болж хуваагдана.
    */
   const byDay = new Map<string, Tournament[]>();
-  for (const tournament of [...visible].sort(
-    (a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime()
-  )) {
+  /*
+   * ЭРЭМБЭ: ӨДӨР → ИВЭЭН ТЭТГЭГЧТЭЙ нь дээр → ЦАГ.
+   *
+   * ⚠ ИВЭЭН ТЭТГЭГЧТЭЙ тэмцээн өдрийнхөө ДЭЭД талд гарна: шагналын сан
+   * тавьсан дэмжигч тодрох ёстой бөгөөд шагналтай тэмцээн нь сурагчид
+   * ч хамгийн сонирхолтой.
+   *
+   * ⚠ ӨДРИЙН БҮЛЭГ нь ХЭВЭЭР: ивээн тэтгэгчтэйг БҮХ өдрөөс салгаж
+   * дээр хуряавал «маргаашийн шагналтай тэмцээн» өнөөдрийнхөөс дээр
+   * гарч, хуваарь нь цаг хугацааны дарааллаа алдана.
+   *
+   * ⚠ Өдөр ДОТОР цаг нь ӨСӨХ дарааллаа хадгална (хоёр бүлэг тус бүрд):
+   * ингэснээр «шагналтай 14:00, 18:00 → бусад 12:00, 20:00» гэж
+   * уншигдана. Цагийн дараалал бүрэн эвдэрвэл хуваарь гэдэг утга нь
+   * үгүй болно.
+   */
+  const sponsored = (tournament: Tournament) =>
+    (tournament.sponsorName ?? "").length > 0 || (tournament.prize ?? "").length > 0;
+
+  for (const tournament of [...visible].sort((a, b) => {
+    const at = new Date(a.startsAt).getTime();
+    const bt = new Date(b.startsAt).getTime();
+
+    const dayA = new Date(a.startsAt).setHours(0, 0, 0, 0);
+    const dayB = new Date(b.startsAt).setHours(0, 0, 0, 0);
+    if (dayA !== dayB) return dayA - dayB;
+
+    const sponsorDiff = Number(sponsored(b)) - Number(sponsored(a));
+    if (sponsorDiff !== 0) return sponsorDiff;
+
+    return at - bt;
+  })) {
     const at = new Date(tournament.startsAt);
     const key = `${at.getFullYear()}-${at.getMonth()}-${at.getDate()}`;
     const bucket = byDay.get(key);
@@ -428,8 +457,18 @@ export function TournamentSection({
                       захаараа бөөрөнхийлөгдөх ёстой. Гадна зай (padding)
                       нь дотоод блокуудад өгөгдөнө.
                     */
+                    /*
+                      ⚠ ШАГНАЛТАЙ мөр нь БҮСЛЭГДСЭН (`ring`): зөвхөн
+                      дараалал (дээр байрлах) нь хүрэлцэхгүй — сурагч
+                      жагсаалтын дундаас харахад аль нь шагналтай гэдэг
+                      нь нэг харцад ойлгогдох ёстой.
+                    */
                     className={`surface flex flex-col overflow-hidden border-l-4 ${
                       gameTheme(tournament.game).border
+                    } ${
+                      sponsored(tournament)
+                        ? "ring-1 ring-amber-300 dark:ring-amber-500/40"
+                        : ""
                     }`}
                   >
                     <div className="flex flex-col gap-2 p-3 sm:flex-row sm:items-center sm:gap-3">
