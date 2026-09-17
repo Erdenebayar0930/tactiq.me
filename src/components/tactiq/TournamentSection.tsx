@@ -7,13 +7,17 @@ import { CalendarClock, Check, Medal, ScrollText, Trophy, Users } from "lucide-r
 import { useUser } from "@/context/UserContext";
 import { InvoiceCard } from "@/components/tactiq/QpayInvoice";
 import { TournamentSchedule } from "@/components/tactiq/TournamentSchedule";
+import { gameTheme } from "@/lib/tactiq/gameTheme";
+import { mnDateTime } from "@/lib/tactiq/dateMn";
 import { ErrorNote } from "@/components/tactiq/ui";
 import { apiFetch, ApiError } from "@/lib/apiClient";
 import { MEMBERSHIP_TIERS } from "@/lib/billing";
 import {
   OTHER_TOURNAMENT_CATEGORY,
   TOURNAMENT_CATEGORIES,
+  tournamentAccessLabel,
   tournamentCategoryLabel,
+  parseTournamentAccess,
 } from "@/lib/tactiq/tournament";
 import {
   ARENA_RULES,
@@ -48,6 +52,8 @@ type Tournament = {
   durationMin: number;
   /** "chess" | "checkers" — хуваарь дээрх дүрс, өнгө. */
   game: string;
+  /** "open" | "members" | "mind" — оролцох эрх (`tournamentAccessLabel`). */
+  access: string;
   seats: number | null;
   registered: number;
   entryFeeMnt: number;
@@ -322,32 +328,82 @@ export function TournamentSection({ defaultOpen = false }: { defaultOpen?: boole
             const startsAt = new Date(tournament.startsAt);
             const canEnter = startsAt.getTime() - Date.now() <= ENTER_WINDOW_MS;
             const full = tournament.seats !== null && tournament.registered >= tournament.seats;
-            const free = tournament.entryFeeMnt === 0 || hasFreeLeft;
+            const access = parseTournamentAccess(tournament.access);
+            const accessLabel = tournamentAccessLabel(access);
+            /*
+             * ⚠ ГИШҮҮДИЙН тэмцээн нь гишүүнд ҮРГЭЛЖ үнэгүй (сарын квот
+             * зарцуулахгүй) — `lib/api/tournamentAccess.ts`. Тиймээс
+             * товчны бичвэр нь квотаас хамаарахгүй.
+             */
+            const free =
+              tournament.entryFeeMnt === 0 ||
+              (access === "members" && membership.tier !== null) ||
+              hasFreeLeft;
             const busy = busyId === tournament.id;
 
             return (
-              <li key={tournament.id} className="surface flex flex-wrap items-center gap-3 p-3">
-                <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-amber-500 text-white">
-                  <Trophy className="size-5" aria-hidden />
+              <li
+                key={tournament.id}
+                /*
+                  ⚠ ЗҮҮН ЗАХЫН ӨНГӨТ ЗУРВАС (`border-l-4`): гар утсан дээр
+                  мөрүүд нягт байдаг тул хаанаас хаа хүртэл нэг тэмцээн
+                  болохыг өнгө нь тусгаарлана. Мөн шатар/даамыг ХОЛООС
+                  харахад л ялгана.
+                */
+                className={`surface flex flex-wrap items-center gap-3 border-l-4 p-3 ${
+                  gameTheme(tournament.game).border
+                }`}
+              >
+                <span
+                  className={`grid size-10 shrink-0 place-items-center rounded-xl ${
+                    gameTheme(tournament.game).tile
+                  }`}
+                >
+                  {/* ⚠ Тоглоомын дүрс — цомын дүрс БИШ: цом нь бүх тэмцээнд
+                      ижил тул юу ч ялгадаггүй. */}
+                  {(() => {
+                    const Icon = gameTheme(tournament.game).Icon;
+                    return <Icon className="size-5" aria-hidden />;
+                  })()}
                 </span>
 
                 <div className="min-w-0 flex-1">
                   <p className="truncate font-bold text-gray-900 dark:text-white">{tournament.name}</p>
                   <p className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-gray-500 dark:text-gray-400">
-                    {/* «Бүгд» табд аль ангиллынх болохыг харуулна */}
-                    {category === "all" && (
-                      <span className="rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-700 dark:bg-amber-500/15 dark:text-amber-300">
-                        {tournamentCategoryLabel(tournament.category)}
+                    {/*
+                      ⚠ ТОГЛООМЫН ШОШГО нь ҮРГЭЛЖ харагдана («Бүгд» табд ч,
+                      ангиллын табд ч): өнгө, дүрс хоёр нь өнгө сохор
+                      хэрэглэгчид, нарны доорх дэлгэцэнд хүрэлцэхгүй.
+                    */}
+                    <span
+                      className={`rounded-full px-1.5 py-0.5 text-[10px] font-bold ${
+                        gameTheme(tournament.game).chip
+                      }`}
+                    >
+                      {gameTheme(tournament.game).label}
+                    </span>
+                    {/*
+                      ⚠ ЭРХИЙН ШОШГО — «Гишүүнд үнэгүй» / «Mind · чансаа».
+                      Бүртгүүлэх товч дарахаас ӨМНӨ харагдах ёстой: 403
+                      хариу авч байж мэдэх нь хамгийн дор.
+                    */}
+                    {accessLabel && (
+                      <span className="rounded-full bg-violet-100 px-1.5 py-0.5 text-[10px] font-bold text-violet-700 dark:bg-violet-500/20 dark:text-violet-200">
+                        {accessLabel}
                       </span>
                     )}
+                    {category === "all" &&
+                      tournamentCategoryLabel(tournament.category) !==
+                        gameTheme(tournament.game).label && (
+                        <span className="rounded-full bg-gray-100 px-1.5 py-0.5 text-[10px] font-bold text-gray-600 dark:bg-white/10 dark:text-gray-300">
+                          {tournamentCategoryLabel(tournament.category)}
+                        </span>
+                      )}
                     <span className="inline-flex items-center gap-1">
                       <CalendarClock className="size-3.5" aria-hidden />
-                      {startsAt.toLocaleString("mn-MN", {
-                        month: "short",
-                        day: "numeric",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
+                      {/* ⚠ Монгол огноо ГАРААР — `Intl` нь mn ICU байхгүй
+                          орчинд англи руу буцдаг (`lib/tactiq/dateMn.ts`). */}
+                      {mnDateTime(startsAt)}
                     </span>
                     {tournament.timeControl && <span>{tournament.timeControl}</span>}
                     <span className="inline-flex items-center gap-1">

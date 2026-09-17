@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { checkTournamentAccess } from "@/lib/api/tournamentAccess";
 
 import { badRequest, requireActiveUser, serverError } from "@/lib/api/auth";
 import { attachInvoiceId, createPendingPayment } from "@/lib/api/payments";
@@ -84,7 +85,32 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const claim = await claimFreeEntry(caller.uid, tournamentId, tournament.entryFeeMnt === 0);
+    /*
+     * ОРОЛЦОХ ЭРХ — СЕРВЕР ТАЛД (`lib/api/tournamentAccess.ts`).
+     *
+     * ⚠ Клиент тал шошго харуулдаг ч тэр нь зөвхөн харагдац: шалгалт
+     * ЭНД байхгүй бол хэн ч дурын `tournamentId` илгээж, гишүүдийн
+     * эсвэл Mind хөтөлбөрийн хаалттай тэмцээнд орно.
+     */
+    const access = await checkTournamentAccess(caller.uid, tournament.access);
+    if (!access.allowed) {
+      return NextResponse.json(
+        { error: access.reason, code: "tournament-not-eligible" },
+        { status: 403 }
+      );
+    }
+
+    /*
+     * ⚠ `access.free` нь САРЫН КВОТ ЗАРЦУУЛАХГҮЙ үнэгүй: гишүүдэд
+     * зориулсан тэмцээн нь гишүүнчлэлийн үнэ цэнэ өөрөө. Квотаас
+     * хасвал «гишүүн боллоо, гэтэл гишүүний тэмцээн квотыг идлээ»
+     * гэсэн хачирхалтай зан болно.
+     */
+    const claim = await claimFreeEntry(
+      caller.uid,
+      tournamentId,
+      tournament.entryFeeMnt === 0 || access.free
+    );
 
     if (claim.result !== "needs-payment") {
       if (claim.entryId) await syncEntry(claim.entryId);

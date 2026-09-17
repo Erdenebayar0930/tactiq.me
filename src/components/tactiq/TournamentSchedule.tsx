@@ -1,7 +1,7 @@
 "use client";
 
-import { CircleDot, Swords } from "lucide-react";
-
+import { gameTheme } from "@/lib/tactiq/gameTheme";
+import { mnDay, mnTime } from "@/lib/tactiq/dateMn";
 import { t } from "@/lib/i18n/t";
 
 /**
@@ -34,11 +34,12 @@ const PX_PER_MIN = 2.6;
 /** Тэнхлэг дээр хэдэн минут тутамд цаг бичих вэ. */
 const TICK_MIN = 30;
 
-const hhmm = (date: Date) =>
-  date.toLocaleTimeString("mn-MN", { hour: "2-digit", minute: "2-digit", hour12: false });
-
-const dayLabel = (date: Date) =>
-  date.toLocaleDateString("mn-MN", { month: "long", day: "numeric", weekday: "short" });
+/*
+ * ⚠ ОГНОО нь ГАРААР форматлагдана (`lib/tactiq/dateMn.ts`):
+ * `toLocaleString("mn-MN")` нь монгол ICU байхгүй орчинд чимээгүйхэн
+ * АНГЛИ руу буцдаг бөгөөд хуваарь дээр «Wed, September 16» гэж гарч
+ * байв.
+ */
 
 /**
  * Хуваарийн ЭХЛЭЛ — одоогийн цагийг хамгийн сүүлийн 30 минутад бөөрөнхийлнө.
@@ -122,7 +123,7 @@ export function TournamentSchedule({
   return (
     <div className="space-y-2">
       <p className="text-xs font-semibold text-gray-500 dark:text-gray-400">
-        {dayLabel(start)}
+        {mnDay(start)}
       </p>
 
       {/*
@@ -140,7 +141,7 @@ export function TournamentSchedule({
                 className="absolute top-0 -translate-x-1/2 text-[10px] font-semibold text-gray-400"
                 style={{ left }}
               >
-                {hhmm(at)}
+                {mnTime(at)}
               </span>
             ))}
           </div>
@@ -173,8 +174,8 @@ export function TournamentSchedule({
             )}
 
             {placed.map(({ item, from, row }) => {
-              const isDraughts = item.game === "checkers";
-              const Icon = isDraughts ? CircleDot : Swords;
+              const theme = gameTheme(item.game);
+              const Icon = theme.Icon;
               const full = item.seats !== null && item.registered >= item.seats;
 
               return (
@@ -182,15 +183,19 @@ export function TournamentSchedule({
                   key={item.id}
                   type="button"
                   onClick={() => onEnter?.(item.id)}
-                  title={`${item.name} · ${hhmm(new Date(item.startsAt))} · ${item.durationMin} ${t("мин")}`}
-                  className={`absolute flex items-center gap-1.5 overflow-hidden rounded-lg px-2 text-left text-white shadow-sm transition-[filter] hover:brightness-110 ${
+                  title={`${item.name} · ${mnTime(new Date(item.startsAt))} · ${item.durationMin} ${t("мин")}`}
+                  /*
+                    ⚠ БҮРТГЭГДСЭН (ногоон) ба ДҮҮРСЭН (саарал) нь тоглоомын
+                    өнгөнөөс ДАВУУ: тоглогчид «би орсон уу» гэдэг нь «ямар
+                    тоглоом бэ» гэдгээс чухал. Тоглоомыг дүрс ба шошго
+                    (дотор) хэлсээр байна.
+                  */
+                  className={`absolute flex items-center gap-1.5 overflow-hidden rounded-lg px-2 text-left text-white shadow-sm ${
                     item.isRegistered
-                      ? "bg-emerald-600"
+                      ? "bg-emerald-600 hover:bg-emerald-500"
                       : full
-                        ? "bg-gray-400 dark:bg-gray-600"
-                        : isDraughts
-                          ? "bg-amber-500"
-                          : "bg-sky-600"
+                        ? "bg-gray-400 hover:bg-gray-400 dark:bg-gray-600"
+                        : theme.bar
                   }`}
                   style={{
                     left: from * PX_PER_MIN,
@@ -201,11 +206,16 @@ export function TournamentSchedule({
                     height: 36,
                   }}
                 >
-                  <Icon className="size-3.5 shrink-0" aria-hidden />
+                  <Icon className="size-4 shrink-0" aria-hidden />
                   <span className="min-w-0 flex-1 truncate text-xs font-bold leading-tight">
                     {item.name}
-                    <span className="block truncate text-[10px] font-medium text-white/85">
-                      {item.timeControl} · {item.registered}
+                    {/*
+                      ⚠ ТОГЛООМЫН НЭР туузан дээр БИЧИГДЭНЭ: өнгө, дүрс
+                      хоёр нь гар утасны жижиг туузан дээр хангалтгүй.
+                      Бичвэр нь хамгийн найдвартай дохио.
+                    */}
+                    <span className="block truncate text-[10px] font-semibold text-white/90">
+                      {theme.label} · {item.timeControl} · {item.registered}
                       {item.seats === null ? "" : `/${item.seats}`}
                     </span>
                   </span>

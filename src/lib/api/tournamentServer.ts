@@ -1,12 +1,13 @@
 import "server-only";
 
 import {
+  parseTournamentAccess,
   isTournamentCategory,
   OTHER_TOURNAMENT_CATEGORY,
   tournamentBaseUrl,
 } from "@/lib/tactiq/tournament";
 
-import type { TournamentCategory } from "@/lib/tactiq/tournament";
+import type { TournamentAccess, TournamentCategory } from "@/lib/tactiq/tournament";
 
 /**
  * ТЭМЦЭЭНИЙ СЕРВЕРТЭЙ ярих клиент (server-to-server).
@@ -46,6 +47,15 @@ export type RemoteTournament = {
   durationMin: number;
   /** "chess" | "checkers" — хуваарь дээрх дүрс. */
   game: string;
+  /**
+   * ХЭН ОРОЛЦОХ ВЭ: "open" | "members" | "mind".
+   *
+   * ⚠ Танихгүй утга нь "open": шинэ түвшин нэмэхэд хуучин апп тэмцээнийг
+   * НУУХГҮЙ, харин илүү нээлттэй харуулна. Эсрэгээр (хаах) бол админ
+   * яагаад хэн ч бүртгэгдэхгүй байгааг олоход хэцүү. Эрхийн ЖИНХЭНЭ
+   * шалгалт нь бүртгэлийн route дээр (`/api/tournament/register`).
+   */
+  access: TournamentAccess;
   seats: number | null;
   registered: number;
   entryFeeMnt: number;
@@ -91,6 +101,7 @@ function parseTournament(raw: unknown): RemoteTournament | null {
     timeControl: typeof r.timeControl === "string" ? r.timeControl.slice(0, 32) : "",
     durationMin: isInt(r.durationMin, 1) ? Math.min(r.durationMin, 24 * 60) : 60,
     game: r.game === "checkers" || r.game === "draughts" ? "checkers" : "chess",
+    access: parseTournamentAccess(r.access),
     seats: r.seats as number | null,
     registered: r.registered,
     entryFeeMnt: r.entryFeeMnt,

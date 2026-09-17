@@ -71,3 +71,45 @@ export function tournamentBaseUrl(): string {
 export function tournamentEnabled(): boolean {
   return tournamentBaseUrl().length > 0;
 }
+
+// ---------------------------------------------------------------------------
+// ОРОЛЦОХ ЭРХ
+// ---------------------------------------------------------------------------
+
+/**
+ * ТЭМЦЭЭНД ХЭН ОРОЛЦОХ ВЭ.
+ *
+ *   open    — хүн бүр. Төлбөртэй байж болно; гишүүнд сарын квотоор
+ *             үнэгүй болдог (`membership.freeEntriesPerMonth`).
+ *   members — ЗӨВХӨН гишүүнчлэлтэй хүн, тэдэнд ҮРГЭЛЖ ҮНЭГҮЙ. Квот
+ *             хамаарахгүй: энэ нь гишүүнчлэлийн ҮНЭ ЦЭНЭ өөрөө.
+ *   mind    — Mind хөтөлбөрийн сурагчид (чансаа тогтоох тэмцээн). Чансаа
+ *             нь хөтөлбөрийн дотоод зэрэглэл тул гадны хүн орвол
+ *             зэрэглэл нь утгаа алдана.
+ *
+ * ⚠ ЭРХ нь tactiq ТАЛД шалгагдана: гишүүнчлэл, хөтөлбөрийн өгөгдөл энд
+ * байдаг. Тэмцээний сервер нь хэрэглэгчийн хүснэгтгүй тул зөвхөн тугийг
+ * хадгална.
+ */
+export const TOURNAMENT_ACCESS = ["open", "members", "mind"] as const;
+
+export type TournamentAccess = (typeof TOURNAMENT_ACCESS)[number];
+
+/**
+ * ⚠ Танихгүй утга → "open". Шинэ түвшин нэмэхэд хуучин апп тэмцээнийг
+ * НУУХГҮЙ, харин илүү нээлттэй харуулна — админ «яагаад хэн ч
+ * бүртгэгдэхгүй байна» гэж хайхаас дээр. Бүртгэлийн үеийн ЖИНХЭНЭ
+ * шалгалт нь сервер талд тул нээлттэй харуулах нь эрх зөрчихгүй.
+ */
+export function parseTournamentAccess(value: unknown): TournamentAccess {
+  return TOURNAMENT_ACCESS.includes(value as TournamentAccess)
+    ? (value as TournamentAccess)
+    : "open";
+}
+
+/** Шошгоны бичвэр — жагсаалт, хуваарь дээр. */
+export function tournamentAccessLabel(access: TournamentAccess): string | null {
+  if (access === "members") return "Гишүүнд үнэгүй";
+  if (access === "mind") return "Mind · чансаа";
+  return null;
+}
