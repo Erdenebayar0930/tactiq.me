@@ -21,7 +21,18 @@ export type PetSpecies = {
   id: string;
   kind: PetKind;
   label: string;
-  /** Дэлгэц дээрх дүрс — эможи (зурагны файл татахгүй, PWA-гийн жин нэмэгдэхгүй). */
+  /**
+   * Дэлгэц дээрх ЗУРАГ (`public/images/pets/v1/<id>.webp`).
+   *
+   * ⚠ ЭможиГ ОРЛОВ: эможи нь iOS, Android, Windows гурван өөр зурагтай
+   * бөгөөд дэлгүүр нь «яг ИЙМ тэжээвэр авна» гэж амлаж байгаа тул
+   * хэрэглэгч бүрд ижил харагдах ёстой.
+   */
+  image: string;
+  /**
+   * Эможи — ЗӨВХӨН нөөц: зураг ачаалагдтал, мөн `alt` текст. Худалдан
+   * авалтын баяр (`PurchaseToast`) дээр ч хэрэглэгддэг.
+   */
   emoji: string;
   /** Худалдан авах үнэ (зоос). */
   price: number;
@@ -47,6 +58,7 @@ export const PET_SPECIES: PetSpecies[] = [
     id: "rabbit",
     kind: "animal",
     label: "Туулай",
+    image: "/images/pets/v1/rabbit.webp",
     emoji: "🐰",
     price: 150,
     careCost: 10,
@@ -63,6 +75,7 @@ export const PET_SPECIES: PetSpecies[] = [
     id: "cat",
     kind: "animal",
     label: "Муур",
+    image: "/images/pets/v1/cat.webp",
     emoji: "🐱",
     price: 250,
     careCost: 10,
@@ -79,6 +92,7 @@ export const PET_SPECIES: PetSpecies[] = [
     id: "dog",
     kind: "animal",
     label: "Нохой",
+    image: "/images/pets/v1/dog.webp",
     emoji: "🐶",
     price: 400,
     careCost: 15,
@@ -95,6 +109,7 @@ export const PET_SPECIES: PetSpecies[] = [
     id: "cactus",
     kind: "plant",
     label: "Ортоз",
+    image: "/images/pets/v1/cactus.webp",
     emoji: "🌵",
     price: 100,
     careCost: 5,
@@ -111,6 +126,7 @@ export const PET_SPECIES: PetSpecies[] = [
     id: "flower",
     kind: "plant",
     label: "Цэцэг",
+    image: "/images/pets/v1/flower.webp",
     emoji: "🌸",
     price: 200,
     careCost: 8,
@@ -127,6 +143,7 @@ export const PET_SPECIES: PetSpecies[] = [
     id: "tree",
     kind: "plant",
     label: "Мод",
+    image: "/images/pets/v1/tree.webp",
     emoji: "🌳",
     price: 500,
     careCost: 10,

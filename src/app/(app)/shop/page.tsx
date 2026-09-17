@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { PetArt } from "@/components/tactiq/PetArt";
 import { useState } from "react";
 import { Check, Coins, Snowflake } from "lucide-react";
 
@@ -199,9 +200,7 @@ export default function ShopPage() {
         <div className="grid gap-3 sm:grid-cols-2">
           {PET_SPECIES.map((species) => (
             <div key={species.id} className="surface flex items-center gap-3 p-4">
-              <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-gray-100 text-3xl dark:bg-white/10">
-                {species.emoji}
-              </span>
+              <PetArt species={species} size={56} />
 
               <div className="min-w-0 flex-1">
                 <p className="font-bold text-gray-900 dark:text-white">{species.label}</p>

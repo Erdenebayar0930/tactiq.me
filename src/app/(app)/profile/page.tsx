@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { PetArt } from "@/components/tactiq/PetArt";
 import {
   ChevronRight,
   Coins,
@@ -302,11 +303,12 @@ function WelcomeBanner({
             className="pointer-events-none flex shrink-0 items-center gap-1 text-xl opacity-90"
             aria-hidden
           >
-            {pets.slice(0, 5).map((species, index) => (
-              <span key={species + index} className="drop-shadow">
-                {findSpecies(species)?.emoji ?? ""}
-              </span>
-            ))}
+            {pets.slice(0, 5).map((species, index) => {
+              const found = findSpecies(species);
+              return found ? (
+                <PetArt key={species + index} species={found} size={28} className="drop-shadow" />
+              ) : null;
+            })}
           </span>
         )}
       </div>

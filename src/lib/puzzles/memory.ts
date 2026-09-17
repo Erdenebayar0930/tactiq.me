@@ -26,8 +26,15 @@ export const MEMORY_MIN_PAIRS = 3;
  */
 export const MEMORY_MAX_PAIRS = 10;
 
-/** Нэг зүйлийн дээд урт — эможи эсвэл 1-3 үсгийн товч бичээс. */
-export const MEMORY_ITEM_MAX = 8;
+/**
+ * Нэг зүйлийн дээд урт — эможи, 1-3 үсгийн товч бичээс, ЭСВЭЛ зургийн
+ * тэмдэглэгээ (`img:flag-mn` — `lib/tactiq/itemArt.ts`).
+ *
+ * ⚠ 8 байсныг 20 болгов: зургийн тэмдэглэгээ түүнээс урт
+ * («img:flag-mn» = 11). Хязгаар нь хөзөр дээр УРТ ТЕКСТ гарахыг
+ * хоригложгүйн тулд байсан — зураг нь текст биш тул тэр эрсдэл алга.
+ */
+export const MEMORY_ITEM_MAX = 20;
 
 export type MemoryDeck = {
   pairs: number;

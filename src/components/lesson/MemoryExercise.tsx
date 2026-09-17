@@ -2,7 +2,10 @@
 
 import { useEffect, useRef, useState } from "react";
 
+import Image from "next/image";
+
 import { makeRng, seedFromString } from "@/lib/net/puzzle";
+import { itemArt } from "@/lib/tactiq/itemArt";
 import { dealMemory, decodeMemory, memoryColumns } from "@/lib/puzzles/memory";
 
 import type { MemoryCard } from "@/lib/puzzles/memory";
@@ -158,7 +161,7 @@ export default function MemoryExercise({
               type="button"
               onClick={() => flip(card)}
               disabled={feedback !== null || isOpen || busy}
-              aria-label={isOpen ? card.value : "Хөзөр эргүүлэх"}
+              aria-label={isOpen ? (itemArt(card.value)?.label ?? card.value) : "Хөзөр эргүүлэх"}
               /*
                 ⚠ Хаалттай ба нээлттэй хөзөр ИЖИЛ ХЭМЖЭЭТЭЙ байх ёстой
                 (`aspect-square`) — эс бөгөөс хөзөр эргэх бүрд тор нь
@@ -201,13 +204,7 @@ export default function MemoryExercise({
                       isMatched ? "ring-2 ring-emerald-400" : "ring-1 ring-gray-200 dark:ring-white/10"
                     }`}
                   >
-                    <span
-                      className={`grid size-[78%] place-items-center rounded-full text-3xl ${
-                        FACE_TINTS[card.pairId % FACE_TINTS.length]
-                      }`}
-                    >
-                      {card.value}
-                    </span>
+                    <CardFace value={card.value} pairId={card.pairId} />
                   </span>
                 )}
               </span>
@@ -220,5 +217,44 @@ export default function MemoryExercise({
         Хоёр хөзөр эргүүлж ижил зурагтай хосыг ол. Бүх хосыг олбол дуусна.
       </p>
     </div>
+  );
+}
+
+/**
+ * Хөзрийн НҮҮР — зураг (`img:<түлхүүр>`) эсвэл текст/эможи.
+ *
+ * ⚠ ЗУРАГТАЙ хөзөр нь өнгөт дугуйгүй: далбааны цагаан тал (Япон, Польш,
+ * Дани…) өнгөт дугуй дээр бохир харагдана. Тиймээс зургийг цагаан
+ * хавтан дээр, нимгэн хүрээтэй тавина.
+ *
+ * ⚠ Хосын өнгө нь ЗӨВХӨН текст хөзөрт үлдэв: зурагт хөзөр өөрөө өнгөтэй
+ * тул нэмэлт өнгө нь ялгахад тус болохгүй, харин бүдгэрүүлнэ.
+ */
+function CardFace({ value, pairId }: { value: string; pairId: number }) {
+  const art = itemArt(value);
+
+  if (art) {
+    return (
+      <span className="grid size-[86%] place-items-center overflow-hidden rounded-xl bg-white ring-1 ring-gray-200 dark:ring-white/20">
+        <Image
+          src={art.src}
+          alt=""
+          aria-hidden
+          width={192}
+          height={132}
+          className="h-auto w-full select-none object-contain"
+        />
+      </span>
+    );
+  }
+
+  return (
+    <span
+      className={`grid size-[78%] place-items-center rounded-full text-3xl ${
+        FACE_TINTS[pairId % FACE_TINTS.length]
+      }`}
+    >
+      {value}
+    </span>
   );
 }

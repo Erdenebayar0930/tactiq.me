@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { PetArt } from "@/components/tactiq/PetArt";
 import { Coins, Gift, Info } from "lucide-react";
 import Link from "next/link";
 
@@ -153,9 +154,7 @@ export default function PetsPage() {
             return (
               <div key={pet.id} className="surface space-y-4 p-5">
                 <div className="flex items-start gap-4">
-                  <span className="grid size-16 shrink-0 place-items-center rounded-2xl bg-gray-100 text-4xl dark:bg-white/10">
-                    {species.emoji}
-                  </span>
+                  <PetArt species={species} size={72} />
 
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">

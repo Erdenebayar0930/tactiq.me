@@ -14,6 +14,7 @@
     "sync:claims": "tsx --env-file=.env.local scripts/sync-claims.ts",
     "seed:piano": "tsx --env-file=.env.local scripts/seed-piano-course.ts",
     "seed:piano:rhythm": "tsx --env-file=.env.local scripts/seed-piano-rhythm.ts",
+    "reskin:memory": "tsx --env-file=.env.local scripts/reskin-memory-decks.ts",
     "retune:lessons": "tsx --env-file=.env.local scripts/retune-lessons.ts",
     "seed:puzzles": "tsx --env-file=.env.local scripts/seed-chess-puzzles.ts",
     "seed:sudoku": "tsx --env-file=.env.local scripts/seed-sudoku-course.ts",
