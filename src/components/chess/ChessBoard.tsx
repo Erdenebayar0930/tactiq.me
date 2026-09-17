@@ -175,6 +175,13 @@ export function ChessBoard({
    * ⚠ `100dvh` нь хөтчийн мөрийг хассан ЖИНХЭНЭ өндөр (`100vh` нь гар
    * утсан дээр худал утга өгдөг).
    *
+   * ⚠ НӨӨЦ нь ХУУДСААС ХАМААРНА, тиймээс `--board-reserve` хувьсагчаар
+   * тохируулагддаг (анхдагч 22rem — тоглох дэлгэц). Хичээлийн дэлгэцэнд
+   * толгой, явцын мөр, замын ДҮР, «Үргэлжлүүлэх» товч гэсэн дөрвөн
+   * нэмэлт мөр байдаг тул тэр хуудас нь илүү их нөөц өгнө
+   * (`learn/[lessonId]`). Хатуу 22rem байхад дүрийн толгой наалдсан
+   * толгой мөрийн дор орж таслагдаж байв.
+   *
    * ⚠ 22rem нөөцлөв. Дээд талын мэдээллийг нягтруулсны дараа (буцах мөр
    * нэг мөр боллоо, тоглолтын толгой намссан) 26rem шаардлагагүй болсон
    * — тэр зай нь ХӨЛӨГТ очно.
@@ -184,7 +191,7 @@ export function ChessBoard({
    * зүйл.
    */
   return (
-    <div className="relative mx-auto aspect-square w-full max-w-[min(620px,calc(100dvh-22rem))] select-none rounded-lg bg-gradient-to-br from-[#4a2f1c] to-[#1c0f07] p-[6%] shadow-[inset_0_2px_3px_rgba(255,255,255,0.12),inset_0_-3px_8px_rgba(0,0,0,0.65),0_8px_24px_rgba(0,0,0,0.45)]">
+    <div className="relative mx-auto aspect-square w-full max-w-[min(620px,calc(100dvh-var(--board-reserve,22rem)))] select-none rounded-lg bg-gradient-to-br from-[#4a2f1c] to-[#1c0f07] p-[6%] shadow-[inset_0_2px_3px_rgba(255,255,255,0.12),inset_0_-3px_8px_rgba(0,0,0,0.65),0_8px_24px_rgba(0,0,0,0.45)]">
       {/* Мөрийн дугаар (1-8) — хүрээний баруун захад, хөлөгтэй ижил чиглэлтэй эргэдэг */}
       <div className="pointer-events-none absolute inset-y-[6%] right-0 flex w-[6%] flex-col text-[2.4vw] font-semibold text-amber-100/80 sm:text-xs">
         {rows.map((row) => (

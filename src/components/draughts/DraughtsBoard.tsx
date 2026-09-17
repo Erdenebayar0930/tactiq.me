@@ -205,7 +205,7 @@ export function DraughtsBoard({
    * зүйл.
    */
   return (
-    <div className="relative mx-auto aspect-square w-full max-w-[min(620px,calc(100dvh-22rem))] select-none rounded-lg bg-gradient-to-br from-[#4a2f1c] to-[#1c0f07] p-[3%] shadow-[inset_0_2px_3px_rgba(255,255,255,0.12),inset_0_-3px_8px_rgba(0,0,0,0.65),0_8px_24px_rgba(0,0,0,0.45)]">
+    <div className="relative mx-auto aspect-square w-full max-w-[min(620px,calc(100dvh-var(--board-reserve,22rem)))] select-none rounded-lg bg-gradient-to-br from-[#4a2f1c] to-[#1c0f07] p-[3%] shadow-[inset_0_2px_3px_rgba(255,255,255,0.12),inset_0_-3px_8px_rgba(0,0,0,0.65),0_8px_24px_rgba(0,0,0,0.45)]">
       <div
         ref={boardRef}
         onPointerMove={onBoardMove}

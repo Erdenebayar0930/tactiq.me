@@ -4,6 +4,8 @@ import Link from "next/link";
 import dynamic from "next/dynamic";
 import { useParams, useRouter } from "next/navigation";
 import { useRef, useState } from "react";
+
+import type { CSSProperties } from "react";
 import { PartyPopper, X } from "lucide-react";
 
 import { useUser } from "@/context/UserContext";
@@ -347,7 +349,20 @@ function Player({ lesson, apply }: { lesson: Lesson; apply: Apply }) {
   if (result) return <CompletionScreen lesson={lesson} result={result} />;
 
   return (
-    <div className="mx-auto max-w-lg space-y-5">
+    /*
+     * ⚠ `--board-reserve`: шатар, даамын хөлөг өөрийн өндрийг
+     * `100dvh` -ээс ЭНЭ нөөцийг хассанаар тооцно (`ChessBoard`).
+     *
+     * 24rem = 384px, ингэж бодов: наалдсан толгой 64 + явцын мөр 56 +
+     * зай 20 + хайрцгийн доторх бичвэр, хүрээ 84 + зай 20 + товч 52 +
+     * доод зай 24 ≈ 320, дээр нь ГАР УТСАН дээрх доод цэсний тууз 64.
+     * Тэр тууз нь `fixed` тул `dvh`-д тооцогддоггүй — түүнийг мартвал
+     * хөлгийн доод эгнээ цэсний дор орж, сурагч нүүдэл хийж чадахгүй.
+     *
+     * ⚠ Тоглох дэлгэцийн анхдагч (22rem) -аас ИХ: тэнд явцын мөр, дүр,
+     * «Үргэлжлүүлэх» товч байхгүй.
+     */
+    <div className="mx-auto max-w-lg space-y-5" style={{ "--board-reserve": "24rem" } as CSSProperties}>
       <div className="flex items-center gap-3">
         <button
           type="button"
@@ -365,51 +380,40 @@ function Player({ lesson, apply }: { lesson: Lesson; apply: Apply }) {
           />
         </div>
 
+        {/*
+          ДҮР — явцын мөрний БАРУУН ЗАХАД, ТУСДАА МӨРГҮЙ.
+
+          ⚠ Урьд нь өөрийн мөрөнд сууж ~80px өндөр эзэлдэг байв. Ноутбукийн
+          дэлгэцэнд (≈660px) толгой + явц + дүр + хөлөг + товч нь багтахгүй
+          болж, хуудас гүйж, дүрийн толгой наалдсан толгой мөрийн дор орж
+          ТАСЛАГДАЖ байсан — «дүрс багтахгүй» гэдэг нь яг энэ.
+
+          ⚠ Хайрцгийн ДОТОР ч биш: тэнд тавивал асуултын бичвэртэй мөрлөж,
+          хөлөг, тор, хөзрийг доош түлхэнэ.
+
+          ⚠ Дүр нь ДАСГАЛ БҮРД солигдоно (`index`). `PathCharacter` нь
+          `aria-hidden` тул дэлгэц уншигчид давхар чимээ гарахгүй.
+        */}
+        <PathCharacter
+          index={index}
+          set={characterSetForCourse(user?.activeCourseSlug ?? "")}
+          height={56}
+          className="drop-shadow-md"
+        />
       </div>
 
-      {/*
-        ДҮР — дасгалын хайрцгийн ДЭЭР, түүний ГАДНА.
-
-        ⚠ Хайрцаг дээр давхарлаж БОЛОХГҮЙ: асуултын бичвэр нь хайрцгийн
-        дээд мөрийг бүтнээр эзэлдэг бөгөөд урт асуулт баруун зах хүртэл
-        мөрлөнө — давхарласан дүр түүнийг халхална. Дасгалын төрөл бүр
-        өөрийн бичвэрээ өөрөө зурдаг тул «баруун талд зай үлдээ» гэж нэг
-        дор зохицуулах ч боломжгүй.
-
-        ⚠ Тиймээс дүр нь ТУСДАА МӨРӨНД, БҮТНЭЭРЭЭ сууна. Урьд нь хөлийг
-        нь хайрцгийн ард нуух гэж `translate-y` хэрэглэж байсныг хассан:
-        дүр нь таслагдсан мэт харагдаж байв. Бүтэн дүр нь жаахан зай
-        авдаг ч ойлгомжтой.
-
-        ⚠ Хайрцагны ДОТОР ч биш: тэнд тавивал хөлөг, тор, хөзөр зэрэг
-        агуулгыг доош түлхэж, жижиг дэлгэц дээр шахна.
-
-        ⚠ Дүр нь ДАСГАЛ БҮРД солигдоно (`index`). `PathCharacter` нь
-        `aria-hidden` тул дэлгэц уншигчид давхар чимээ гарахгүй.
-      */}
       <div>
-        <div className="flex justify-end pr-4 sm:pr-8">
-          <PathCharacter
-            index={index}
-            set={characterSetForCourse(user?.activeCourseSlug ?? "")}
-            height={72}
-            className="drop-shadow-md"
-          />
-        </div>
-
-        <div className="mt-2">
-          <ExerciseCard
-            // `key`-ээр дасгал бүрд (мөн ДАХИН ОРОЛДЛОГО бүрд) ШИНЭЭР mount
-            // хийлгэнэ — доторх сонголт/хөлгийн төлөв (`ChoiceExercise`-ийн
-            // `selected`, `BoardMoveExercise`-ийн `Chess` instance) гараар
-            // цэвэрлэх шаардлагагүй болно.
-            key={`${exercise.id}:${attempt}`}
-            exercise={exercise}
-            feedback={feedback}
-            onAnswer={(correct) => choose(correct)}
-            onMistake={mistake}
-          />
-        </div>
+        <ExerciseCard
+          // `key`-ээр дасгал бүрд (мөн ДАХИН ОРОЛДЛОГО бүрд) ШИНЭЭР mount
+          // хийлгэнэ — доторх сонголт/хөлгийн төлөв (`ChoiceExercise`-ийн
+          // `selected`, `BoardMoveExercise`-ийн `Chess` instance) гараар
+          // цэвэрлэх шаардлагагүй болно.
+          key={`${exercise.id}:${attempt}`}
+          exercise={exercise}
+          feedback={feedback}
+          onAnswer={(correct) => choose(correct)}
+          onMistake={mistake}
+        />
       </div>
 
       {error && <p className="text-sm text-rose-600 dark:text-rose-400">{error}</p>}
