@@ -857,6 +857,15 @@ export const tournamentEntries = pgTable(
     monthKey: varchar("month_key", { length: 7 }).notNull(),
     paymentId: uuid("payment_id"),
     syncedAt: timestamp("synced_at"),
+    /**
+     * Тэмцээн эхлэхийн өмнөх мэдэгдэл илгээсэн мөч (`null` = илгээгээгүй).
+     *
+     * ⚠ ЯАГААД ХЭРЭГТЭЙ: илгээгч минут тутам ажиллана
+     * (`/api/cron/tournament-reminders`). Тэмдэглэхгүй бол 10 минутын
+     * цонхонд сурагч 10 удаа мэдэгдэл авна — тэр нь мэдэгдлийг бүрмөсөн
+     * унтраах хамгийн хурдан шалтгаан.
+     */
+    reminderSentAt: timestamp("reminder_sent_at", { withTimezone: true }),
     createdAt: timestamp("created_at").notNull().defaultNow(),
   },
   (table) => [
@@ -1561,3 +1570,41 @@ export type ChessQueueRow = typeof chessQueue.$inferSelect;
 export type ChessRoomRow = typeof chessRooms.$inferSelect;
 export type ChessInviteRow = typeof chessInvites.$inferSelect;
 export type ChessSignalRow = typeof chessSignals.$inferSelect;
+
+/**
+ * PUSH ТОКЕН — төхөөрөмж тус бүрийн FCM токен.
+ *
+ * ⚠ `uid` нь ТҮЛХҮҮР БИШ: нэг хүн утас, ком, таблет гэсэн олон
+ * төхөөрөмжтэй байж болно. Бүгдэд нь мэдэгдэл хүрэх ёстой — сурагч
+ * тэмцээнээ утсандаа мэдээд ком дээрээ тоглоно.
+ *
+ * ⚠ `token` нь ДАВХАРДАХГҮЙ (unique): ижил токен хоёр хэрэглэгчид
+ * оногдвол хуучин хэрэглэгч нөгөөгийнх мэдэгдлийг авна. FCM токен нь
+ * хэрэглэгч гарч, өөр хүн нэвтрэхэд ДАХИН хэрэглэгддэг тул энэ нь
+ * онолын эрсдэл биш.
+ */
+export const pushTokens = pgTable(
+  "push_tokens",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    uid: uidCol("uid").notNull(),
+    /** ⚠ `text`: FCM токен 150+ тэмдэгт, Google дээд хязгаар амлаагүй. */
+    token: text("token").notNull(),
+    /** Аль төхөөрөмж вэ — «ком дээрх мэдэгдлийг унтраа» гэж хэлэхэд. */
+    label: varchar("label", { length: 64 }).notNull().default(""),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    /**
+     * Хамгийн сүүлд харагдсан мөч.
+     *
+     * ⚠ Хуучирсан токеныг цэвэрлэхэд: FCM нь устсан төхөөрөмжийн токенд
+     * `messaging/registration-token-not-registered` гэж хариулдаг бөгөөд
+     * тэр үед мөрийг устгана. Гэхдээ огт хэрэглэгдээгүй токен ч хурааж
+     * хэвтэхээс сэргийлж цагийг бичнэ.
+     */
+    lastSeenAt: timestamp("last_seen_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("push_tokens_token_uq").on(table.token),
+    index("push_tokens_uid_idx").on(table.uid),
+  ]
+);

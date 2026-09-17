@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { disablePush, enablePush } from "@/lib/push";
 import { Camera, Laptop, Trash2 } from "lucide-react";
 
 import { useLocale } from "@/context/LocaleContext";
@@ -73,6 +74,8 @@ export default function SettingsPage() {
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  /** Хөтчийн зөвшөөрөл, токентой холбоотой алдаа — санд бичихээс тусдаа. */
+  const [pushError, setPushError] = useState<string | null>(null);
 
   const initial = (user.displayName || user.email || "?").charAt(0).toUpperCase();
 
@@ -87,6 +90,30 @@ export default function SettingsPage() {
     const timer = setTimeout(() => setNotice(null), 3000);
     return () => clearTimeout(timer);
   }, [notice]);
+
+  /**
+   * МЭДЭГДЭЛ — хүслийг санд, зөвшөөрлийг хөтчид.
+   *
+   * ⚠ ЭХЛЭЭД ХӨТЧӨӨС асууна, дараа нь санд бичнэ: зөвшөөрөл олгогдоогүй
+   * байхад «асаалттай» гэж бичвэл сурагч мэдэгдэл хүлээгээд ирэхгүй.
+   * Сервер тал ч токенгүй хүнд юу ч илгээж чадахгүй
+   * (`lib/api/tournamentReminders.ts`).
+   */
+  const toggleNotifications = async (value: boolean) => {
+    setPushError(null);
+
+    if (value) {
+      const result = await enablePush();
+      if (!result.ok) {
+        setPushError(result.reason ?? t("Мэдэгдэл асаахад алдаа гарлаа."));
+        return;
+      }
+    } else {
+      await disablePush();
+    }
+
+    await persist({ notificationsEnabled: value });
+  };
 
   /** Аль ч талбарыг хадгалах нэгдсэн зам */
   const persist = async (patch: Parameters<typeof updateMe>[0]) => {
@@ -325,12 +352,27 @@ export default function SettingsPage() {
           checked={user.soundEnabled}
           onChange={(value) => void persist({ soundEnabled: value })}
         />
+        {/*
+          ⚠ МЭДЭГДЭЛ нь ХОЁР зүйлийг зэрэг хийнэ: (1) хэрэглэгчийн
+          хүслийг санд бичнэ, (2) хөтчийн ЗӨВШӨӨРЛИЙГ асууж, FCM
+          токеныг серверт бүртгэнэ. Зөвхөн нэгийг нь хийвэл унтраалга
+          «асаалттай» харагдаад мэдэгдэл ирэхгүй — хамгийн будлиантай
+          хувилбар.
+
+          ⚠ Зөвшөөрлийг ХЭРЭГЛЭГЧИЙН ҮЙЛДЛЭЭС (унтраалга дарах) асууна,
+          хуудас ачаалахад БИШ: гэнэтийн зөвшөөрлийн цонхыг хөтчүүд спам
+          гэж үзэж хориглодог бөгөөд хэрэглэгч ойлгохгүй «Хориглох»
+          дарвал тэр сонголт удаан хадгалагдана.
+        */}
         <Toggle
           label={t("Мэдэгдэл")}
-          hint={t("Өдрийн зорилтоо санагдуулах")}
+          hint={t("Тэмцээн эхлэхийн 10 минутын өмнө сануулна")}
           checked={user.notificationsEnabled}
-          onChange={(value) => void persist({ notificationsEnabled: value })}
+          onChange={(value) => void toggleNotifications(value)}
         />
+        {pushError && (
+          <p className="text-xs font-medium text-rose-600 dark:text-rose-400">{pushError}</p>
+        )}
       </Section>
 
       <DevicesSection />
