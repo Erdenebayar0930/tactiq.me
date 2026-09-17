@@ -16,7 +16,6 @@ import { playGameLabel, roomPath } from "@/lib/tactiq/playGame";
 import type { PlayGame } from "@/lib/tactiq/playGame";
 import { DIFFICULTY_LABELS } from "@/lib/tactiq/theme";
 import { GameRobot } from "@/components/tactiq/GameRobot";
-import { Mascot } from "@/components/tactiq/Mascot";
 import { TournamentSection } from "@/components/tactiq/TournamentSection";
 import { ErrorNote } from "@/components/tactiq/ui";
 import { t } from "@/lib/i18n/t";
@@ -213,8 +212,16 @@ export default function PlayPage() {
         (`CircleDot` / `Swords`) байсан тул шатар, даамын лобби хоёр
         бараг ижил харагддаг байв. Робот нь тоглоомынхоо хөлөгтэй
         (`playGameRobot`) тул нэг харцад л ялгагдана.
+
+        ⚠ НЭГ ДЭЛГЭЦЭНД НЭГ Л РОБОТ. Тоглогч хайж байх үед доор ч робот
+        гардаг байсан тул ижил дүрс хоёр удаа зэрэгцэн харагдаж байв.
+        Одоо хайлт нь доор ШИНЭ дүрс нэмэхгүй, харин ЭНЭ роботыг зөөлөн
+        цохилуулж (`animate-pulse`) «ажиллаж байна» гэдгийг хэлнэ.
       */}
-      <GameRobot game={onlineGame} className="h-28 w-auto" />
+      <GameRobot
+        game={onlineGame}
+        className={`h-28 w-auto ${status === "searching" ? "motion-safe:animate-pulse" : ""}`}
+      />
 
       <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
         {isDraughtsCourse ? t("Даам тоглох") : t("Шатар тоглох")}
@@ -236,12 +243,15 @@ export default function PlayPage() {
       {status === "searching" ? (
         <div className="flex flex-col items-center gap-4">
           {/*
-            ⚠ Ерөнхий mascot БИШ, тоглоомынхоо робот: хэрэглэгч хэдэн
-            секунд хүлээж байхдаа «би юу хайж байна?» гэдгээ дүрснээс
-            мэдэх ёстой. Титэмтэй ерөнхий дүр нь түүнийг хэлдэггүй.
+            ⚠ ЭНД ДҮРС БАЙХГҮЙ: дээрх робот аль хэдийн тоглоомыг хэлж
+            байгаа тул дахин зурвал нэг дэлгэцэнд ижил дүрс давхцана.
+            Хайлт явж байгааг эргэлдэх тойрог ба цохилох робот хэлнэ.
           */}
-          <GameRobot game={onlineGame} className="h-24 w-auto" />
-          <p className="animate-pulse font-semibold text-gray-700 dark:text-gray-200">
+          <p className="inline-flex items-center gap-2 font-semibold text-gray-700 dark:text-gray-200">
+            <span
+              className="size-4 animate-spin rounded-full border-2 border-brand-500 border-t-transparent"
+              aria-hidden
+            />
             {t("Тоглогч хайж байна…")}
           </p>
           <button
