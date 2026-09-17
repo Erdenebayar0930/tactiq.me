@@ -169,3 +169,101 @@ export async function pushRegistration(input: {
   // Бүртгэгдсэн тоо өөрчлөгдсөн — дараагийн жагсаалт шинэ тоо харуулна.
   listCache = null;
 }
+
+// ---------------------------------------------------------------------------
+// АДМИН — тов, давтамжтай сери
+// ---------------------------------------------------------------------------
+
+/**
+ * ⚠ АДМИНЫ БҮХ ХҮСЭЛТ ЭНД ДАМЖИНА. Хөтөч тэмцээний сервер рүү ХЭЗЭЭ Ч
+ * шууд хандахгүй: нууц түлхүүр хөтчид гарвал хэн ч тэмцээн үүсгэж,
+ * устгаж чадна. Админ эрхийг `/api/admin/tournament/*` route шалгана.
+ *
+ * ⚠ АЛДААНЫ БИЧВЭРИЙГ ДАМЖУУЛНА: тэмцээний сервер «Нэр: 120 тэмдэгтээс
+ * урт байж болохгүй» гэж хэлдэг бөгөөд админ түүнийг харах ёстой.
+ * «HTTP 400» гэж хувиргавал юу буруу болсныг таамаглах болно.
+ */
+async function adminCall(
+  path: string,
+  init: { method?: string; body?: unknown } = {}
+): Promise<Record<string, unknown>> {
+  const base = tournamentBaseUrl();
+  const secret = process.env.TOURNAMENT_SHARED_SECRET?.trim();
+  if (!base || !secret) throw new TournamentServerError("Тэмцээний холболт тохируулагдаагүй.");
+
+  const response = await fetch(`${base}/api${path}`, {
+    method: init.method ?? "GET",
+    headers: { "content-type": "application/json", "x-tournament-secret": secret },
+    body: init.body === undefined ? undefined : JSON.stringify(init.body),
+    cache: "no-store",
+    signal: AbortSignal.timeout(TIMEOUT_MS),
+  });
+
+  const data = (await response.json().catch(() => ({}))) as Record<string, unknown>;
+
+  if (!response.ok) {
+    const message = typeof data.error === "string" ? data.error : `HTTP ${response.status}`;
+    throw new TournamentServerError(message);
+  }
+
+  return data;
+}
+
+export type RemoteSeries = {
+  id: string;
+  name: string;
+  category: string;
+  game: string;
+  access: string;
+  durationMin: number;
+  timeControl: string;
+  seats: number | null;
+  entryFeeMnt: number;
+  startTime: string;
+  weekdays: number;
+  active: boolean;
+};
+
+export async function listSeries(): Promise<RemoteSeries[]> {
+  const raw = await adminCall("/admin/series");
+  return Array.isArray(raw.series) ? (raw.series as RemoteSeries[]) : [];
+}
+
+export async function saveSeries(body: unknown): Promise<void> {
+  await adminCall("/admin/series", { method: "POST", body });
+}
+
+export async function setSeriesActive(id: string, active: boolean): Promise<void> {
+  await adminCall(`/admin/series/${encodeURIComponent(id)}`, {
+    method: "PATCH",
+    body: { active },
+  });
+}
+
+export async function deleteSeries(id: string): Promise<void> {
+  await adminCall(`/admin/series/${encodeURIComponent(id)}`, { method: "DELETE" });
+}
+
+export async function saveTournament(body: unknown): Promise<void> {
+  await adminCall("/admin/tournaments", { method: "POST", body });
+}
+
+export async function deleteTournament(id: string): Promise<void> {
+  await adminCall(`/admin/tournaments/${encodeURIComponent(id)}`, { method: "DELETE" });
+}
+
+/**
+ * ⚠ ЖАГСААЛТЫН КЭШИЙГ ЦЭВЭРЛЭНЭ: админ тов оруулаад жагсаалтаа ТЭР
+ * ДАРУЙ харах ёстой. 30 секунд хүлээвэл «хадгалагдсангүй» гэж бодож
+ * дахин дарна.
+ */
+export function clearTournamentListCache(): void {
+  listCache = null;
+}
+
+/** Админд БҮХ төлөвийн тэмцээн — ноорхой, цуцлагдсаныг ч харуулна. */
+export async function listAllTournaments(): Promise<RemoteTournament[]> {
+  const raw = await adminCall("/tournaments?status=upcoming");
+  const list = Array.isArray(raw.tournaments) ? raw.tournaments : [];
+  return list.map(parseTournament).filter((item): item is RemoteTournament => item !== null);
+}

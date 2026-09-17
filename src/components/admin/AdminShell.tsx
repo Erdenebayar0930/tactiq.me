@@ -10,7 +10,7 @@ import {
   Menu,
   Sparkles,
   Users,
-  X, Tag, GraduationCap } from "lucide-react";
+  X, Tag, Trophy, GraduationCap } from "lucide-react";
 
 import { useUser } from "@/context/UserContext";
 import { isAdminRole } from "@/lib/permissions";
@@ -30,6 +30,13 @@ const NAV = [
   { href: "/admin/users", label: "Хэрэглэгчид", Icon: Users, adminOnly: true },
   { href: "/admin/courses", label: "Сургалт", Icon: BookOpen, adminOnly: false },
   { href: "/admin/schools", label: "Сургууль", Icon: GraduationCap, adminOnly: true },
+  /*
+   * ⚠ ТЭМЦЭЭН нь ТУСДАА серверт ажилладаг (`lib/tactiq/tournament.ts`)
+   * ч ТОВЫГ энд тохируулна: админ нэг л хяналтын самбартай байх ёстой.
+   * Хүсэлт нь нууц түлхүүртэй дамжуулагчаар гарна
+   * (`/api/admin/tournament/*`).
+   */
+  { href: "/admin/tournaments", label: "Тэмцээн", Icon: Trophy, adminOnly: true },
   { href: "/admin/promo", label: "Сурталчлагч", Icon: Tag, adminOnly: true },
 ];
 
