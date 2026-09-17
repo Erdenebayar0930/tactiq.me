@@ -206,7 +206,14 @@ export default function PlayPage() {
   };
 
   return (
-    <div className="mx-auto flex max-w-md flex-col items-center gap-5 py-10 text-center">
+    /*
+     * ⚠ ЗАЙГ НЯГТРУУЛСАН: урьд нь `gap-5 py-10` байсан тул гар утасны
+     * дэлгэцэнд (≈560px) ботын түвшингүүд доод цэсний тууз дор орж,
+     * сурагч гүйлгэж байж хүрдэг байв. Толгойн хэсэг (робот, гарчиг,
+     * тайлбар) нь НЭГ УДАА уншигдах мэдээлэл — түүнд дэлгэцийн хагасыг
+     * зарцуулах шалтгаан алга.
+     */
+    <div className="mx-auto flex max-w-md flex-col items-center gap-3 py-5 text-center">
       {/*
         ⚠ РОБОТ, дүрс БИШ: урьд нь өнгөт хайрцаг дотор жижиг глиф
         (`CircleDot` / `Swords`) байсан тул шатар, даамын лобби хоёр
@@ -220,16 +227,20 @@ export default function PlayPage() {
       */}
       <GameRobot
         game={onlineGame}
-        className={`h-28 w-auto ${status === "searching" ? "motion-safe:animate-pulse" : ""}`}
+        /* ⚠ Гар утсан дээр 80px, `sm`-ээс дээш 112px: нарийн дэлгэцэнд
+           28-аар (112px) авбал зөвхөн робот л дэлгэцийн 1/5-ийг эзэлнэ. */
+        className={`h-20 w-auto sm:h-28 ${status === "searching" ? "motion-safe:animate-pulse" : ""}`}
       />
 
-      <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-        {isDraughtsCourse ? t("Даам тоглох") : t("Шатар тоглох")}
-      </h1>
-
-      <p className="text-sm text-gray-500 dark:text-gray-400">
-        {t("Санамсаргүй тоглогчтой шууд (P2P) холбогдоно, эсвэл найзаа урина.")}
-      </p>
+      {/* ⚠ Гарчиг, тайлбар нь НЭГ БҮЛЭГ: хооронд нь `gap-3` зай хэрэггүй. */}
+      <div className="space-y-1">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+          {isDraughtsCourse ? t("Даам тоглох") : t("Шатар тоглох")}
+        </h1>
+        <p className="text-sm text-gray-500 dark:text-gray-400">
+          {t("Санамсаргүй тоглогчтой шууд холбогдоно, эсвэл найзаа урина.")}
+        </p>
+      </div>
 
       {showOnline && onlineCount !== null && (
         <p className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300">
@@ -264,17 +275,28 @@ export default function PlayPage() {
         </div>
       ) : (
         <>
-          {showOnline && (
-            <button
-              type="button"
-              onClick={() => void search()}
-              className="rounded-xl bg-brand-500 px-8 py-3.5 text-base font-semibold text-white hover:bg-brand-600"
-            >
-              {t("Тоглогч хайх")}
-            </button>
-          )}
+          {/*
+            ⚠ ХОЁР ТОВЧ НЭГ ЭГНЭЭНД. Урьд нь дараалан хоёр мөр эзэлж,
+            доорх ботын түвшингүүдийг дэлгэцнээс гаргадаг байв.
 
-          {showOnline && <FriendInvite game={onlineGame} />}
+            ⚠ `flex-wrap` + `basis-40`: 320px дэлгэцэнд хоёр товч тус
+            бүр 40*4=160px-д хүрэхгүй бол өөрсдөө хоёр мөр болно —
+            бичвэр таслагдахаас дээр. Урилгын ХОЛБООСЫН карт нь
+            `basis-full` тул ямагт өөрийн мөрөнд бууна (`FriendInvite`).
+          */}
+          {showOnline && (
+            <div className="flex w-full flex-wrap justify-center gap-2">
+              <button
+                type="button"
+                onClick={() => void search()}
+                className="flex-1 basis-40 rounded-xl bg-brand-500 px-5 py-3 text-base font-semibold text-white hover:bg-brand-600"
+              >
+                {t("Тоглогч хайх")}
+              </button>
+
+              <FriendInvite game={onlineGame} />
+            </div>
+          )}
 
           {showChess && (
             <BotRow
@@ -303,7 +325,12 @@ export default function PlayPage() {
         </>
       )}
 
-      {/* Тэмцээн тусдаа серверт — бүртгэл, төлбөр нь энд (`TournamentSection`) */}
+      {/*
+        Тэмцээн — БАННЕР хэлбэрээр. Дарахад дэлгэрэнгүй (жагсаалт,
+        бүртгэл, төлбөр) ижил компонент дотроо нээгдэнэ
+        (`TournamentSection`). Тусдаа хуудас болговол бүртгэл, төлбөрийн
+        урсгал хоёр газар бичигдэнэ.
+      */}
       <TournamentSection />
     </div>
   );
@@ -415,14 +442,23 @@ function FriendInvite({ game }: { game: PlayGame }) {
   if (!code) {
     return (
       <>
-        {error && <ErrorNote message={error} />}
+        {/* ⚠ `basis-full` — алдаа нь эгнээний хажууд шахагдахгүй, өөрийн мөрөнд. */}
+        {error && (
+          <div className="basis-full">
+            <ErrorNote message={error} />
+          </div>
+        )}
+        {/*
+          ⚠ `flex-1 basis-40` — «Тоглогч хайх»-тай ИЖИЛ: хоёр товч эгнээг
+          тэнцүү хуваана. Дэлгэц нарийсвал хоёулаа өөрсдөө доош бууна.
+        */}
         <button
           type="button"
           onClick={() => void create()}
           disabled={busy}
-          className="inline-flex items-center gap-2 rounded-xl border border-brand-300 px-6 py-2.5 text-sm font-semibold text-brand-600 hover:bg-brand-50 disabled:opacity-60 dark:border-brand-500/40 dark:text-brand-400 dark:hover:bg-brand-500/10"
+          className="flex flex-1 basis-40 items-center justify-center gap-2 rounded-xl border border-brand-300 px-4 py-3 text-sm font-semibold text-brand-600 hover:bg-brand-50 disabled:opacity-60 dark:border-brand-500/40 dark:text-brand-400 dark:hover:bg-brand-500/10"
         >
-          <UserPlus className="size-4" aria-hidden />
+          <UserPlus className="size-4 shrink-0" aria-hidden />
           {busy ? t("Холбоос үүсгэж байна…") : t("Найзаа урих")}
         </button>
       </>
@@ -430,7 +466,8 @@ function FriendInvite({ game }: { game: PlayGame }) {
   }
 
   return (
-    <div className="surface flex w-full flex-col items-center gap-3 p-4">
+    /* ⚠ `basis-full`: холбоос гарахад карт нь эгнээнээс доош бүтэн мөр эзэлнэ. */
+    <div className="surface flex w-full basis-full flex-col items-center gap-3 p-4">
       <p className="text-sm font-semibold text-gray-700 dark:text-gray-200">
         {t("Холбоосоо найздаа илгээнэ үү")}
       </p>

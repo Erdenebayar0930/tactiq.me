@@ -130,7 +130,7 @@ export default function InvitePage() {
       ) : (
         <p className="text-sm text-gray-500 dark:text-gray-400">
           Та хараар тоглоно. Товч дармагц хөлөг нээгдэж, найзтайгаа шууд
-          (P2P) холбогдоно.
+          холбогдоно.
         </p>
       )}
 

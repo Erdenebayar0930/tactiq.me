@@ -77,6 +77,15 @@ export function TournamentSection() {
   const [payment, setPayment] = useState<QpayCheckout | null>(null);
   /** Сонгосон ангиллын таб — "all" эсвэл `TOURNAMENT_CATEGORIES`-ийн түлхүүр. */
   const [category, setCategory] = useState<string>("all");
+  /**
+   * Дэлгэрэнгүй нээгдсэн эсэх.
+   *
+   * ⚠ ХААЛТТАЙГААР эхэлнэ. Урьд нь бүтэн жагсаалт (гишүүнчлэлийн тууз,
+   * ангиллын табууд, тэмцээн бүрийн карт) ҮРГЭЛЖ дэлгэгдсэн байсан тул
+   * лоббийн доод хагасыг эзэлж, ботын түвшингүүд дэлгэцнээс гардаг байв.
+   * Тэмцээн нь ХААЯА болох үйл явдал — өдөр тутам дардаг зүйл биш.
+   */
+  const [open, setOpen] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -151,12 +160,64 @@ export function TournamentSection() {
     }
   };
 
+  /** Удахгүй болох тэмцээний тоо — баннер дээр харуулна. */
+  const upcoming = data.tournaments.length;
+
+  if (!open) {
+    return (
+      /*
+       * БАННЕР — нэг мөр: дүрс, мессеж, товч.
+       *
+       * ⚠ ЭНЭ НЬ ЗӨВХӨН ХАРАГДАЦЫН ХУРААНГУЙ: дарахад ижил компонент
+       * дэлгэрэнгүйгээ нээнэ (шинэ хуудас БИШ). Тусдаа хуудас болговол
+       * бүртгэл, төлбөрийн урсгал (`InvoiceCard`) хоёр газар бичигдэнэ.
+       */
+      <section className="w-full text-left">
+        <div className="flex items-center gap-3 rounded-2xl bg-gradient-to-r from-amber-400 to-amber-500 px-4 py-3 shadow-sm">
+          <Trophy className="size-7 shrink-0 text-white" aria-hidden />
+
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-bold leading-tight text-white">
+              {t("Чансаа тогтоох тэмцээн зохион байгуулж байна")}
+            </p>
+            {/*
+              ⚠ Тоо нь ХООСОН байж болно (сервер холбогдоогүй, эсвэл
+              товлогдоогүй) — тэр үед мөрийг огт гаргахгүй, «0 тэмцээн»
+              гэж бичих нь урилгыг үгүйсгэнэ.
+            */}
+            {upcoming > 0 && (
+              <p className="text-xs text-white/85">
+                {upcoming} {t("тэмцээн товлогдсон")}
+              </p>
+            )}
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setOpen(true)}
+            className="shrink-0 rounded-xl bg-white px-4 py-2 text-xs font-bold text-amber-700 hover:bg-amber-50"
+          >
+            {t("Тэмцээнд оролцох")}
+          </button>
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section className="w-full space-y-3 text-left">
       <div className="flex w-full items-center gap-3 text-xs text-gray-400">
         <span className="h-px flex-1 bg-gray-200 dark:bg-white/10" />
         {t("Тэмцээн")}
         <span className="h-px flex-1 bg-gray-200 dark:bg-white/10" />
+        {/* ⚠ Хаах товч: нээсэн хүн буцаад нягт харагдацдаа орж чадах ёстой. */}
+        <button
+          type="button"
+          onClick={() => setOpen(false)}
+          className="shrink-0 font-semibold text-gray-400 underline hover:text-gray-600 dark:hover:text-gray-200"
+        >
+          {t("Хаах")}
+        </button>
       </div>
 
       {/* Гишүүнчлэлийн төлөв — квот хэд үлдсэнийг бүртгүүлэхээс ӨМНӨ харуулна */}
