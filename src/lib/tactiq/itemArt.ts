@@ -95,14 +95,15 @@ const FLAGS: Record<string, string> = {
 /**
  * Түлхүүр → зураг.
  *
- * ⚠ Хавтас нь ХУВИЛБАРТАЙ (`v1`): service worker нь `/images/**`-ийг 30
- * хоног CacheFirst-ээр барьдаг (`next.config.ts`) тул зургийг СОЛИХОД
- * ижил нэрээр дарж бичих нь хэрэглэгчид хүрэхгүй. Шинэ багц зураг
- * `v2`-т орно.
+ * ⚠ Хавтас нь ХУВИЛБАРТАЙ: service worker нь `/images/**`-ийг 30 хоног
+ * CacheFirst-ээр барьдаг (`next.config.ts`) тул зургийг СОЛИХОД ижил
+ * нэрээр дарж бичих нь хэрэглэгчид хүрэхгүй — тэд эвдэрсэн зургаа
+ * үзсээр байна. Тэжээврийн зураг аль хэдийн `v2`-т байна (`v1` дээр
+ * туулайн цагаан царай арилсан байсан).
  */
 export const ITEM_ART: Record<string, ItemArt> = {
   ...Object.fromEntries(
-    Object.entries(PETS).map(([id, label]) => [id, { src: `/images/pets/v1/${id}.webp`, label }])
+    Object.entries(PETS).map(([id, label]) => [id, { src: `/images/pets/v2/${id}.webp`, label }])
   ),
   ...Object.fromEntries(
     Object.entries(FLAGS).map(([code, label]) => [
