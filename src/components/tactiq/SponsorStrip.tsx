@@ -27,16 +27,29 @@ export type Sponsor = {
   prize: string;
 };
 
-/** Ивээн тэтгэгч эсвэл шагнал БАЙГАА эсэх. */
-export function hasSponsor(item: Sponsor): boolean {
-  return item.sponsorName.length > 0 || item.prize.length > 0;
+/**
+ * Ивээн тэтгэгч эсвэл шагнал БАЙГАА эсэх.
+ *
+ * ⚠ ТАЛБАР БАЙХГҮЙ БАЙЖ МЭДНЭ, хэдийгээр төрөл нь `string` гэж
+ * бичигдсэн ч: энэ өгөгдөл API хил дамждаг. Хөтөч дээр КЭШЛЭГДСЭН
+ * хуучин JS шинэ серверээс (эсвэл эсрэгээр) хариу авахад талбар
+ * дутуу ирнэ. Урьд нь `item.sponsorName.length` нь яг тийм
+ * тохиолдолд `undefined.length` болж ХУУДСЫГ БҮХЭЛДЭЭ унагасан —
+ * ивээн тэтгэгчгүй тэмцээн ч харагдахгүй болсон.
+ *
+ * ⚠ Тиймээс `?? ""`: дутуу талбар нь «ивээн тэтгэгчгүй» гэсэн утгатай,
+ * эвдрэл БИШ.
+ */
+export function hasSponsor(item: Partial<Sponsor>): boolean {
+  return (item.sponsorName ?? "").length > 0 || (item.prize ?? "").length > 0;
 }
 
 export function SponsorStrip({
   item,
   compact = false,
 }: {
-  item: Sponsor;
+  /** ⚠ `Partial` — дээрх `hasSponsor`-ийн тайлбарыг үзнэ үү. */
+  item: Partial<Sponsor>;
   /** Хуанлийн мөрөнд — зөвхөн нэг мөр, лого жижиг. */
   compact?: boolean;
 }) {
@@ -60,9 +73,9 @@ export function SponsorStrip({
         aria-hidden
       />
       <span className="min-w-0 truncate">
-        {item.sponsorName && <span className="font-bold">{item.sponsorName}</span>}
+        {item.sponsorName ? <span className="font-bold">{item.sponsorName}</span> : null}
         {item.sponsorName && item.prize ? " · " : ""}
-        {item.prize}
+        {item.prize ?? ""}
       </span>
     </>
   );

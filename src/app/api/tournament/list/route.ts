@@ -124,6 +124,19 @@ export async function GET(request: NextRequest) {
         timeControl: tournament.timeControl,
         recurring: tournament.recurring,
         /*
+         * ⚠ ИВЭЭН ТЭТГЭГЧИЙН талбаруудыг ЗААВАЛ дамжуулна: хуанли нь
+         * `SponsorStrip`-ийг дууддаг бөгөөд тэдгээр байхгүй бол
+         * `undefined.length` дээр УНАНА (бодитоор тохиолдсон).
+         *
+         * ⚠ `...tournament` гэж бүхлээр тараахгүй: тэгвэл ирээдүйд
+         * сервер талд нэмэгдэх дотоод талбар (жишээ нь `seriesId`) ч
+         * хөтөч рүү чимээгүй урсана.
+         */
+        sponsorName: tournament.sponsorName,
+        sponsorLogo: tournament.sponsorLogo,
+        sponsorUrl: tournament.sponsorUrl,
+        prize: tournament.prize,
+        /*
          * ⚠ «ОДОО бүртгүүлж болох эсэх» — хуанли товчоо шийднэ.
          * Давтамжтай тэмцээн зөвхөн тухайн өдрөө нээгддэг
          * (`/api/tournament/register` нь ч ижил дүрмээр шалгана).
