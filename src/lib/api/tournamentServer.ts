@@ -67,6 +67,16 @@ export type RemoteTournament = {
    * шалгалт нь бүртгэлийн route дээр (`/api/tournament/register`).
    */
   access: TournamentAccess;
+  /**
+   * ДАВТАМЖТАЙ (сериас автоматаар үүссэн) эсэх.
+   *
+   * ⚠ ХАРАГДАХ ДҮРЭМ нь ЭНДЭЭС хамаарна: давтамжтай тэмцээн нь 14
+   * хоногийг урьдчилж үүсгэдэг тул бүгдийг харуулбал жагсаалт ижил
+   * нэртэй 14 мөрөөр дүүрч, зорилтот тэмцээн тэдний дунд живнэ.
+   * Тиймээс давтамжтайг ЗӨВХӨН тухайн өдрөөр шүүнэ
+   * (`/api/tournament/list`).
+   */
+  recurring: boolean;
   seats: number | null;
   registered: number;
   entryFeeMnt: number;
@@ -114,6 +124,7 @@ function parseTournament(raw: unknown): RemoteTournament | null {
     game: r.game === "checkers" || r.game === "draughts" ? "checkers" : "chess",
     access: parseTournamentAccess(r.access),
     format: parseTournamentFormat(r.format),
+    recurring: r.recurring === true,
     seats: r.seats as number | null,
     registered: r.registered,
     entryFeeMnt: r.entryFeeMnt,

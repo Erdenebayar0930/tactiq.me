@@ -56,6 +56,13 @@ type Tournament = {
   access: string;
   /** "arena" | "swiss" | "knockout" | "team" — хурд нь цагийн хяналтаас. */
   format: string;
+  /**
+   * ДАВТАМЖТАЙ (өдөр бүр автоматаар) эсэх.
+   *
+   * ⚠ Давтамжтайг сервер нь ЗӨВХӨН ТУХАЙН ӨДРӨӨР шүүдэг
+   * (`/api/tournament/list`) — энд зөвхөн ШОШГОНД хэрэглэгдэнэ.
+   */
+  recurring: boolean;
   seats: number | null;
   registered: number;
   entryFeeMnt: number;
@@ -460,6 +467,19 @@ export function TournamentSection({ defaultOpen = false }: { defaultOpen?: boole
                       >
                         {gameTheme(tournament.game).label}
                       </span>
+
+                      {/*
+                        ⚠ «Өдөр бүр» ШОШГО: давтамжтай тэмцээн зөвхөн
+                        тухайн өдрөө харагддаг тул сурагч «яагаад
+                        маргаашийнх нь харагдахгүй байна» гэж бодох
+                        эрсдэлтэй. Шошго нь «энэ нь маргааш ч байна»
+                        гэдгийг хэлнэ.
+                      */}
+                      {tournament.recurring && (
+                        <span className="rounded-full bg-sky-100 px-1.5 py-0.5 text-[10px] font-bold text-sky-700 dark:bg-sky-500/20 dark:text-sky-200">
+                          {t("Өдөр бүр")}
+                        </span>
+                      )}
 
                       {accessLabel && (
                         <span className="rounded-full bg-violet-100 px-1.5 py-0.5 text-[10px] font-bold text-violet-700 dark:bg-violet-500/20 dark:text-violet-200">
