@@ -36,6 +36,16 @@ export type RemoteTournament = {
   category: TournamentCategory;
   startsAt: string;
   timeControl: string;
+  /**
+   * Үргэлжлэх хугацаа (минут) — ЦАГИЙН ХУВААРЬ дээрх туузны урт.
+   *
+   * ⚠ Танигдахгүй/байхгүй бол 60: тэмцээнийг ХАЯХГҮЙ. Хугацаа нь
+   * зөвхөн харагдацын мэдээлэл — түүнээс болж бүртгэл хаагдах нь
+   * хэрэглэгчийн хувьд хамаагүй дор.
+   */
+  durationMin: number;
+  /** "chess" | "checkers" — хуваарь дээрх дүрс. */
+  game: string;
   seats: number | null;
   registered: number;
   entryFeeMnt: number;
@@ -79,6 +89,8 @@ function parseTournament(raw: unknown): RemoteTournament | null {
     category: isTournamentCategory(r.category) ? r.category : OTHER_TOURNAMENT_CATEGORY,
     startsAt: r.startsAt,
     timeControl: typeof r.timeControl === "string" ? r.timeControl.slice(0, 32) : "",
+    durationMin: isInt(r.durationMin, 1) ? Math.min(r.durationMin, 24 * 60) : 60,
+    game: r.game === "checkers" || r.game === "draughts" ? "checkers" : "chess",
     seats: r.seats as number | null,
     registered: r.registered,
     entryFeeMnt: r.entryFeeMnt,

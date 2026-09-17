@@ -41,8 +41,26 @@ export function getAdSenseClientId(): string | undefined {
  * гэхдээ Google нь байршил бүрт тусдаа зар нэгж үүсгэхийг зөвлөдөг —
  * ингэснээр гүйцэтгэлийг (CTR, орлого) байршлаар нь тусад нь хэмжиж болно.
  */
-export function getAdSenseSlotId(placement: "sidebar" | "banner"): string | undefined {
+export function getAdSenseSlotId(
+  placement: "sidebar" | "banner" | "tournament"
+): string | undefined {
   if (placement === "sidebar") return process.env.NEXT_PUBLIC_ADSENSE_SLOT_SIDEBAR || undefined;
+  /*
+   * ⚠ ТЭМЦЭЭНИЙ («ивээн тэтгэгчид») зар нь ТУСДАА id-тай: AdSense-ийн
+   * статистик байршлаар салдаг тул банертай нэг id хэрэглэвэл аль
+   * байршил ажиллаж байгааг хэзээ ч мэдэхгүй.
+   *
+   * ⚠ Тохируулаагүй бол банерын id руу БУЦНА, `undefined` БИШ: шинэ
+   * байршил нэмэх бүрд AdSense дээр нэгж үүсгэх хүртэл зар огт
+   * гарахгүй байх нь дэмий хоосон зай.
+   */
+  if (placement === "tournament") {
+    return (
+      process.env.NEXT_PUBLIC_ADSENSE_SLOT_TOURNAMENT ||
+      process.env.NEXT_PUBLIC_ADSENSE_SLOT_BANNER ||
+      undefined
+    );
+  }
   return process.env.NEXT_PUBLIC_ADSENSE_SLOT_BANNER || undefined;
 }
 

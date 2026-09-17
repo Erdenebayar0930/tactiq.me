@@ -6,6 +6,7 @@ import { CalendarClock, Check, Medal, ScrollText, Trophy, Users } from "lucide-r
 
 import { useUser } from "@/context/UserContext";
 import { InvoiceCard } from "@/components/tactiq/QpayInvoice";
+import { TournamentSchedule } from "@/components/tactiq/TournamentSchedule";
 import { ErrorNote } from "@/components/tactiq/ui";
 import { apiFetch, ApiError } from "@/lib/apiClient";
 import { MEMBERSHIP_TIERS } from "@/lib/billing";
@@ -43,6 +44,10 @@ type Tournament = {
   category: string;
   startsAt: string;
   timeControl: string;
+  /** Үргэлжлэх хугацаа (минут) — цагийн хуваарийн туузны урт. */
+  durationMin: number;
+  /** "chess" | "checkers" — хуваарь дээрх дүрс, өнгө. */
+  game: string;
   seats: number | null;
   registered: number;
   entryFeeMnt: number;
@@ -68,7 +73,7 @@ const ENTER_WINDOW_MS = 10 * 60 * 1000;
 
 const money = (amount: number) => `${amount.toLocaleString("mn-MN")}₮`;
 
-export function TournamentSection() {
+export function TournamentSection({ defaultOpen = false }: { defaultOpen?: boolean } = {}) {
   const { apply } = useUser();
   const [data, setData] = useState<ListResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -85,7 +90,7 @@ export function TournamentSection() {
    * лоббийн доод хагасыг эзэлж, ботын түвшингүүд дэлгэцнээс гардаг байв.
    * Тэмцээн нь ХААЯА болох үйл явдал — өдөр тутам дардаг зүйл биш.
    */
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(defaultOpen);
 
   const load = useCallback(async () => {
     try {
@@ -163,6 +168,10 @@ export function TournamentSection() {
   /** Удахгүй болох тэмцээний тоо — баннер дээр харуулна. */
   const upcoming = data.tournaments.length;
 
+  /*
+   * ⚠ Тэмцээний ХУУДАС дээр баннер хэрэггүй: хэрэглэгч аль хэдийн тэр
+   * хуудсыг зориуд нээсэн. Баннер нь зөвхөн ЛОББИД (`/play`) хэрэгтэй.
+   */
   if (!open) {
     return (
       /*
@@ -249,6 +258,16 @@ export function TournamentSection() {
         <p className="rounded-xl bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300">
           {notice}
         </p>
+      )}
+
+      {/*
+        ЦАГИЙН ХУВААРЬ — жагсаалтын ӨМНӨ.
+        ⚠ Жагсаалт нь «ямар тэмцээн байна» гэдгийг хэлдэг ч «хэзээ, хэр
+        зэрэгцэж байна» гэдгийг хэлдэггүй. Тоглогч цагаа төлөвлөхийн тулд
+        хоёуланг нь хэрэгтэй.
+      */}
+      {!payment && data.available && data.tournaments.length > 0 && (
+        <TournamentSchedule items={data.tournaments} />
       )}
 
       {!payment && data.available && (
