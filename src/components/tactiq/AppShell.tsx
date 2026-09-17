@@ -87,6 +87,11 @@ function buildNav(courseSlug: string | null | undefined): NavItem[] {
    * суудлыг эзлэх шаардлагагүй. Цэсийг «Бусад» жагсаалтаас ч олно
    * (`buildRoleNav`).
    *
+   * ⚠ ТОХИРГОО ЭНД БАЙХГҮЙ: «Амжилтууд»-ын ДООР, нэмэлт цэсний
+   * жагсаалтад суусан (`buildRoleNav`). Тохиргоо нь өдөр тутам дардаг
+   * зүйл БИШ — нэг удаа тохируулаад мартдаг; доод туузны ховор суудлыг
+   * эзлэхээсээ Профайл, Амжилттай нэг бүлэгт байх нь логиктой.
+   *
    * ⚠ ТЭМЦЭЭН нь `tournamentEnabled()` үед л гарна: хаяг тохируулаагүй
    * бол `/tournament` нь сесс үүсгэх хүсэлт илгээгээд унаж, улаан алдаа
    * харуулдаг. Тэр үед цэс НЭГЭЭР ЦӨӨН болно — хоосон алдаа руу
@@ -99,7 +104,6 @@ function buildNav(courseSlug: string | null | undefined): NavItem[] {
     ...(tournamentEnabled()
       ? [{ href: "/tournament", label: t("Тэмцээн"), Icon: Swords, color: "amber" } as NavItem]
       : []),
-    { href: "/settings", label: t("Тохиргоо"), Icon: Settings, color: "teal" },
   ];
 }
 
@@ -248,6 +252,13 @@ function buildRoleNav(user: PublicUser | null): NavItem[] {
     { href: "/leaderboard", label: t("Тэргүүлэгчид"), Icon: Trophy, color: "amber" },
     { href: "/friends", label: t("Найзууд"), Icon: Handshake, color: "emerald" },
     { href: "/achievements", label: t("Амжилтууд"), Icon: Award, color: "orange" },
+    /*
+     * ⚠ ТОХИРГОО ЯГ ЭНД — Амжилтуудын ДООР. Урьд нь үндсэн цэсэнд байсан
+     * (`buildNav`-ийн 5 дахь суудал) бөгөөд гар утсан дээр «Бусад» дотор
+     * ГАРААР дахин бичигдсэн байв. Одоо нэг л жагсаалтад: ширээний хажуу
+     * багана, «Бусад» хуудас, аватарын цэс гурвуулаа эндээс уншина.
+     */
+    { href: "/settings", label: t("Тохиргоо"), Icon: Settings, color: "teal" },
     ...parent,
     ...teacher,
     ...admin,
@@ -482,8 +493,8 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           {/*
             ⚠ ЭХНИЙ 4-ийг л зурна. Тавдугаарт "Бусад" товч сууж, үлдсэн бүх
             цэсийг нээнэ — эс бөгөөс нэмэлт цэсүүд гар утаснаас БҮРЭН
-            олдохгүй. `buildNav`-ийн 5 дахь зүйл (Тохиргоо) нь тэр хуудсанд
-            орсон тул алдагдахгүй.
+            олдохгүй. Тохиргоо нь одоо `buildRoleNav`-д (Амжилтуудын доор)
+            байгаа тул «Бусад» дотроос олдоно.
           */}
           {NAV.slice(0, 4).map(({ href, label, Icon, color }) => {
             const active = isActive(href);
@@ -686,22 +697,6 @@ function MoreSheet({
               </Link>
             </li>
           ))}
-
-          {/*
-            ⚠ Тохиргоо ЗААВАЛ энд байх ёстой. Тэр нь `buildNav`-ийн 5 дахь
-            зүйл байсан бөгөөд доод туузнаас "Бусад"-д байраа тавьсан —
-            энд оруулахгүй бол гар утаснаас БҮРЭН алга болно.
-          */}
-          <li>
-            <Link
-              href="/settings"
-              onClick={onClose}
-              className="flex items-center gap-3 rounded-xl px-2 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-white/5"
-            >
-              <NavIcon Icon={Settings} color="teal" active={false} />
-              {t("Тохиргоо")}
-            </Link>
-          </li>
 
           <li>
             <button
@@ -928,13 +923,12 @@ function UserMenu() {
           {/* Дүрсний өнгө нь хажуугийн багана, "Бусад" хуудастай ИЖИЛ —
               нэг цэс гурван газар өөр өнгөтэй байвал таних тэмдэг болохоо
               болино. */}
-          {(
-            [
-              { href: "/profile", label: t("Профайл"), Icon: UserIcon, color: "indigo" },
-              { href: "/settings", label: t("Тохиргоо"), Icon: Settings, color: "teal" },
-              ...buildRoleNav(user),
-            ] as NavItem[]
-          ).map(({ href, label, Icon, color }) => (
+          {/*
+            ⚠ ГАРААР бичихгүй, `buildRoleNav`-аас: Профайл, Тохиргоо хоёр
+            тэр жагсаалтад аль хэдийн байдаг. Урьд нь энд дахин бичигдсэн
+            тул `/profile` ХОЁР удаа гарч, React-ийн `key` давхардаж байв.
+          */}
+          {buildRoleNav(user).map(({ href, label, Icon, color }) => (
             <Link
               key={href}
               href={href}
