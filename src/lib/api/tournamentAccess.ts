@@ -49,8 +49,9 @@ export async function checkTournamentAccess(
 
   if (!user) return { allowed: false, reason: "Хэрэглэгч олдсонгүй." };
 
+  const tier = activeMembershipTier(user.tier, user.until);
+
   if (access === "members") {
-    const tier = activeMembershipTier(user.tier, user.until);
     if (!tier) {
       return {
         allowed: false,
@@ -66,7 +67,20 @@ export async function checkTournamentAccess(
     return { allowed: true, free: true };
   }
 
-  // access === "mind"
+  /*
+   * ⚠ `mind-members` нь ХОЁР нөхцөлтэй: гишүүнчлэл БА Mind хөтөлбөр.
+   * Гишүүнчлэлийг ЭХЛЭЭД шалгана — тэр нь хэрэглэгч өөрөө шийдэж
+   * чадах зүйл (худалдан авах), харин хөтөлбөр нь курс сонгохоос
+   * хамаарна. Хамгийн засахад хялбар шалтгааныг эхлээд хэлэх нь зөв.
+   */
+  if (access === "mind-members" && !tier) {
+    return {
+      allowed: false,
+      reason: "Энэ тэмцээн Mind хөтөлбөрийн ГИШҮҮДЭД. Гишүүн болоод үнэгүй оролцоорой.",
+    };
+  }
+
+  // access === "mind" | "mind-members" — Mind хөтөлбөрийн шалгалт
   if (!user.activeCourseSlug) {
     return {
       allowed: false,
@@ -88,9 +102,12 @@ export async function checkTournamentAccess(
   }
 
   /*
-   * ⚠ Mind тэмцээн нь ТӨЛБӨРТЭЙ байж болно (`entryFeeMnt`): чансаа
-   * тогтоох тэмцээний шагналын сан төлбөрөөс бүрдэж мэднэ. Тиймээс
-   * `free: false` — эрх нь нээгдэв гэдэг нь үнэгүй гэсэн үг биш.
+   * ⚠ `mind` нь ТӨЛБӨРТЭЙ байж болно (`entryFeeMnt`): чансаа тогтоох
+   * тэмцээний шагналын сан төлбөрөөс бүрдэж мэднэ. Эрх нь нээгдэв гэдэг
+   * нь үнэгүй гэсэн үг биш.
+   *
+   * ⚠ `mind-members` нь харин ҮНЭГҮЙ: гишүүнчлэл шаардсан тэмцээнд
+   * дахин төлбөр авах нь гишүүнчлэлийн амлалтыг зөрчинө.
    */
-  return { allowed: true, free: false };
+  return { allowed: true, free: access === "mind-members" };
 }

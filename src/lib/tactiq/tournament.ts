@@ -86,12 +86,17 @@ export function tournamentEnabled(): boolean {
  *   mind    — Mind хөтөлбөрийн сурагчид (чансаа тогтоох тэмцээн). Чансаа
  *             нь хөтөлбөрийн дотоод зэрэглэл тул гадны хүн орвол
  *             зэрэглэл нь утгаа алдана.
+ *   mind-members
+ *           — Mind хөтөлбөрийн сурагч БӨГӨӨД гишүүнчлэлтэй. ХОЁР нөхцөл
+ *             ЗЭРЭГ шаардана: хамгийн хаалттай, хамгийн өндөр зэрэглэлийн
+ *             тэмцээн. Гишүүнд ҮНЭГҮЙ (сарын квот зарцуулахгүй) —
+ *             `members`-тэй ижил шалтгаан.
  *
  * ⚠ ЭРХ нь tactiq ТАЛД шалгагдана: гишүүнчлэл, хөтөлбөрийн өгөгдөл энд
  * байдаг. Тэмцээний сервер нь хэрэглэгчийн хүснэгтгүй тул зөвхөн тугийг
  * хадгална.
  */
-export const TOURNAMENT_ACCESS = ["open", "members", "mind"] as const;
+export const TOURNAMENT_ACCESS = ["open", "members", "mind", "mind-members"] as const;
 
 export type TournamentAccess = (typeof TOURNAMENT_ACCESS)[number];
 
@@ -111,5 +116,11 @@ export function parseTournamentAccess(value: unknown): TournamentAccess {
 export function tournamentAccessLabel(access: TournamentAccess): string | null {
   if (access === "members") return "Гишүүнд үнэгүй";
   if (access === "mind") return "Mind · чансаа";
+  /*
+   * ⚠ «Mind+ Гишүүд» — ХОЁР нөхцөлийг зэрэг илэрхийлнэ. «Mind» гэж
+   * дангаар бичвэл гишүүнчлэлгүй Mind сурагч бүртгүүлэхийг оролдож,
+   * 403 хариу авна — шошго нь хориглолтыг УРЬДЧИЛЖ хэлэх ёстой.
+   */
+  if (access === "mind-members") return "Mind+ Гишүүд";
   return null;
 }

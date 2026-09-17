@@ -365,7 +365,8 @@ export function TournamentSection({ defaultOpen = false }: { defaultOpen?: boole
                  */
                 const free =
                   tournament.entryFeeMnt === 0 ||
-                  (access === "members" && membership.tier !== null) ||
+                  ((access === "members" || access === "mind-members") &&
+                    membership.tier !== null) ||
                   hasFreeLeft;
                 const busy = busyId === tournament.id;
 
