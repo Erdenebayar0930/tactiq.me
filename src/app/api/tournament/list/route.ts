@@ -95,10 +95,41 @@ export async function GET(request: NextRequest) {
       return startsAt.getTime() <= now && now < endsAt;
     });
 
+    const visibleIds = new Set(visible.map((tournament) => tournament.id));
+
     return NextResponse.json({
       enabled: true,
       available: true,
       membership,
+      /*
+       * ХУАНЛИД ЗОРИУЛСАН БҮТЭН ЖАГСААЛТ (14 хоног).
+       *
+       * ⚠ `tournaments`-аас ТУСДАА: тэр нь «ОДОО бүртгүүлж болох»
+       * тэмцээнүүд, энэ нь «ямар өдөр юу байна» гэсэн ТӨЛӨВЛӨГӨӨ.
+       * Хоёрыг нэг массив болговол хуанли нь бүтэн сар харуулах ч
+       * жагсаалт нь ижил нэртэй 14 мөрөөр дүүрнэ.
+       *
+       * ⚠ Зөвхөн ХАРАГДАЦЫН талбарууд: бүртгэлийн төлөв
+       * (`isRegistered`), төлбөрийн логик энд хэрэггүй — хуанли нь
+       * «тэмцээн БАЙНА» гэдгийг л хэлнэ.
+       */
+      upcoming: remote.map((tournament) => ({
+        id: tournament.id,
+        name: tournament.name,
+        game: tournament.game,
+        format: tournament.format,
+        access: tournament.access,
+        startsAt: tournament.startsAt,
+        durationMin: tournament.durationMin,
+        timeControl: tournament.timeControl,
+        recurring: tournament.recurring,
+        /*
+         * ⚠ «ОДОО бүртгүүлж болох эсэх» — хуанли товчоо шийднэ.
+         * Давтамжтай тэмцээн зөвхөн тухайн өдрөө нээгддэг
+         * (`/api/tournament/register` нь ч ижил дүрмээр шалгана).
+         */
+        open: visibleIds.has(tournament.id),
+      })),
       tournaments: visible.map((tournament) => ({
         ...tournament,
         isRegistered: mine.has(tournament.id),

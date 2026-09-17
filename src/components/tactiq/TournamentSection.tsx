@@ -6,6 +6,7 @@ import { CalendarClock, Check, Medal, ScrollText, Trophy, Users } from "lucide-r
 
 import { useUser } from "@/context/UserContext";
 import { InvoiceCard } from "@/components/tactiq/QpayInvoice";
+import { TournamentCalendar } from "@/components/tactiq/TournamentCalendar";
 import { gameTheme } from "@/lib/tactiq/gameTheme";
 import { parseTournamentFormat, tournamentTypeLabel } from "@/lib/tactiq/tournamentFormat";
 import { mnDay, mnTime } from "@/lib/tactiq/dateMn";
@@ -27,6 +28,7 @@ import {
 import { t } from "@/lib/i18n/t";
 
 import type { QpayCheckout } from "@/components/tactiq/QpayInvoice";
+import type { CalendarItem } from "@/components/tactiq/TournamentCalendar";
 import type { MembershipTierId } from "@/lib/billing";
 
 /**
@@ -73,6 +75,15 @@ type ListResponse = {
   enabled: boolean;
   available: boolean;
   tournaments: Tournament[];
+  /**
+   * ХУАНЛИД зориулсан БҮТЭН төлөвлөгөө (14 хоног).
+   *
+   * ⚠ `tournaments`-аас ТУСДАА: тэр нь «ОДОО бүртгүүлж болох»
+   * тэмцээнүүд. Давтамжтай тэмцээн зөвхөн тухайн өдрөө нээгддэг тул
+   * хуанли нь түүнээс бусад өдөр хоосон болж, «тэмцээн байхгүй» гэсэн
+   * худал мессеж өгнө.
+   */
+  upcoming: CalendarItem[];
   membership: {
     tier: MembershipTierId | null;
     until: string | null;
@@ -297,6 +308,15 @@ export function TournamentSection({ defaultOpen = false }: { defaultOpen?: boole
         <p className="rounded-xl bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300">
           {notice}
         </p>
+      )}
+
+      {/*
+        САРЫН ХУАНЛИ — жагсаалтын ӨМНӨ.
+        ⚠ Жагсаалт нь «ОДОО юу байна», хуанли нь «ЭНЭ САРД ямар өдрүүдэд
+        байна» гэдгийг хэлнэ. Хоёр өөр асуулт тул хоёр өөр харагдац.
+      */}
+      {!payment && data.available && (data.upcoming?.length ?? 0) > 0 && (
+        <TournamentCalendar items={data.upcoming} />
       )}
 
       {!payment && data.available && (

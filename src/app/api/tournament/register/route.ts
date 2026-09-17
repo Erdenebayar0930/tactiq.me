@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { checkTournamentAccess } from "@/lib/api/tournamentAccess";
 
+import { toDay, today } from "@/lib/tactiq/day";
 import { badRequest, requireActiveUser, serverError } from "@/lib/api/auth";
 import { attachInvoiceId, createPendingPayment } from "@/lib/api/payments";
 import { createInvoice } from "@/lib/api/qpay";
@@ -77,6 +78,24 @@ export async function POST(request: NextRequest) {
     }
 
     if (tournament.status !== "upcoming") return badRequest("Энэ тэмцээний бүртгэл хаагдсан.");
+
+    /*
+     * ⚠ ДАВТАМЖТАЙ тэмцээн ЗӨВХӨН ТУХАЙН ӨДРӨӨ нээгдэнэ.
+     *
+     * Жагсаалт нь аль хэдийн шүүдэг (`/api/tournament/list`) ч ХУАНЛИ нь
+     * 14 хоногийн бүх тэмцээнийг ХАРУУЛДАГ тул id нь хэрэглэгчид
+     * мэдэгдэнэ. Энд шалгахгүй бол хэн ч маргаашийн, эсвэл хоёр
+     * долоо хоногийн дараах өдөр бүрийн тэмцээнд урьдчилж бүртгүүлж,
+     * суудлыг бөглөх боломжтой болно.
+     *
+     * ⚠ Зорилтот (гараар оруулсан) тэмцээнд энэ хязгаар ХАМААРАХГҮЙ:
+     * тэр нь ховор үйл явдал бөгөөд урьдчилан бүртгүүлэх нь гол санаа.
+     */
+    if (tournament.recurring && toDay(new Date(tournament.startsAt)) !== today()) {
+      return badRequest(
+        "Өдөр бүрийн тэмцээнд зөвхөн тухайн өдөр бүртгүүлнэ. Тэр өдөр эргэж орно уу."
+      );
+    }
 
     if (tournament.seats !== null && tournament.registered >= tournament.seats) {
       return NextResponse.json(
