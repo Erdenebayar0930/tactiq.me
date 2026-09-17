@@ -9,8 +9,16 @@ import {
   parseDraughtsPuzzle,
   squareToNumber,
 } from "@/lib/draughts/puzzle";
+import {
+  advanceChain,
+  chainBoard,
+  chainPosition,
+  chainTargets,
+  startChain,
+} from "@/lib/draughts/chain";
 import { DraughtsBoard } from "@/components/draughts/DraughtsBoard";
 
+import type { ChainState } from "@/lib/draughts/chain";
 import type { Square as DraughtsSquare } from "@/lib/draughts/engine";
 import type { Exercise } from "@/lib/tactiq/courses";
 
@@ -71,12 +79,23 @@ export default function DraughtsPuzzleExercise({
     };
   }, []);
 
+  /**
+   * Хагас дууссан идэлтийн хэлхээ (`lib/draughts/chain.ts`).
+   *
+   * ⚠ Тааврын дундах идэлтүүд нь ХӨДӨЛГҮҮРТ хэрэгжихгүй — зөвхөн
+   * харуулах хөлөгт. Буруу үргэлжлэл дарвал байрлал эргэж ирнэ.
+   */
+  const [chain, setChain] = useState<ChainState | null>(null);
+
   const board = useMemo(
-    () => gameRef.current!.board(),
+    () => {
+      const real = gameRef.current!.board();
+      return chain ? chainBoard(real, chain) : real;
+    },
     // `version` зөвхөн "дахин тооцоол" гэсэн дохио — `gameRef` мутацлагддаг
     // тул бодит hook хамаарал биш (`ChessPuzzleExercise`-тэй ижил загвар).
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [version]
+    [version, chain]
   );
 
   if (!puzzle) {
@@ -128,13 +147,22 @@ export default function DraughtsPuzzleExercise({
     const expected = puzzle.moves[ply];
     if (!expected) return;
 
-    const legal = game
-      .movesFrom(from)
-      .some((move) => move.to.row === to.row && move.to.col === to.col);
-    if (!legal) return;
+    // ИДЭЛТ БҮРД ЗОГСОНО — `lib/draughts/chain.ts`-ийн тайлбарыг үзнэ үү.
+    const step = chain ? advanceChain(chain, to) : startChain(game.movesFrom(from), from, to);
 
+    // ⚠ Хууль бус даралт нь АЛДАА БИШ: сурагч зүгээр нэг нүд дарсан байж
+    // мэднэ. Алдаа гэж тоолвол зүрх хэдхэн товшилтод дуусна.
+    if (step.kind === "illegal") return;
+
+    if (step.kind === "partial") {
+      setChain(step.state);
+      forceUpdate((v) => v + 1);
+      return;
+    }
+
+    const move = step.move;
     const correct =
-      squareToNumber(from) === expected.from && squareToNumber(to) === expected.to;
+      squareToNumber(move.from) === expected.from && squareToNumber(move.to) === expected.to;
 
     /*
      * ⚠ Буруу нүүдлийг ХИЙЛГЭХГҮЙ: даамын хөдөлгүүр буцаах (undo) үйлдэлгүй
@@ -142,16 +170,20 @@ export default function DraughtsPuzzleExercise({
      * үлдэж, сурагч дахин оролдоно.
      */
     if (!correct) {
+      setChain(null);
       setMistake(true);
       onMistake?.();
+      forceUpdate((v) => v + 1);
       return;
     }
 
-    const applied = game.move(from, to);
-    if (!applied) return;
+    // ⚠ `move(from, to)` БИШ: ижил эхлэл, төгсгөлтэй хоёр өөр хэлхээ
+    // байж болох тул сурагч ЗУРСАН яг тэр хэлхээг хэрэгжүүлнэ.
+    game.applyMove(move);
 
+    setChain(null);
     setMistake(false);
-    setLastMove({ from, to });
+    setLastMove({ from: move.from, to: move.to });
     forceUpdate((v) => v + 1);
 
     const nextPly = ply + 1;
@@ -186,10 +218,23 @@ export default function DraughtsPuzzleExercise({
         board={board}
         orientation="white"
         interactive={!feedback && !waiting}
-        getLegalTargets={(square) => game.movesFrom(square).map((move) => move.to)}
+        getLegalTargets={(square) => {
+          // Хэлхээ дундуур — зөвхөн тэр дүрсийн дараагийн буултууд.
+          if (chain) {
+            const at = chainPosition(chain);
+            return at.row === square.row && at.col === square.col ? chainTargets(chain) : [];
+          }
+          return game.movesFrom(square).map((move) => move.to);
+        }}
         onMove={handleMove}
         lastMove={lastMove}
       />
+
+      {chain && !feedback && (
+        <p className="text-sm font-semibold text-amber-700 dark:text-amber-300">
+          Идэлт үргэлжилж байна — дараагийн нүдээ дар.
+        </p>
+      )}
 
       {waiting && (
         <p className="text-sm font-medium text-gray-500 dark:text-gray-400">

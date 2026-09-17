@@ -33,6 +33,15 @@ export type DraughtsMove = {
   to: Square;
   /** Энэ нүүдэлд идэгдсэн бүх нүд, дараалалтайгаар (хоосон = энгийн нүүдэл). */
   captures: Square[];
+  /**
+   * Дүрс БУУСАН нүднүүд дараалалтайгаар; сүүлийнх нь `to`.
+   *
+   * ⚠ `captures`-тай ЗЭРЭГЦЭЭ: `landings[i]` нь `captures[i]`-г идсэний
+   * дараах буулт. Хичээлийн тоглуулагч идэлт БҮРД зогсохын тулд дундах
+   * буултуудыг мэдэх ёстой (`DraughtsMoveExercise`) — `from`/`to` хоёр
+   * нь зөвхөн эхлэл, төгсгөлийг хэлдэг тул хүрэлцэхгүй.
+   */
+  landings: Square[];
   /** Энэ нүүдлийн төгсгөлд дүрс хаан болсон эсэх. */
   promoted: boolean;
 };
@@ -86,7 +95,7 @@ function simpleMovesFrom(board: Board, from: Square, piece: Piece): DraughtsMove
       let row = from.row + dr;
       let col = from.col + dc;
       while (inBounds(row, col) && !board[row][col]) {
-        moves.push({ from, to: { row, col }, captures: [], promoted: false });
+        moves.push({ from, to: { row, col }, captures: [], landings: [{ row, col }], promoted: false });
         row += dr;
         col += dc;
       }
@@ -100,7 +109,7 @@ function simpleMovesFrom(board: Board, from: Square, piece: Piece): DraughtsMove
     const col = from.col + dc;
     if (!inBounds(row, col) || board[row][col]) continue;
     const promoted = (piece.color === "w" && row === 0) || (piece.color === "b" && row === SIZE - 1);
-    moves.push({ from, to: { row, col }, captures: [], promoted });
+    moves.push({ from, to: { row, col }, captures: [], landings: [{ row, col }], promoted });
   }
   return moves;
 }
@@ -125,7 +134,9 @@ function captureSequencesFrom(
   current: Square,
   piece: Piece,
   captured: Set<string>,
-  path: Square[]
+  path: Square[],
+  /** Хүрсэн буултууд — `path`-тай зэрэгцээ (`DraughtsMove.landings`). */
+  landed: Square[] = []
 ): DraughtsMove[] {
   const extensions: DraughtsMove[] = [];
 
@@ -157,9 +168,25 @@ function captureSequencesFrom(
         const nextCaptured = new Set(captured);
         nextCaptured.add(squareKey(enemySquare));
         const nextPath = [...path, enemySquare];
-        const deeper = captureSequencesFrom(board, origin, landing, piece, nextCaptured, nextPath);
+        const nextLanded = [...landed, landing];
+        const deeper = captureSequencesFrom(
+          board,
+          origin,
+          landing,
+          piece,
+          nextCaptured,
+          nextPath,
+          nextLanded
+        );
         if (deeper.length > 0) extensions.push(...deeper);
-        else extensions.push({ from: origin, to: landing, captures: nextPath, promoted: false });
+        else
+          extensions.push({
+            from: origin,
+            to: landing,
+            captures: nextPath,
+            landings: nextLanded,
+            promoted: false,
+          });
         landRow += dr;
         landCol += dc;
       }
@@ -182,14 +209,45 @@ function captureSequencesFrom(
       nextCaptured.add(squareKey(midSquare));
       const nextPath = [...path, midSquare];
 
-      // Хааны эгнээнд хүрвэл ЭНД ХААН болоод, ҮЛДСЭН хэлхээг хааны дүрмээр үргэлжлүүлнэ.
+      /*
+       * ⚠ ДУНДАА ХААН БОЛОХГҮЙ. Урьд нь хааны эгнээнд хүрмэгц дүрсийг
+       * хаан болгож, үлдсэн хэлхээг ХААНЫ дүрмээр (холын идэлт, хойш
+       * идэлт) үргэлжлүүлж байв. Энэ нь хоёр алдаа үүсгэсэн:
+       *
+       *   1. ДҮРЭМ ЗӨРЧИГДӨНӨ. Олон улсын даамын дүрмээр бэр нь хааны
+       *      эгнээг ДАМЖИН гарвал хаан БОЛОХГҮЙ — зөвхөн тэр эгнээнд
+       *      ЗОГСВОЛ хаан болно.
+       *   2. Хамгийн урт хэлхээ нь ЗӨВХӨН хууль бус хааны хүчээр
+       *      үргэлжилдэг байсан тул «максималь идэлт» тэр хэлхээг
+       *      сонгоно. Дүрс нь хааны эгнээнээс гарч буудаг тул
+       *      `promoted: false` — сурагч «даам болсон дүрсээ идэлт хийсэн
+       *      чинь даам болохоо больсон» гэж харна. Яг тэр гомдол.
+       *
+       * Одоо хэлхээ нь БЭРийн дүрмээр үргэлжилнэ; хааны эгнээнд ЗОГССОН
+       * тохиолдолд `promoted: true`.
+       */
       const reachesKingRow =
         (piece.color === "w" && landRow === 0) || (piece.color === "b" && landRow === SIZE - 1);
-      const effectivePiece = reachesKingRow ? { ...piece, king: true } : piece;
 
-      const deeper = captureSequencesFrom(board, origin, landing, effectivePiece, nextCaptured, nextPath);
+      const nextLanded = [...landed, landing];
+      const deeper = captureSequencesFrom(
+        board,
+        origin,
+        landing,
+        piece,
+        nextCaptured,
+        nextPath,
+        nextLanded
+      );
       if (deeper.length > 0) extensions.push(...deeper);
-      else extensions.push({ from: origin, to: landing, captures: nextPath, promoted: reachesKingRow });
+      else
+        extensions.push({
+          from: origin,
+          to: landing,
+          captures: nextPath,
+          landings: nextLanded,
+          promoted: reachesKingRow,
+        });
     }
   }
 

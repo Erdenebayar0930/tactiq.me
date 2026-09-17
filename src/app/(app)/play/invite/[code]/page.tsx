@@ -2,12 +2,12 @@
 
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { CircleDot, Swords } from "lucide-react";
+import Image from "next/image";
 
 import { apiFetch, ApiError } from "@/lib/apiClient";
 import { Mascot } from "@/components/tactiq/Mascot";
 import { ErrorNote, Skeleton } from "@/components/tactiq/ui";
-import { playGameLabel, roomPath } from "@/lib/tactiq/playGame";
+import { playGameLabel, playGameRobot, roomPath } from "@/lib/tactiq/playGame";
 import { t } from "@/lib/i18n/t";
 
 import type { PlayGame } from "@/lib/tactiq/playGame";
@@ -107,6 +107,8 @@ export default function InvitePage() {
     );
   }
 
+  const robot = playGameRobot(invite.game);
+
   return (
     <div className="mx-auto flex max-w-md flex-col items-center gap-5 py-10 text-center">
       {/*
@@ -114,17 +116,16 @@ export default function InvitePage() {
         байна» гэсэн бичвэр даамын өрөө рүү хөтөлвөл найз нь буруу зүйл
         хүлээж нээнэ.
       */}
-      <span
-        className={`grid size-20 place-items-center rounded-3xl text-white ${
-          invite.game === "draughts" ? "bg-amber-500" : "bg-sky-500"
-        }`}
-      >
-        {invite.game === "draughts" ? (
-          <CircleDot className="size-10" aria-hidden />
-        ) : (
-          <Swords className="size-10" aria-hidden />
-        )}
-      </span>
+      {/* Лоббитой ИЖИЛ робот — найз холбоос дарахад ямар тоглоом болохыг нэг харцад мэднэ. */}
+      <Image
+        src={robot.src}
+        alt=""
+        aria-hidden
+        width={robot.width}
+        height={robot.height}
+        className="h-28 w-auto select-none drop-shadow-md"
+        priority
+      />
 
       <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
         {invite.host?.displayName ?? t("Найз")} чамайг {playGameLabel(invite.game).toLowerCase()}{" "}

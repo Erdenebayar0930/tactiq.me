@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { Bot, Check, CircleDot, Copy, Share2, Swords, UserPlus } from "lucide-react";
+import { Bot, Check, CircleDot, Copy, Share2, UserPlus } from "lucide-react";
 
 import { useCurrentUser } from "@/context/UserContext";
 import { courseHasOnline } from "@/lib/tactiq/courseNav";
@@ -11,7 +12,7 @@ import { apiFetch, ApiError } from "@/lib/apiClient";
 import { BOT_DIFFICULTIES } from "@/lib/chess/bot";
 import { DRAUGHTS_BOT_DIFFICULTIES } from "@/lib/draughts/bot";
 import { inviteUrl } from "@/lib/chess/invite";
-import { playGameLabel, roomPath } from "@/lib/tactiq/playGame";
+import { playGameLabel, playGameRobot, roomPath } from "@/lib/tactiq/playGame";
 
 import type { PlayGame } from "@/lib/tactiq/playGame";
 import { DIFFICULTY_LABELS } from "@/lib/tactiq/theme";
@@ -85,6 +86,7 @@ export default function PlayPage() {
    * тоглогч хамгийн их байдаг тоглоом.
    */
   const onlineGame: PlayGame = isDraughtsCourse ? "draughts" : "chess";
+  const robot = playGameRobot(onlineGame);
   const [status, setStatus] = useState<QueueStatus>("idle");
   const [error, setError] = useState<string | null>(null);
   const [onlineCount, setOnlineCount] = useState<number | null>(null);
@@ -207,17 +209,21 @@ export default function PlayPage() {
 
   return (
     <div className="mx-auto flex max-w-md flex-col items-center gap-5 py-10 text-center">
-      <span
-        className={`grid size-20 place-items-center rounded-3xl text-white ${
-          isDraughtsCourse ? "bg-amber-500" : "bg-sky-500"
-        }`}
-      >
-        {isDraughtsCourse ? (
-          <CircleDot className="size-10" aria-hidden />
-        ) : (
-          <Swords className="size-10" aria-hidden />
-        )}
-      </span>
+      {/*
+        ⚠ РОБОТ, дүрс БИШ: урьд нь өнгөт хайрцаг дотор жижиг глиф
+        (`CircleDot` / `Swords`) байсан тул шатар, даамын лобби хоёр
+        бараг ижил харагддаг байв. Робот нь тоглоомынхоо хөлөгтэй
+        (`playGameRobot`) тул нэг харцад л ялгагдана.
+      */}
+      <Image
+        src={robot.src}
+        alt=""
+        aria-hidden
+        width={robot.width}
+        height={robot.height}
+        className="h-28 w-auto select-none drop-shadow-md"
+        priority
+      />
 
       <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
         {isDraughtsCourse ? t("Даам тоглох") : t("Шатар тоглох")}

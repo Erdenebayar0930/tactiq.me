@@ -3,15 +3,29 @@
 import { useMemo, useRef, useState } from "react";
 
 import { Draughts } from "@/lib/draughts/engine";
+import {
+  advanceChain,
+  chainBoard,
+  chainPosition,
+  chainTargets,
+  startChain,
+} from "@/lib/draughts/chain";
 import { deserializePosition, squareNumber } from "@/lib/draughts/notation";
 import { DraughtsBoard } from "@/components/draughts/DraughtsBoard";
 
+import type { ChainState } from "@/lib/draughts/chain";
 import type { Square as DraughtsSquare } from "@/lib/draughts/engine";
 import type { Exercise } from "@/lib/tactiq/courses";
 
 /**
  * "draughts-move" дасгал — `BoardMoveExercise`-тэй ИЖИЛ санаа, гэхдээ
  * `Draughts` хөдөлгүүр + `DraughtsBoard`-оор.
+ *
+ * ⚠ ИДЭЛТИЙН ХЭЛХЭЭ ИДЭЛТ БҮРД ЗОГСОНО (`lib/draughts/chain.ts`).
+ * Хөдөлгүүр нь хэлхээт идэлтийг нэг нүүдэл гэж үздэг бөгөөд тоглолтод
+ * тэр нь зөв. Гэвч хичээлд сурагч «эхлэл → төгсгөл» гэсэн хоёр нүдийг
+ * хараад дундах идэлтүүдийг ТӨСӨӨЛӨХ шаардлагатай болдог — даам сурч
+ * байгаа хүүхдэд яг тэр дундах алхмууд нь сурах зүйл.
  *
  * ⚠ АЛДАА ДАСГАЛЫГ ДУУСГАХГҮЙ. Буруу нүүдлийг хөлөг дээр ХИЙЛГЭХГҮЙ —
  * байрлал хэвээр үлдэж, сурагч ижил байрлал дээр дахин оролдоно
@@ -45,35 +59,65 @@ export default function DraughtsMoveExercise({
   /** Буруу нүүдэл оролдсон — сануулга харуулна (дараагийн зөв нүүдэл хүртэл). */
   const [mistake, setMistake] = useState(false);
 
+  /** Хагас дууссан идэлтийн хэлхээ — `null` бол дүрс хөлөг дээр тайван. */
+  const [chain, setChain] = useState<ChainState | null>(null);
+
   const board = useMemo(
-    () => gameRef.current.board(),
+    () => {
+      const real = gameRef.current.board();
+      // Хэлхээ дундуур байвал ХАРУУЛАХ байрлал — хөдөлгүүр хөндөгдөөгүй.
+      return chain ? chainBoard(real, chain) : real;
+    },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [version]
+    [version, chain]
   );
 
   const handleMove = (from: DraughtsSquare, to: DraughtsSquare) => {
     if (feedback) return;
 
     const game = gameRef.current;
-    const legal = game
-      .movesFrom(from)
-      .some((move) => move.to.row === to.row && move.to.col === to.col);
-    if (!legal) return;
+    const step = chain
+      ? advanceChain(chain, to)
+      : startChain(game.movesFrom(from), from, to);
 
-    const correct =
-      String(squareNumber(from.row, from.col)) === exercise.correctFrom &&
-      String(squareNumber(to.row, to.col)) === exercise.correctTo;
+    /*
+     * ⚠ ХУУЛЬ БУС даралт нь АЛДАА БИШ: сурагч хөлөг дээр хамаагүй нүд
+     * дарсан байж мэднэ (эсвэл дүрсээ хөдөлгөж үзэж байна). Алдаа гэж
+     * тоолвол зүрх хэдхэн товшилтод дуусна.
+     */
+    if (step.kind === "illegal") return;
 
-    if (!correct) {
-      setMistake(true);
-      onMistake?.();
+    // Хэлхээ үргэлжилнэ — дүрс дундах буулт дээр зогсоно, идэгдсэн дүрс арилна.
+    if (step.kind === "partial") {
+      setChain(step.state);
+      forceUpdate((v) => v + 1);
       return;
     }
 
-    const applied = game.move(from, to);
-    if (!applied) return;
+    const move = step.move;
+    const correct =
+      String(squareNumber(move.from.row, move.from.col)) === exercise.correctFrom &&
+      String(squareNumber(move.to.row, move.to.col)) === exercise.correctTo;
 
-    setLastMove({ from, to });
+    /*
+     * ⚠ Буруу бол ХЭЛХЭЭГ ТАЙЛНА: байрлал хэвээр үлдэж, сурагч эхнээсээ
+     * дахин оролдоно. Дундах алхмууд нь хөдөлгүүрт хэрэгжээгүй тул
+     * буцаах (undo) шаардлагагүй.
+     */
+    if (!correct) {
+      setChain(null);
+      setMistake(true);
+      onMistake?.();
+      forceUpdate((v) => v + 1);
+      return;
+    }
+
+    // ⚠ `move(from, to)` БИШ, `applyMove(move)`: ижил эхлэл, төгсгөлтэй
+    // хоёр өөр хэлхээ байж болох тул сурагч ЗУРСАН яг тэр хэлхээг хийнэ.
+    game.applyMove(move);
+
+    setChain(null);
+    setLastMove({ from: move.from, to: move.to });
     setMistake(false);
     forceUpdate((v) => v + 1);
     onAnswer(true);
@@ -87,10 +131,27 @@ export default function DraughtsMoveExercise({
         board={board}
         orientation="white"
         interactive={feedback === null}
-        getLegalTargets={(square) => gameRef.current.movesFrom(square).map((m) => m.to)}
+        /*
+          ⚠ Хэлхээ дундуур байхад ЗӨВХӨН тэр дүрсийн дараагийн буултууд
+          тодорно: өөр дүрс сонгуулбал сурагч хэлхээгээ хагас орхиод
+          хөлгийг эвдэрсэн байрлалд харна.
+        */
+        getLegalTargets={(square) => {
+          if (chain) {
+            const at = chainPosition(chain);
+            return at.row === square.row && at.col === square.col ? chainTargets(chain) : [];
+          }
+          return gameRef.current.movesFrom(square).map((m) => m.to);
+        }}
         onMove={handleMove}
         lastMove={lastMove}
       />
+
+      {chain && feedback === null && (
+        <p className="text-sm font-semibold text-amber-700 dark:text-amber-300">
+          Идэлт үргэлжилж байна — дараагийн нүдээ дар.
+        </p>
+      )}
 
       {mistake && feedback === null && (
         <div className="space-y-2">

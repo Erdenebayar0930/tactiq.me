@@ -45,3 +45,20 @@ export function roomPath(game: PlayGame, roomId: string): string {
 export function playGameLabel(game: PlayGame): string {
   return game === "draughts" ? "Даам" : "Шатар";
 }
+
+/**
+ * ЛОББИ, УРИЛГЫН ХУУДСАНЫ РОБОТ.
+ *
+ * ⚠ Ерөнхий дүрс (`CircleDot`, `Swords`) -ийг ОРЛОВ: хоёр хуудас
+ * хоорондоо зөвхөн өнгө, жижиг глифээрээ ялгагддаг тул «би шатар уу,
+ * даам уу тоглох гэж байна?» гэдэг нь нэг харцад ойлгогдохгүй байв.
+ * Робот нь хөлөгтэйгээ хамт харагдана.
+ *
+ * ⚠ Зураг нь ЗАМЫН ДҮРСНҮҮДЭЭС (`PathCharacter`-ийн багцууд): шинэ файл
+ * нэмээгүй. Тэдгээр нь 400px өндөр, тунгалаг дэвсгэртэй.
+ */
+export function playGameRobot(game: PlayGame): { src: string; width: number; height: number } {
+  return game === "draughts"
+    ? { src: "/images/characters/checkers/robot.webp", width: 242, height: 400 }
+    : { src: "/images/characters/chess/robot.webp", width: 256, height: 400 };
+}
