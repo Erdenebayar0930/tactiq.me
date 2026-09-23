@@ -396,9 +396,21 @@ export type LeagueView = {
    * ЭНЭ долоо хоногт тэмцээнд орсон эсэх.
    *
    * `false` = энэ сургуулийн курсээр энэ долоо хоногт хичээл эхлүүлээгүй.
-   * Тэр үед `standings` ХООСОН — өөр хэн нэгний бүлгийг үзүүлэх нь утгагүй.
    */
   joined: boolean;
+  /**
+   * ЖАГСААЛТ нь ХАРАХ (preview) төлөвт эсэх.
+   *
+   * `joined: false` үед ч бид бодит бүлгийн эрэмбийг ХАРУУЛНА — хэрэглэгч
+   * «лиг гэж юу вэ, хэр XP шаардлагатай вэ» гэдгийг ОРОХООСОО ӨМНӨ харах
+   * ёстой. Урьд нь хоосон карт гардаг байсан тул лиг нь байхгүй зүйл шиг
+   * мэдрэгддэг байв.
+   *
+   * ⚠ `preview: true` үед хэрэглэгч тэр бүлэгт БАЙХГҮЙ — UI нь «Та
+   * хичээл эхлүүлбэл орно» гэдгийг ХЭЛЭХ ёстой, эс бөгөөс хэрэглэгч
+   * өөрийгөө жагсаалтад хайж олохгүй.
+   */
+  preview: boolean;
 };
 
 /**
@@ -407,6 +419,84 @@ export type LeagueView = {
  * ⚠ Дүгнэлт, нэгдэлтийг ЭНД гүйцэтгэнэ — жагсаалт нээх нь хэрэглэгч эргэж
  * ирсэн гэдгийн хамгийн найдвартай дохио.
  */
+/**
+ * ХАРАХ (preview) ЖАГСААЛТ — хэрэглэгч бүлэгт ороогүй байхад.
+ *
+ * Тухайн лиг, тухайн шатны ЭНЭ долоо хоногийн бүлгүүдээс хамгийн ОЛОН
+ * гишүүнтэйг сонгоно.
+ *
+ * ⚠ ЯАГААД хамгийн олон гишүүнтэйг вэ: 1-2 хүнтэй бүлэг нь «лиг хоосон»
+ * гэсэн буруу дүр зураг өгнө. Дүүрэн бүлэг нь юу болохыг үзүүлнэ.
+ *
+ * ⚠ БҮЛЭГТ НЭГДҮҮЛЭХГҮЙ (бичилт огт хийхгүй): «жагсаалт хараад л
+ * нэгдэх» нь «хичээл эхлүүлээгүй долоо хоногт өнжинө» дүрмийг эвдэнэ.
+ */
+async function previewStandings(
+  leagueKey: string,
+  tier: number,
+  weekKey: string,
+  uid: string
+): Promise<{ size: number; standings: LeagueStanding[]; tier: number }> {
+  /*
+   * ⚠ ХОЁР ОРОЛДЛОГО: эхлээд ӨӨРИЙН шатны бүлэг (хэрэглэгч тэнд орох
+   * байсан), байхгүй бол ТУХАЙН ЛИГИЙН дурын шатны бүлэг.
+   *
+   * Хоёр дахь оролдлого нь ЗАЙЛШГҮЙ: платформ жижиг байхад тухайн
+   * долоо хоногт нэг л бүлэг байж мэднэ (жишээ нь 1-р шатанд). Тэр үед
+   * «шат таарсангүй» гээд хоосон карт үзүүлбэл эвдрэлтэй ижил
+   * мэдрэгдэнэ.
+   */
+  const pick = async (exactTier: boolean) => {
+    const [row] = await db
+      .select({ id: leagueCohorts.id, tier: leagueCohorts.tier })
+      .from(leagueCohorts)
+      .where(
+        exactTier
+          ? and(
+              eq(leagueCohorts.courseSlug, leagueKey),
+              eq(leagueCohorts.tier, tier),
+              eq(leagueCohorts.weekKey, weekKey)
+            )
+          : and(eq(leagueCohorts.courseSlug, leagueKey), eq(leagueCohorts.weekKey, weekKey))
+      )
+      .orderBy(desc(leagueCohorts.memberCount))
+      .limit(1);
+    return row;
+  };
+
+  const cohort = (await pick(true)) ?? (await pick(false));
+
+  if (!cohort) return { size: 0, standings: [], tier };
+
+  const rows = await db
+    .select({
+      uid: leagueMembers.uid,
+      xp: leagueMembers.xp,
+      displayName: users.displayName,
+      photoUrl: users.photoUrl,
+    })
+    .from(leagueMembers)
+    .innerJoin(users, eq(users.uid, leagueMembers.uid))
+    .where(eq(leagueMembers.cohortId, cohort.id))
+    .orderBy(desc(leagueMembers.xp), asc(leagueMembers.createdAt));
+
+  return {
+    /* ⚠ ХАРУУЛЖ БАЙГАА бүлгийн шатыг буцаана: өөр шатны жагсаалтыг
+       өөрийн шатны нэрээр гарчиглавал худал болно. */
+    tier: cohort.tier,
+    size: rows.length,
+    standings: rows.map((row, index) => ({
+      uid: row.uid,
+      displayName: row.displayName,
+      photoUrl: row.photoUrl,
+      xp: row.xp,
+      rank: index + 1,
+      /* ⚠ Preview үед `isMe` ямагт `false`: хэрэглэгч тэр бүлэгт байхгүй. */
+      isMe: row.uid === uid,
+    })),
+  };
+}
+
 export async function leagueView(uid: string, leagueKey: string): Promise<LeagueView> {
   const settled = await settlePastWeeks(uid);
   await applyIdleDecay(uid, leagueKey);
@@ -443,14 +533,22 @@ export async function leagueView(uid: string, leagueKey: string): Promise<League
       .where(and(eq(courseLeagues.uid, uid), eq(courseLeagues.courseSlug, leagueKey)))
       .limit(1);
 
+    const tier = clampTier(standing?.tier ?? 0);
+    /*
+     * ⚠ ХООСОН БИШ, ХАРАХ жагсаалт: лигт ороогүй хэрэглэгч ч эрэмбийг
+     * харна. Нэгдэлт нь ХИЧЭЭЛ ЭХЛЭХЭД л болно — энд бичилт хийхгүй.
+     */
+    const preview = await previewStandings(leagueKey, tier, weekKey, uid);
+
     return {
       leagueKey,
-      tier: clampTier(standing?.tier ?? 0),
+      tier: preview.tier,
       weekKey,
-      size: 0,
-      standings: [],
+      size: preview.size,
+      standings: preview.standings,
       lastOutcome,
       joined: false,
+      preview: true,
     };
   }
 
@@ -483,6 +581,7 @@ export async function leagueView(uid: string, leagueKey: string): Promise<League
     })),
     lastOutcome,
     joined: true,
+    preview: false,
   };
 }
 
@@ -541,6 +640,41 @@ export async function leagueOptions(uid: string): Promise<LeagueOption[]> {
   const joined = new Set(joinedRows.map((row) => row.key));
   // Сургуулийн нэрийг админ засаж болдог тул нийлүүлсэн жагсаалтыг уншина.
   const schools = await getSchools();
+
+  /*
+   * ⚠ ХООСОН БАЙЖ БОЛОХГҮЙ: хичээл огт эхлүүлээгүй хэрэглэгчид «Лиг
+   * хараахан байхгүй» гэсэн хоосон карт гардаг байв — лиг нь байхгүй
+   * зүйл шиг мэдрэгдэнэ. Оронд нь ХАРАХ лиг санал болгоно:
+   *
+   *   1. Сонгосон курсийн сургуулийн лиг (хамгийн зөв таамаг)
+   *   2. Тэр ч байхгүй бол ЭНЭ долоо хоногт хамгийн олон бүлэгтэй лиг
+   *
+   * ⚠ Эдгээр нь `joined: false` — жагсаалт нь ХАРАХ төлөвт гарна
+   * (`leagueView` → `preview: true`), нэгдэлт хийгдэхгүй.
+   */
+  if (keys.size === 0) {
+    const [me] = await db
+      .select({ slug: users.activeCourseSlug })
+      .from(users)
+      .where(eq(users.uid, uid))
+      .limit(1);
+
+    if (me?.slug) {
+      for (const key of await leagueKeysForCourse(me.slug)) keys.add(key);
+    }
+  }
+
+  if (keys.size === 0) {
+    const [busiest] = await db
+      .select({ key: leagueCohorts.courseSlug })
+      .from(leagueCohorts)
+      .where(eq(leagueCohorts.weekKey, weekKey))
+      .groupBy(leagueCohorts.courseSlug)
+      .orderBy(desc(sql<number>`sum(${leagueCohorts.memberCount})`))
+      .limit(1);
+
+    if (busiest?.key) keys.add(busiest.key);
+  }
 
   return [...keys]
     .map((key) => ({

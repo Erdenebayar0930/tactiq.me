@@ -13,6 +13,7 @@ import React, {
 import { useUser } from "@/context/UserContext";
 import { translate, type Locale } from "@/lib/i18n/dictionary";
 import { setActiveLocale } from "@/lib/i18n/t";
+import { LanguageGate } from "@/components/tactiq/LanguageGate";
 
 /**
  * Аппын хэл — Монгол (анхдагч) / Англи.
@@ -64,9 +65,37 @@ function readLocale(): Locale {
   }
 }
 
+/**
+ * Хэрэглэгч хэлээ СОНГОСОН эсэх («mn» гэсэн анхдагчаас ЯЛГААТАЙ).
+ *
+ * ⚠ `readLocale` нь сонгоогүй үед `"mn"` буцаадаг тул «сонгосон уу»
+ * гэдгийг түүнээс мэдэх АРГАГҮЙ — тиймээс түлхүүр өөрөө байгаа эсэхийг
+ * шалгана. Анхны хэлний дэлгэц (`LanguageGate`) зөвхөн ҮҮНЭЭС хамаарна.
+ */
+function readChosen(): boolean {
+  try {
+    const value = localStorage.getItem(STORAGE_KEY);
+    return value === "mn" || value === "en";
+  } catch {
+    /*
+     * ⚠ Хувийн горим / хориглосон санах ой: «сонгосон» гэж үзнэ. Эс
+     * бөгөөс уншиж чадахгүй хэрэглэгчид хэлний дэлгэц ХУУДАС БҮРД
+     * гарна — сонголт нь хадгалагдахгүй тул мөчлөг тасрахгүй.
+     */
+    return true;
+  }
+}
+
 export function LocaleProvider({ children }: { children: React.ReactNode }) {
   const locale = useSyncExternalStore(subscribe, readLocale, () => "mn" as Locale);
-  const { user } = useUser();
+  /*
+   * ⚠ СЕРВЕРИЙН ХУВИЛБАР нь ЯМАГТ `true` («сонгосон»): сервер дээр
+   * `localStorage` байхгүй тул `false` гэж буцаавал БҮХ хуудас хэлний
+   * дэлгэцтэйгээр рендерлэгдэж, дараа нь client дээр алга болно — эргэж
+   * ирсэн хэрэглэгч бүр анивчилт харна, мөн hydration зөрнө.
+   */
+  const chosen = useSyncExternalStore(subscribe, readChosen, () => true);
+  const { user, status } = useUser();
 
   const setLocale = useCallback((next: Locale) => {
     try {
@@ -124,10 +153,33 @@ export function LocaleProvider({ children }: { children: React.ReactNode }) {
    * (бөглөж байсан маягт) — хэл солих нь ховор, зориудын үйлдэл тул
    * хүлээн зөвшөөрөгдөхүйц төлбөр.
    */
+  /*
+   * АНХНЫ ХЭЛНИЙ ДЭЛГЭЦ — ЗӨВХӨН нэвтрээгүй, хэлээ хараахан сонгоогүй
+   * хүнд.
+   *
+   * ⚠ НЭВТЭРСЭН хүнд ХЭЗЭЭ Ч гарахгүй: түүний хэл профайлаас
+   * (`users.language`) ирдэг бөгөөд шинэ төхөөрөмж дээр автоматаар
+   * хэрэгжинэ (дээрх effect). Нэвтэрсэн хүнээс дахин асуух нь
+   * тохиргоог хоёр удаа хийлгэх гэсэн үг.
+   *
+   * ⚠ `status === "loading"` үед ч гарахгүй: сесс сэргэх хооронд
+   * (IndexedDB-ээс) хэлний дэлгэц харуулбал нэвтэрсэн хэрэглэгч ЯМАГТ
+   * түүнийг хагас секунд харна.
+   */
+  const showGate = chosen === false && status === "signed-out";
+
   return (
     <LocaleContext.Provider value={value}>
       <div key={locale} className="contents">
+        {/*
+          ⚠ АГУУЛГА нь ЦААНА РЕНДЕРЛЭГДСЭЭР байна, попап нь түүнийг
+          ОРЛОХГҮЙ: шинэ хүн хичээлийн зам, цэсийг хараад «энэ сайт юу
+          хийдэг вэ» гэдгийг мэдсэн байж хэлээ сонгоно. Мөн хэл солигдоход
+          цаана байгаа мод `key={locale}`-ээр дахин монтлогдох тул попап
+          хаагдахад агуулга шинэ хэлээрээ бэлэн болно.
+        */}
         {children}
+        {showGate && <LanguageGate onPick={setLocale} />}
       </div>
     </LocaleContext.Provider>
   );

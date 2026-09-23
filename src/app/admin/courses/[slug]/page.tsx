@@ -2763,7 +2763,8 @@ function DraughtsPuzzleEditor({
           }`}
         >
           {parsed
-            ? `Бэлэн: ${draughtsPuzzleGoalLabel(parsed)} — сурагч ${parsed.playerCaptures} дүрс идэж, ${parsed.opponentCaptures}-ыг өгнө.`
+            ? // ⚠ «хэдэн хүү өгнө» гэдгийг шошго өөрөө хэлдэг болсон тул давтахгүй.
+              `Бэлэн: ${draughtsPuzzleGoalLabel(parsed)} — сурагч ${parsed.playerCaptures} дүрс иднэ.`
             : "Шугам бүрэн биш: нүүдлийн тоо СОНДГОЙ бөгөөд өрсөлдөгчийн хариу бүр албадмал байх ёстой."}
         </p>
       )}

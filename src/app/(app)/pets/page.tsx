@@ -12,6 +12,7 @@ import { useApiData } from "@/hooks/useApiData";
 import { apiFetch, ApiError } from "@/lib/apiClient";
 import { sfx } from "@/lib/audio/sfx";
 import { findSpecies, nextMilestone } from "@/lib/tactiq/pets";
+import { t } from "@/lib/i18n/t";
 
 type Pet = {
   id: string;
@@ -99,10 +100,8 @@ export default function PetsPage() {
     <div className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Миний тэжээвэр</h1>
-          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            Өдөр бүр асарвал шагнал авна.
-          </p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t("Миний тэжээвэр")}</h1>
+          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{t("Өдөр бүр асарвал шагнал авна.")}</p>
         </div>
 
         <span className="flex items-center gap-1.5 rounded-full bg-sky-50 px-3 py-1.5 font-bold text-sky-700 dark:bg-sky-500/15 dark:text-sky-300">
@@ -133,13 +132,9 @@ export default function PetsPage() {
           <p className="text-4xl" aria-hidden>
             🐰 🌸
           </p>
-          <p className="font-bold text-gray-900 dark:text-white">Танд тэжээвэр байхгүй байна</p>
-          <p className="text-sm text-gray-500 dark:text-gray-400">
-            Дэлгүүрээс амьтан эсвэл цэцэг аваарай. Өдөр бүр асарвал зоосон шагнал авна.
-          </p>
-          <Link href="/shop" className="btn-primary inline-block px-5 py-2.5 text-sm">
-            Дэлгүүр рүү
-          </Link>
+          <p className="font-bold text-gray-900 dark:text-white">{t("Танд тэжээвэр байхгүй байна")}</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400">{t("Дэлгүүрээс амьтан эсвэл цэцэг аваарай. Өдөр бүр асарвал зоосон шагнал авна.")}</p>
+          <Link href="/shop" className="btn-primary inline-block px-5 py-2.5 text-sm">{t("Дэлгүүр рүү")}</Link>
         </div>
       ) : (
         <div className="space-y-3">
@@ -159,22 +154,19 @@ export default function PetsPage() {
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
                       <p className="font-bold text-gray-900 dark:text-white">
-                        {pet.name || species.label}
+                        {pet.name || t(species.label)}
                       </p>
                       <span className={`rounded-full px-2 py-0.5 text-xs font-bold ${mood.tone}`}>
-                        {mood.label}
+                        {t(mood.label)}
                       </span>
                     </div>
 
-                    <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                      Дараалал: <span className="num font-semibold">{pet.careStreak}</span> хоног ·
-                      нийт <span className="num">{pet.totalCare}</span> удаа асарсан
+                    <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{t("Дараалал:")}{" "}<span className="num font-semibold">{pet.careStreak}</span>{" "}{t("хоног · нийт")}{" "}<span className="num">{pet.totalCare}</span> удаа асарсан
                       {goal && (
                         <>
                           {" · дараагийн шагнал "}
                           <span className="num font-semibold">{goal.days}</span> хоногт{" "}
-                          <span className="num">{goal.gems}</span> зоос
-                        </>
+                          <span className="num">{goal.gems}</span>{" "}{t("зоос")}</>
                       )}
                     </p>
                   </div>
@@ -183,9 +175,7 @@ export default function PetsPage() {
                 {/* Асаргааны заавар — худалдаж авмагц юу хийхээ мэдэх ёстой. */}
                 <div className="rounded-xl bg-gray-50 p-3 dark:bg-white/5">
                   <p className="flex items-center gap-1.5 text-xs font-bold text-gray-700 dark:text-gray-200">
-                    <Info className="size-3.5 shrink-0" aria-hidden />
-                    Асаргааны заавар
-                  </p>
+                    <Info className="size-3.5 shrink-0" aria-hidden />{t("Асаргааны заавар")}</p>
                   <ul className="mt-1.5 space-y-1 text-xs text-gray-600 dark:text-gray-300">
                     {species.instructions.map((line) => (
                       <li key={line}>• {line}</li>
@@ -203,8 +193,8 @@ export default function PetsPage() {
                     {busy === pet.id
                       ? "…"
                       : canCareNow
-                        ? `${species.careLabel} — ${species.careCost} зоос`
-                        : `${untilNext(pet.msToNextCare)} дараа`}
+                        ? `${t(species.careLabel)} — ${species.careCost} ${t("зоос")}`
+                        : `${untilNext(pet.msToNextCare)} ${t("дараа")}`}
                   </button>
 
                   {pet.claimable.map((milestone) => (
@@ -222,7 +212,7 @@ export default function PetsPage() {
                       className="flex items-center gap-1.5 rounded-xl border-2 border-emerald-500 px-3 py-2 text-sm font-semibold text-emerald-600 disabled:opacity-50 dark:text-emerald-300"
                     >
                       <Gift className="size-4" aria-hidden />
-                      {milestone.label} — {milestone.gems} зоос
+                      {t(milestone.label)} — {milestone.gems} {t("зоос")}
                     </button>
                   ))}
                 </div>

@@ -1058,7 +1058,7 @@ function chessCaptureTasks(
     if (!from) continue;
     if (!place("p", "b")) continue;
 
-    // Ээлж, эрх — цагаан нүүнэ, рокировка байхгүй.
+    // Ээлж, эрх — цагаан нүүнэ, сэлгээ байхгүй.
     const parts = chess.fen().split(" ");
     const fen = [parts[0], "w", "-", "-", "0", "1"].join(" ");
 
@@ -1173,7 +1173,7 @@ function chessSimplePieceLesson(kind: "pawn" | "king"): KidsLesson {
           ]
         ),
         choice(
-          ["♟ Хүү хэрхэн ид вэ?", "♟ How does a pawn capture?"],
+          ["♟ Хүү хэрхэн иддэг вэ?", "♟ How does a pawn capture?"],
           [
             ["Ташуу урагш", "Diagonally forward"],
             ["Шулуун урагш", "Straight forward"],

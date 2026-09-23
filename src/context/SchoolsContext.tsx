@@ -46,7 +46,13 @@ export function SchoolsProvider({
 
     let cancelled = false;
 
-    apiFetch<{ texts: SchoolText[] }>("/api/schools")
+    /*
+     * ⚠ `authOptional`: `/api/schools` нь НИЙТЭД нээлттэй ч `apiFetch`
+     * нь анхдагчаар токен шаардаж, зочны үед хүсэлтийг сервер рүү
+     * ЯВУУЛАЛГҮЙ шиднэ. Тэр үед сургуулийн засвар татагдахгүй тул
+     * зочин админы зассан нэр, тайлбарын оронд кодын анхдагчийг харна.
+     */
+    apiFetch<{ texts: SchoolText[] }>("/api/schools", { authOptional: true })
       .then((result) => {
         if (!cancelled) setTexts(result.texts);
       })

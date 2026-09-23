@@ -92,6 +92,23 @@ export async function PATCH(
       patch.status = nextStatus;
     }
 
+    /*
+     * ТЕСТЕР ТУГ — бүх хичээл нээлттэй сурагч.
+     *
+     * ⚠ ЭРХИЙН ШАТЛАЛААР хамгаалагдана: `canChangeStatus`-тай ИЖИЛ
+     * шалгалт (өөрөөсөө доогуур эрхтэй дээр л). Эс бөгөөс админ өөр
+     * админд, эсвэл өөртөө тестер туг тавьж, төлбөртэй агуулгыг
+     * чимээгүй нээх зам үүснэ.
+     */
+    if (body?.tester !== undefined) {
+      if (typeof body.tester !== "boolean") return badRequest("Тестер туг буруу.");
+
+      const blocked = deny(canChangeStatus(actor, targetInfo));
+      if (blocked) return blocked;
+
+      patch.tester = body.tester;
+    }
+
     if (Object.keys(patch).length === 0) {
       return badRequest("Өөрчлөх зүйл заагаагүй байна.");
     }
@@ -138,6 +155,7 @@ export async function PATCH(
         displayName: updated.displayName,
         role: updated.role,
         status: updated.status,
+        tester: updated.tester,
       },
     });
   } catch (error) {

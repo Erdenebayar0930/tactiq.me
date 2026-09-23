@@ -22,6 +22,7 @@ import { InvoiceCard } from "@/components/tactiq/QpayInvoice";
 
 import type { PlanId } from "@/lib/billing";
 import type { QpayCheckout } from "@/components/tactiq/QpayInvoice";
+import { t } from "@/lib/i18n/t";
 
 /**
  * Premium худалдан авах дэлгэц — QPay нэхэмжлэл, QR ба банкны холбоос.
@@ -116,9 +117,7 @@ export default function PremiumPage() {
     <div className="space-y-5">
       <div>
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Premium</h1>
-        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          Хязгааргүй зүрх, реклам байхгүй, бүх хичээл нээлттэй.
-        </p>
+        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{t("Хязгааргүй зүрх, реклам байхгүй, бүх хичээл нээлттэй.")}</p>
       </div>
 
       {isPremium ? (
@@ -143,9 +142,7 @@ export default function PremiumPage() {
           <p className="text-sm font-semibold">
             Үнэгүй {TRIAL_DAYS} хоног дууссан байна. Урьсан найз тань эхний
             хичээлээ дуусгах бүрд {REFERRAL_BONUS_DAYS} хоног үнэгүй нэмэгдэнэ —{" "}
-            <Link href="/profile" className="underline">
-              миний урилгын холбоос
-            </Link>
+            <Link href="/profile" className="underline">{t("миний урилгын холбоос")}</Link>
             .
           </p>
         </div>
@@ -255,9 +252,7 @@ function PlanCard({
     >
       {isBest ? (
         <p className="flex items-center justify-center gap-1 bg-brand-500 py-1.5 text-[11px] font-bold text-white">
-          <Sparkles className="size-3 shrink-0" aria-hidden />
-          Хамгийн ашигтай
-        </p>
+          <Sparkles className="size-3 shrink-0" aria-hidden />{t("Хамгийн ашигтай")}</p>
       ) : (
         // Тууз байхгүй картуудыг ижил өндөрт эхлүүлэх зай — үгүй бол
         // онцлогдсон картын агуулга бусдаасаа доогуур эхэлнэ.
@@ -330,17 +325,13 @@ function FailedCard({ message, onRetry }: { message: string; onRetry: () => void
       <span className="grid size-16 place-items-center rounded-full bg-rose-50 text-rose-600 dark:bg-rose-500/15 dark:text-rose-300">
         <X className="size-8" aria-hidden />
       </span>
-      <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-        Төлбөр баталгаажсангүй
-      </h2>
+      <h2 className="text-xl font-bold text-gray-900 dark:text-white">{t("Төлбөр баталгаажсангүй")}</h2>
       <p className="max-w-sm text-sm text-gray-500 dark:text-gray-400">{message}</p>
       <button
         type="button"
         onClick={onRetry}
         className="btn-primary px-5 py-2.5 text-sm"
-      >
-        Дахин оролдох
-      </button>
+      >{t("Дахин оролдох")}</button>
     </div>
   );
 }
@@ -351,12 +342,8 @@ function PaidCard() {
       <span className="grid size-16 place-items-center rounded-full bg-emerald-50 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-300">
         <Check className="size-8" aria-hidden />
       </span>
-      <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-        Төлбөр амжилттай!
-      </h2>
-      <p className="text-sm text-gray-500 dark:text-gray-400">
-        Premium идэвхжлээ. Сайхан суралцаарай!
-      </p>
+      <h2 className="text-xl font-bold text-gray-900 dark:text-white">{t("Төлбөр амжилттай!")}</h2>
+      <p className="text-sm text-gray-500 dark:text-gray-400">{t("Premium идэвхжлээ. Сайхан суралцаарай!")}</p>
     </div>
   );
 }

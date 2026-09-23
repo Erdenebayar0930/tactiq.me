@@ -699,3 +699,47 @@
     animation: none;
   }
 }
+
+/*
+ * НҮҮХ БОЛОМЖГҮЙ ДҮРС ДЭЭР ДАРСНЫ ДОХИО (`DraughtsBoard`).
+ *
+ * ⚠ ГАЦААНЫ ОРОНД ХАРИУ: урьд нь өрсөлдөгчийн (эсвэл хаагдсан) дүрс
+ * сонгогдчихоод хөдөлдөггүй тул хүүхэд хөлгийг эвдэрсэн гэж ойлгодог
+ * байв. Богино сэгсрэлт нь «энэ дүрсээр нүүхгүй» гэдгийг хэлнэ.
+ *
+ * ⚠ ЗӨВХӨН ХЭВТЭЭ чиглэлд, 500 мс: хөлөг дээрх бусад дүрсийг
+ * хөндөхгүй, анхаарлыг ч сарниулахгүй.
+ */
+@keyframes board-refuse {
+  0%,
+  100% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  20% {
+    transform: translateX(-3px);
+  }
+  40% {
+    transform: translateX(3px);
+  }
+  60% {
+    transform: translateX(-2px);
+  }
+  80% {
+    transform: translateX(2px);
+  }
+}
+
+.board-refuse {
+  animation: board-refuse 500ms ease-in-out;
+}
+
+/*
+ * ⚠ «Хөдөлгөөнийг багасга» гэсэн хэрэглэгчид сэгсрэлтгүйгээр зөвхөн
+ * улаан хүрээг харуулна — мэдээлэл нь хэвээр, хөдөлгөөн нь алга.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .board-refuse {
+    animation: none;
+  }
+}

@@ -18,6 +18,7 @@ import {
 
 
 import type { LeagueOutcome } from "@/lib/tactiq/league";
+import { t } from "@/lib/i18n/t";
 
 /**
  * Тэргүүлэгчид — долоо хоногийн лиг ба найзуудын жагсаалт.
@@ -62,6 +63,8 @@ type LeagueResponse = {
   standings: LeagueStanding[];
   lastOutcome: LeagueOutcome | null;
   joined: boolean;
+  /** Жагсаалт нь ХАРАХ төлөвт эсэх (би тэр бүлэгт байхгүй). */
+  preview: boolean;
   cohortSize: number;
   promoteCount: number;
   demoteCount: number;
@@ -88,20 +91,13 @@ export default function LeaderboardPage() {
   return (
     <div className="space-y-5">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Тэргүүлэгчид</h1>
-        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          Долоо хоног бүр Даваа гарагт шинэ тэмцээн эхэлнэ. Бүх сурагч
-          НЭГ лигт өрсөлдөнө.
-        </p>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t("Тэргүүлэгчид")}</h1>
+        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{t("Долоо хоног бүр Даваа гарагт шинэ тэмцээн эхэлнэ. Бүх сурагч НЭГ лигт өрсөлдөнө.")}</p>
       </div>
 
       <div className="flex gap-2">
-        <TabButton active={tab === "league"} onClick={() => setTab("league")} Icon={Trophy}>
-          Лиг
-        </TabButton>
-        <TabButton active={tab === "friends"} onClick={() => setTab("friends")} Icon={Users}>
-          Найзууд
-        </TabButton>
+        <TabButton active={tab === "league"} onClick={() => setTab("league")} Icon={Trophy}>{t("Лиг")}</TabButton>
+        <TabButton active={tab === "friends"} onClick={() => setTab("friends")} Icon={Users}>{t("Найзууд")}</TabButton>
       </div>
 
       {tab === "league" ? <LeagueTab /> : <FriendsTab />}
@@ -153,12 +149,16 @@ function LeagueTab() {
   if (error) return <ErrorNote message={error} onRetry={() => void reload()} />;
   if (!data) return null;
 
-  // Огт хичээл эхлээгүй — лиг байхгүй.
+  /*
+   * ⚠ Одоо сервер нь ХАРАХ лиг санал болгодог тул энд хүрэх нь ХОВОР
+   * (систем дээр нэг ч бүлэг үүсээгүй үед л). Тиймээс текст нь
+   * «лиг байхгүй» гэдгийг ҮНЭНЭЭР хэлнэ.
+   */
   if (data.leagues.length === 0) {
     return (
       <EmptyState
-        title="Лиг хараахан байхгүй"
-        description="Хичээл эхлүүлмэгц тэр курсийн сургуулийн (Mind, Codely…) лигт орно."
+        title={t("Лиг хараахан байхгүй")}
+        description={t("Хичээл эхлүүлмэгц тэр курсийн сургуулийн (Mind, Codely…) лигт орно.")}
       />
     );
   }
@@ -237,9 +237,7 @@ function LeagueTab() {
               <span className="block text-3xl leading-none text-white/40" aria-hidden>
                 &ldquo;
               </span>
-              <blockquote className="mt-1 max-w-[16rem] text-sm leading-relaxed text-white/85">
-                Өнөөдрийн жижиг амжилт, маргаашийн их боломж юм.
-              </blockquote>
+              <blockquote className="mt-1 max-w-[16rem] text-sm leading-relaxed text-white/85">{t("Өнөөдрийн жижиг амжилт, маргаашийн их боломж юм.")}</blockquote>
             </figure>
 
             <div className="text-center">
@@ -275,14 +273,14 @@ function LeagueTab() {
 
             <div className="lg:justify-self-end">
               <dl className="grid grid-cols-3 gap-1 rounded-2xl bg-white/10 p-3 text-center backdrop-blur-sm">
-                <HeroStat icon="⭐" value={user.xp.toLocaleString("mn-MN")} label="Нийт оноо" />
-                <HeroStat icon="🔥" value={String(user.streakDays)} label="Дасгалын өдөр" />
+                <HeroStat icon="⭐" value={user.xp.toLocaleString("mn-MN")} label={t("Нийт оноо")} />
+                <HeroStat icon="🔥" value={String(user.streakDays)} label={t("Дасгалын өдөр")} />
                 <HeroStat
                   icon="🛡"
                   /* ⚠ Бүлэгт ороогүй бол байр ГЭЖ БАЙХГҮЙ — 0 гэж бичвэл
                      «сүүлийн байр» мэт худал уншигдана. */
                   value={myRank ? `${myRank}` : "—"}
-                  label="Байр"
+                  label={t("Байр")}
                 />
               </dl>
             </div>
@@ -293,12 +291,19 @@ function LeagueTab() {
       </div>
 
       {/*
-        ⚠ Тэмцээнд ОРООГҮЙ үед өөр хэн нэгний бүлгийг үзүүлэхгүй. Сурагч
-        хичээл эхлүүлэх хүртэл бүлэгт нэгддэггүй (`lib/api/league.ts`) —
-        танихгүй хүмүүсийн жагсаалт харуулбал өөрийгөө хайж олохгүй,
-        яагаад тэнд байхгүйгээ ойлгохгүй.
+        ⚠ ЛИГТ ОРООГҮЙ Ч ЭРЭМБЭ ХАРАГДАНА. Урьд нь ороогүй хүнд зөвхөн
+        «хичээл эхлүүл» гэсэн карт гардаг тул лиг нь ХООСОН, эсвэл
+        байхгүй зүйл шиг мэдрэгддэг байв. Одоо бодит бүлгийн эрэмбийг
+        харуулна — «хэр XP шаардлагатай, хэн тэргүүлж байна» гэдгийг
+        ОРОХООСОО ӨМНӨ харах нь өөрөө хөшүүрэг.
+
+        ⚠ Гэхдээ «БИ ЭНД БАЙХГҮЙ» гэдгийг ИЛ ХЭЛНЭ (`NotJoinedNote`
+        жагсаалтын ДЭЭР): эс бөгөөс хэрэглэгч өөрийгөө хайж олохгүй,
+        яагаад байхгүйгээ ойлгохгүй.
       */}
-      {data.joined ? (
+      {!data.joined && <NotJoinedNote preview={data.standings.length > 0} />}
+
+      {data.standings.length > 0 && (
         <ul className="surface divide-y divide-gray-100 p-0 dark:divide-white/5">
           {data.standings.map((row) => (
             <StandingRow
@@ -308,8 +313,6 @@ function LeagueTab() {
             />
           ))}
         </ul>
-      ) : (
-        <NotJoinedNote />
       )}
     </div>
   );
@@ -335,7 +338,7 @@ function HeroStat({ icon, value, label }: { icon: string; value: string; label: 
  * бууруулдаггүй — сурагч бүлэгт огт нэгддэггүй тул дүгнэгдэх мөр байхгүй.
  * Үүнийг хэлэхгүй бол сурагч "хоцорлоо, буучихлаа" гэж айна.
  */
-function NotJoinedNote() {
+function NotJoinedNote({ preview }: { preview: boolean }) {
   return (
     <div className="surface flex flex-col items-center gap-5 p-6 text-center sm:flex-row sm:text-left">
       <Image
@@ -347,16 +350,17 @@ function NotJoinedNote() {
         className="h-auto w-40 shrink-0"
       />
       <div className="flex flex-col items-center gap-2 sm:items-start">
-        <p className="text-lg font-extrabold text-gray-900 dark:text-white">
-          Энэ долоо хоногт хараахан ороогүй
-        </p>
+        <p className="text-lg font-extrabold text-gray-900 dark:text-white">{t("Энэ долоо хоногт хараахан ороогүй")}</p>
         <p className="max-w-sm text-sm text-gray-500 dark:text-gray-400">
-          Аль нэг курсээр хичээл эхлүүлмэгц шинэ тэмцээнд орно.
-          Өнжсөн долоо хоног шатыг бууруулахгүй.
+          {/*
+            ⚠ ХАРАХ үед текст нь ӨӨР: доор жагсаалт байгаа тул
+            «энэ бол бусдын эрэмбэ, та ороогүй» гэдгийг хэлэх ёстой.
+          */}
+          {preview
+            ? "Доорх эрэмбэ бол энэ долоо хоногийн бүлэг. Хичээл эхлүүлмэгц та ч тэмцээнд орж, жагсаалтад гарна. Өнжсөн долоо хоног шатыг бууруулахгүй."
+            : "Аль нэг курсээр хичээл эхлүүлмэгц шинэ тэмцээнд орно. Өнжсөн долоо хоног шатыг бууруулахгүй."}
         </p>
-        <Link href="/learn" className="btn-primary mt-1 px-5 py-2.5 text-sm">
-          Хичээл эхлүүлэх
-        </Link>
+        <Link href="/learn" className="btn-primary mt-1 px-5 py-2.5 text-sm">{t("Хичээл эхлүүлэх")}</Link>
       </div>
     </div>
   );
@@ -425,11 +429,11 @@ function StandingRow({ row, zone }: { row: LeagueStanding; zone: LeagueOutcome }
 function ZoneMark({ zone }: { zone: LeagueOutcome }) {
   if (zone === "promoted") {
     return (
-      <ChevronUp className="size-4 shrink-0 text-emerald-500" aria-label="Дэвших бүс" />
+      <ChevronUp className="size-4 shrink-0 text-emerald-500" aria-label={t("Дэвших бүс")} />
     );
   }
   if (zone === "demoted") {
-    return <ChevronDown className="size-4 shrink-0 text-rose-500" aria-label="Буух бүс" />;
+    return <ChevronDown className="size-4 shrink-0 text-rose-500" aria-label={t("Буух бүс")} />;
   }
   return <Minus className="size-4 shrink-0 text-gray-300 dark:text-gray-600" aria-hidden />;
 }
@@ -446,8 +450,8 @@ function FriendsTab() {
     return (
       <EmptyState
         icon={<Users className="size-10" aria-hidden />}
-        title="Хараахан найзгүй байна"
-        description="Найзаа нэмбэл түүнтэй долоо хоногийн оноогоо харьцуулж, хамтын даалгавар авах боломжтой."
+        title={t("Хараахан найзгүй байна")}
+        description={t("Найзаа нэмбэл түүнтэй долоо хоногийн оноогоо харьцуулж, хамтын даалгавар авах боломжтой.")}
       />
     );
   }

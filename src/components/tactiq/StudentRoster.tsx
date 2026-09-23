@@ -9,6 +9,7 @@ import { apiFetch, ApiError } from "@/lib/apiClient";
 import { EmptyState, ErrorNote, ProgressBar, Skeleton } from "@/components/tactiq/ui";
 
 import type { LinkedStudent } from "@/lib/api/studentLinks";
+import { t } from "@/lib/i18n/t";
 
 /**
  * Эцэг эх (`/parent`) ба багшийн (`/teacher`) сурагчдын жагсаалт.
@@ -165,7 +166,7 @@ function AddStudentCard({
         <input
           value={code}
           onChange={(event) => setCode(event.target.value.toUpperCase())}
-          placeholder="Жишээ нь ABC123"
+          placeholder={t("Жишээ нь ABC123")}
           maxLength={12}
           /* Код нь зөвхөн том үсэг, тоо тул гар утасны автомат
              томсголт/засварыг унтраана — эс бөгөөс "Abc123" болж бичигдэнэ. */
@@ -278,18 +279,18 @@ function StudentCard({
       </div>
 
       <div className="grid grid-cols-3 divide-x divide-gray-200 text-center dark:divide-white/10">
-        <Metric Icon={Zap} className="text-brand-500" value={student.xp} label="Нийт XP" />
+        <Metric Icon={Zap} className="text-brand-500" value={student.xp} label={t("Нийт XP")} />
         <Metric
           Icon={Flame}
           className="text-orange-500"
           value={student.streakDays}
-          label="Дараалал"
+          label={t("Дараалал")}
         />
         <Metric
           Icon={Crown}
           className="text-gold-500"
           value={student.dailyGoal}
-          label="Өдрийн зорилт"
+          label={t("Өдрийн зорилт")}
         />
       </div>
 

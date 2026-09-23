@@ -22,6 +22,7 @@ import { PET_SPECIES } from "@/lib/tactiq/pets";
 import { STREAK_FREEZE_COST_GEMS } from "@/lib/streakFreeze";
 
 import type { PublicUser } from "@/lib/api/publicUser";
+import { t } from "@/lib/i18n/t";
 
 /**
  * ЗООСНЫ ДЭЛГҮҮР.
@@ -133,10 +134,8 @@ export default function ShopPage() {
     <div className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Дэлгүүр</h1>
-          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            Хичээл дуусгаж цуглуулсан зоосоороо худалдан аваарай.
-          </p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t("Дэлгүүр")}</h1>
+          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{t("Хичээл дуусгаж цуглуулсан зоосоороо худалдан аваарай.")}</p>
         </div>
 
         <span className="flex items-center gap-1.5 rounded-full bg-sky-50 px-3 py-1.5 font-bold text-sky-700 dark:bg-sky-500/15 dark:text-sky-300">
@@ -158,7 +157,7 @@ export default function ShopPage() {
 
       {/* --- Тусламж: дараалал хамгаалагч --- */}
       <section className="space-y-3">
-        <h2 className="text-lg font-bold text-gray-900 dark:text-white">Тусламж</h2>
+        <h2 className="text-lg font-bold text-gray-900 dark:text-white">{t("Тусламж")}</h2>
 
         <div className="surface flex flex-wrap items-center justify-between gap-3 p-5">
           <div className="flex items-center gap-3">
@@ -166,11 +165,10 @@ export default function ShopPage() {
               <Snowflake className="size-6" aria-hidden />
             </span>
             <div className="min-w-0">
-              <p className="font-bold text-gray-900 dark:text-white">Дараалал хамгаалагч</p>
+              <p className="font-bold text-gray-900 dark:text-white">{t("Дараалал хамгаалагч")}</p>
               <p className="text-sm text-gray-500 dark:text-gray-400">
                 Нэг өдөр алгасахад дараалал тасрахаас хамгаална. Танд одоо{" "}
-                <span className="num font-semibold">{user.streakFreezes ?? 0}</span> ширхэг байна.
-              </p>
+                <span className="num font-semibold">{user.streakFreezes ?? 0}</span>{" "}{t("ширхэг байна.")}</p>
             </div>
           </div>
 
@@ -188,12 +186,8 @@ export default function ShopPage() {
       {/* --- Амьтан ба цэцэг --- */}
       <section className="space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <h2 className="text-lg font-bold text-gray-900 dark:text-white">
-            Амьтан ба цэцэг
-          </h2>
-          <Link href="/pets" className="text-sm font-semibold text-brand-600 hover:underline dark:text-brand-300">
-            Миний тэжээвэр →
-          </Link>
+          <h2 className="text-lg font-bold text-gray-900 dark:text-white">{t("Амьтан ба цэцэг")}</h2>
+          <Link href="/pets" className="text-sm font-semibold text-brand-600 hover:underline dark:text-brand-300">{t("Миний тэжээвэр →")}</Link>
         </div>
 
 
@@ -203,8 +197,8 @@ export default function ShopPage() {
               <PetArt species={species} size={56} />
 
               <div className="min-w-0 flex-1">
-                <p className="font-bold text-gray-900 dark:text-white">{species.label}</p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">{species.description}</p>
+                <p className="font-bold text-gray-900 dark:text-white">{t(species.label)}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">{t(species.description)}</p>
                 <p className="mt-0.5 text-xs text-gray-400">
                   {species.careLabel}: {species.careCost} зоос / өдөр
                 </p>
@@ -216,7 +210,7 @@ export default function ShopPage() {
                 disabled={busy !== null || user.gems < species.price}
                 className="btn-primary shrink-0 px-3 py-1.5 text-xs disabled:opacity-50"
               >
-                {busy === "pet" + species.id ? "…" : <><span className="num">{species.price}</span> зоос</>}
+                {busy === "pet" + species.id ? "…" : <><span className="num">{species.price}</span>{" "}{t("зоос")}</>}
               </button>
             </div>
           ))}
@@ -225,7 +219,7 @@ export default function ShopPage() {
 
       {/* --- Аватарын хүрээ --- */}
       <section className="space-y-3">
-        <h2 className="text-lg font-bold text-gray-900 dark:text-white">Аватарын хүрээ</h2>
+        <h2 className="text-lg font-bold text-gray-900 dark:text-white">{t("Аватарын хүрээ")}</h2>
 
         <div className="grid gap-3 sm:grid-cols-2">
           {SHOP_FRAMES.map((frame) => {
@@ -254,24 +248,20 @@ export default function ShopPage() {
                 </span>
 
                 <div className="min-w-0 flex-1">
-                  <p className="font-bold text-gray-900 dark:text-white">{frame.label}</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">{frame.hint}</p>
+                  <p className="font-bold text-gray-900 dark:text-white">{t(frame.label)}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">{t(frame.hint)}</p>
                 </div>
 
                 {isEquipped ? (
                   <span className="flex shrink-0 items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300">
-                    <Check className="size-3.5" aria-hidden />
-                    Зүүсэн
-                  </span>
+                    <Check className="size-3.5" aria-hidden />{t("Зүүсэн")}</span>
                 ) : isOwned ? (
                   <button
                     type="button"
                     onClick={() => void act(frame.id, "equip")}
                     disabled={busy !== null}
                     className="shrink-0 rounded-xl border-2 border-brand-500 px-3 py-1.5 text-xs font-semibold text-brand-600 disabled:opacity-50 dark:text-brand-300"
-                  >
-                    Зүүх
-                  </button>
+                  >{t("Зүүх")}</button>
                 ) : (
                   <button
                     type="button"
@@ -279,8 +269,7 @@ export default function ShopPage() {
                     disabled={busy !== null || user.gems < frame.gems}
                     className="btn-primary shrink-0 px-3 py-1.5 text-xs disabled:opacity-50"
                   >
-                    <span className="num">{frame.gems}</span> зоос
-                  </button>
+                    <span className="num">{frame.gems}</span>{" "}{t("зоос")}</button>
                 )}
               </div>
             );
@@ -293,18 +282,14 @@ export default function ShopPage() {
             onClick={() => void act("", "equip")}
             disabled={busy !== null}
             className="text-sm text-gray-500 underline hover:text-gray-700 disabled:opacity-50 dark:text-gray-400"
-          >
-            Хүрээг тайлах
-          </button>
+          >{t("Хүрээг тайлах")}</button>
         )}
       </section>
 
       {/* --- Профайлын банер --- */}
       <section className="space-y-3">
-        <h2 className="text-lg font-bold text-gray-900 dark:text-white">Профайлын банер</h2>
-        <p className="text-sm text-gray-500 dark:text-gray-400">
-          Профайлын дээд банерийн өнгө. Авсан тэжээвэр тань мөн тэнд харагдана.
-        </p>
+        <h2 className="text-lg font-bold text-gray-900 dark:text-white">{t("Профайлын банер")}</h2>
+        <p className="text-sm text-gray-500 dark:text-gray-400">{t("Профайлын дээд банерийн өнгө. Авсан тэжээвэр тань мөн тэнд харагдана.")}</p>
 
         <div className="grid gap-3 sm:grid-cols-2">
           {SHOP_BANNERS.map((banner) => {
@@ -318,24 +303,20 @@ export default function ShopPage() {
 
                 <div className="flex items-center gap-3 p-4">
                   <div className="min-w-0 flex-1">
-                    <p className="font-bold text-gray-900 dark:text-white">{banner.label}</p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">{banner.hint}</p>
+                    <p className="font-bold text-gray-900 dark:text-white">{t(banner.label)}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">{t(banner.hint)}</p>
                   </div>
 
                   {isEquipped ? (
                     <span className="flex shrink-0 items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300">
-                      <Check className="size-3.5" aria-hidden />
-                      Зүүсэн
-                    </span>
+                      <Check className="size-3.5" aria-hidden />{t("Зүүсэн")}</span>
                   ) : isOwned ? (
                     <button
                       type="button"
                       onClick={() => void act(banner.id, "equip", "banner")}
                       disabled={busy !== null}
                       className="shrink-0 rounded-xl border-2 border-brand-500 px-3 py-1.5 text-xs font-semibold text-brand-600 disabled:opacity-50 dark:text-brand-300"
-                    >
-                      Тохируулах
-                    </button>
+                    >{t("Тохируулах")}</button>
                   ) : (
                     <button
                       type="button"
@@ -343,8 +324,7 @@ export default function ShopPage() {
                       disabled={busy !== null || user.gems < banner.gems}
                       className="btn-primary shrink-0 px-3 py-1.5 text-xs disabled:opacity-50"
                     >
-                      <span className="num">{banner.gems}</span> зоос
-                    </button>
+                      <span className="num">{banner.gems}</span>{" "}{t("зоос")}</button>
                   )}
                 </div>
               </div>
@@ -358,18 +338,14 @@ export default function ShopPage() {
             onClick={() => void act("", "equip", "banner")}
             disabled={busy !== null}
             className="text-sm text-gray-500 underline hover:text-gray-700 disabled:opacity-50 dark:text-gray-400"
-          >
-            Ердийн банер руу буцаах
-          </button>
+          >{t("Ердийн банер руу буцаах")}</button>
         )}
       </section>
 
       {/* --- Дэвсгэр өнгө --- */}
       <section className="space-y-3">
-        <h2 className="text-lg font-bold text-gray-900 dark:text-white">Дэвсгэр өнгө</h2>
-        <p className="text-sm text-gray-500 dark:text-gray-400">
-          Аппын бүх хуудасны дэвсгэр өнгө.
-        </p>
+        <h2 className="text-lg font-bold text-gray-900 dark:text-white">{t("Дэвсгэр өнгө")}</h2>
+        <p className="text-sm text-gray-500 dark:text-gray-400">{t("Аппын бүх хуудасны дэвсгэр өнгө.")}</p>
 
         <div className="grid gap-3 sm:grid-cols-2">
           {SHOP_BACKGROUNDS.map((background) => {
@@ -384,24 +360,20 @@ export default function ShopPage() {
                 />
 
                 <div className="min-w-0 flex-1">
-                  <p className="font-bold text-gray-900 dark:text-white">{background.label}</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">{background.hint}</p>
+                  <p className="font-bold text-gray-900 dark:text-white">{t(background.label)}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">{t(background.hint)}</p>
                 </div>
 
                 {isEquipped ? (
                   <span className="flex shrink-0 items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300">
-                    <Check className="size-3.5" aria-hidden />
-                    Зүүсэн
-                  </span>
+                    <Check className="size-3.5" aria-hidden />{t("Зүүсэн")}</span>
                 ) : isOwned ? (
                   <button
                     type="button"
                     onClick={() => void act(background.id, "equip", "background")}
                     disabled={busy !== null}
                     className="shrink-0 rounded-xl border-2 border-brand-500 px-3 py-1.5 text-xs font-semibold text-brand-600 disabled:opacity-50 dark:text-brand-300"
-                  >
-                    Тохируулах
-                  </button>
+                  >{t("Тохируулах")}</button>
                 ) : (
                   <button
                     type="button"
@@ -411,8 +383,7 @@ export default function ShopPage() {
                     disabled={busy !== null || user.gems < background.gems}
                     className="btn-primary shrink-0 px-3 py-1.5 text-xs disabled:opacity-50"
                   >
-                    <span className="num">{background.gems}</span> зоос
-                  </button>
+                    <span className="num">{background.gems}</span>{" "}{t("зоос")}</button>
                 )}
               </div>
             );
@@ -425,9 +396,7 @@ export default function ShopPage() {
             onClick={() => void act("", "equip", "background")}
             disabled={busy !== null}
             className="text-sm text-gray-500 underline hover:text-gray-700 disabled:opacity-50 dark:text-gray-400"
-          >
-            Ердийн дэвсгэр рүү буцаах
-          </button>
+          >{t("Ердийн дэвсгэр рүү буцаах")}</button>
         )}
       </section>
     </div>

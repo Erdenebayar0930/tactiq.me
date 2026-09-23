@@ -4,8 +4,8 @@ import { useEffect } from "react";
 import { createPortal } from "react-dom";
 import { Coins, Gift } from "lucide-react";
 
+import { CelebrationVideo } from "@/components/tactiq/CelebrationVideo";
 import { Confetti } from "@/components/tactiq/Confetti";
-import { Mascot } from "@/components/tactiq/Mascot";
 import { t } from "@/lib/i18n/t";
 
 /**
@@ -97,7 +97,16 @@ export default function RewardPopup({
         </p>
 
         <div className="mt-3 flex items-center justify-center gap-2">
-          <Mascot mood="cheer" className="size-16" />
+          {/*
+            ⚠ Титэмт `Mascot`-ыг ОРЛОВ: тэр нь ХӨДӨЛГӨӨНГҮЙ дүрс байсан.
+            Бэлэг нээх нь баярлах мөч бөгөөд хичээл дуусгах дэлгэцэд
+            хэрэглэгддэг ЯГ ТЭР баярлаж буй робот энд ч тохирно — апп
+            даяар нэг дүр байх нь хүүхдэд танил мэдрэмж өгнө.
+
+            ⚠ `object-cover` — видео нь дөрвөлжин (420×420) тул `size-16`
+            хүрээнд гажилтгүй суух ёстой.
+          */}
+          <CelebrationVideo className="size-16 shrink-0 rounded-2xl object-cover" />
           <p className="max-w-36 text-left text-xs text-gray-500 dark:text-gray-400">
             {t("Зоосоороо дэлгүүрээс гоёл, гэрийн тэжээвэр авч болно.")}
           </p>

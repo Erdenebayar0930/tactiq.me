@@ -13,6 +13,7 @@ import { EmptyState, ErrorNote, ProgressBar, Skeleton } from "@/components/tacti
 import { isStudentRole } from "@/lib/permissions";
 
 import type { Quest } from "@/components/tactiq/FriendQuestCard";
+import { t } from "@/lib/i18n/t";
 
 /**
  * Найзууд — хүсэлт илгээх/зөвшөөрөх, хамтын долоо хоногийн даалгавар.
@@ -56,10 +57,8 @@ export default function FriendsPage() {
   return (
     <div className="space-y-5">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Найзууд</h1>
-        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          Найзтайгаа хамт оноо цуглуулж, долоо хоногийн даалгавраа биелүүл.
-        </p>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t("Найзууд")}</h1>
+        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{t("Найзтайгаа хамт оноо цуглуулж, долоо хоногийн даалгавраа биелүүл.")}</p>
       </div>
 
       {/*
@@ -89,13 +88,13 @@ export default function FriendsPage() {
       ) : (
         <>
           <RequestSection
-            title="Ирсэн хүсэлт"
+            title={t("Ирсэн хүсэлт")}
             people={friends.data?.incoming ?? []}
             mode="incoming"
             onChanged={reloadAll}
           />
           <RequestSection
-            title="Илгээсэн хүсэлт"
+            title={t("Илгээсэн хүсэлт")}
             people={friends.data?.outgoing ?? []}
             mode="outgoing"
             onChanged={reloadAll}
@@ -152,18 +151,15 @@ function AddFriendCard({ onAdded }: { onAdded: () => void }) {
   return (
     <form onSubmit={(event) => void submit(event)} className="surface space-y-3 p-5">
       <div>
-        <p className="font-bold text-gray-900 dark:text-white">Найз нэмэх</p>
-        <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
-          Найзынхаа хувийн кодыг оруулна уу. Тэр нь хүсэлтийг зөвшөөрмөгц
-          найзууд болно.
-        </p>
+        <p className="font-bold text-gray-900 dark:text-white">{t("Найз нэмэх")}</p>
+        <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">{t("Найзынхаа хувийн кодыг оруулна уу. Тэр нь хүсэлтийг зөвшөөрмөгц найзууд болно.")}</p>
       </div>
 
       <div className="flex gap-2">
         <input
           value={code}
           onChange={(event) => setCode(event.target.value.toUpperCase())}
-          placeholder="Жишээ нь ABC123"
+          placeholder={t("Жишээ нь ABC123")}
           maxLength={12}
           autoCapitalize="characters"
           autoCorrect="off"
@@ -228,7 +224,7 @@ function QuestCard({
   return (
     <section className="surface space-y-3 p-5">
       <div>
-        <p className="font-bold text-gray-900 dark:text-white">Хамтын даалгавар эхлүүлэх</p>
+        <p className="font-bold text-gray-900 dark:text-white">{t("Хамтын даалгавар эхлүүлэх")}</p>
         <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
           Найзтайгаа хамт долоо хоногт {data?.goalXp ?? 3000} оноо цуглуулбал хоёулаа{" "}
           {data?.rewardGems ?? 30} зоос авна. Долоо хоногт нэг найзтай.
@@ -349,8 +345,8 @@ function FriendList({ friends, onChanged }: { friends: Friend[]; onChanged: () =
     return (
       <EmptyState
         icon={<Users className="size-10" aria-hidden />}
-        title="Хараахан найзгүй байна"
-        description="Найзынхаа хувийн кодыг дээр оруулбал хүсэлт илгээгдэнэ."
+        title={t("Хараахан найзгүй байна")}
+        description={t("Найзынхаа хувийн кодыг дээр оруулбал хүсэлт илгээгдэнэ.")}
       />
     );
   }

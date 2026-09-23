@@ -4,7 +4,6 @@ import { NextResponse } from "next/server";
 
 import { badRequest, notFound, requireActiveUser, serverError } from "@/lib/api/auth";
 import { getRoomForCaller } from "@/lib/api/chess";
-import { applyHumanGame } from "@/lib/api/rating";
 import { toPublicUser } from "@/lib/api/publicUser";
 import { db } from "@/lib/db";
 import { chessRooms, users } from "@/lib/db/schema";
@@ -14,7 +13,13 @@ import type { NextRequest } from "next/server";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const END_REASONS = new Set(["checkmate", "resignation", "draw", "disconnect"]);
+/*
+ * ⚠ "timeout" нэмэгдсэн: цаг нь одоо БОДИТООР ажилладаг
+ * (`lib/tactiq/gameClock.ts`) тул цагаар дуусах нь хүчинтэй үр дүн.
+ * Энд байхгүй бол route нь «танихгүй шалтгаан» гэж 400 буцааж, цаг
+ * дууссан тоглолт САНД дуусахгүй үлдэнэ.
+ */
+const END_REASONS = new Set(["checkmate", "resignation", "draw", "disconnect", "timeout"]);
 
 /**
  * Тоглоомыг дуусгасныг тэмдэглэнэ — аль ч тал эхлээд илрүүлж болно
@@ -27,9 +32,9 @@ const END_REASONS = new Set(["checkmate", "resignation", "draw", "disconnect"]);
  * үр дүн авна — эс бөгөөс хоёулаа амжилттай update хийгээд ялалт/хожигдлын
  * тоо ХОЁР ДАХИН нэмэгдэх эрсдэлтэй байсан.
  *
- * ⚠ Тэр ЯГ ИЖИЛ хамгаалалт Elo-д ч чухал: үнэлгээ хоёр удаа тооцогдвол
- * ялагч давхар оноо авна. Тиймээс `applyHumanGame` нь мөрийг амжилттай
- * "finished" болгосон урсгал ДОТОР л дуудагдана.
+ * ⚠ ЧАНСАА ЭНД ХӨДӨЛӨХГҮЙ: ердийн тоглолт нь чансаагүй. Чансаа ЗӨВХӨН
+ * «чансаа тогтоох» тэмцээнээр өрнөнө (`api/tournament/game`) — хос нь
+ * чөлөөтэй сонгогддог тоглолт чансааг дурын тоо болгох цоорхой тул.
  */
 export async function POST(
   request: NextRequest,
@@ -111,36 +116,27 @@ export async function POST(
     }
 
     /*
-     * ⚠ МЭДЭГДЭЖ БУЙ ХЯЗГААРЛАЛТ: Elo нь ХОЁР ТОГЛООМД НЭГ (`users.rating`).
-     * Шатарт хүчтэй хүн даамд шинэхэн байж мэднэ — тэр үед үнэлгээ хоёр
-     * тоглоомын алинд ч зөв биш болно. Тусад нь болгоход шинэ багана,
-     * миграци, профайлын хоёр тоо шаардагдана; онлайн даам нь дөнгөж
-     * нэмэгдсэн тул тоглолтын тоо хуримтлагдсаны дараа шийдэхээр
-     * зориудаар хойшлуулав.
+     * ⚠ ЧАНСАА ЭНД ХӨДӨЛӨХГҮЙ. Ердийн онлайн тоглолт (найзаа урих,
+     * тоглогч хайх) нь ЧАНСААГҮЙ: чансаа ЗӨВХӨН «чансаа тогтоох»
+     * тэмцээнээр өрнөнө (`api/tournament/game`).
      *
-     * Elo — ХОЁУЛАНГ нь НЭГ гүйлгээнд, ИЖИЛ "өмнөх" утгаар (`lib/api/rating.ts`).
+     * ЯАГААД: хос нь ЧӨЛӨӨТЭЙ сонгогддог тул хоёр хүн тохиролцоод
+     * дахин дахин тоглох нь чансааг дурын тоо болгоно (нэг нь зориуд
+     * бууж өгөх). Тэмцээнд хосыг СИСТЕМ сугалдаг, шүүлт байдаг тул тэр
+     * цоорхой хаалттай (`docs/rating-system.md` §3, §13).
      *
-     * Тэнцээ үед "winner"/"loser" гэдэг нь зүгээр л дараалал: `draw: true`
-     * үед функц хоёуланд нь 0.5 оноо өгнө. Цагаан талыг эхэнд тавьсан нь
-     * дурын сонголт — тэнцээд тал нь ялгаагүй.
+     * ⚠ СТАТИСТИК нь дээр аль хэдийн бичигдсэн (ялалт/хожигдол) —
+     * тоглолтын түүх нь чансаанаас ТУСДАА. Хүүхэд найзтайгаа тоглосон
+     * тоглолт профайл дээр харагдах ёстой, гэхдээ чансааг хөндөхгүй.
      */
-    const ratings = await applyHumanGame(
-      winnerUid ?? updated.whiteUid,
-      winnerUid
-        ? winnerUid === updated.whiteUid
-          ? updated.blackUid
-          : updated.whiteUid
-        : updated.blackUid,
-      !winnerUid
-    );
-
     const [row] = await db.select().from(users).where(eq(users.uid, caller.uid)).limit(1);
     return NextResponse.json({
       ok: true,
       alreadyFinished: false,
       user: toPublicUser(row),
-      /** Дуудагчийн ӨӨРИЙНХ нь үнэлгээний өөрчлөлт (+12 / −8). */
-      rating: ratings[caller.uid] ?? null,
+      /** ⚠ Ердийн тоглолт ЧАНСААГҮЙ — клиент «чансаа» гэж харуулахгүй. */
+      rating: null,
+      rated: false,
     });
   } catch (error) {
     return serverError(error, "Тоглоом дуусгахад алдаа гарлаа");

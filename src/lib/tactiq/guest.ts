@@ -57,6 +57,8 @@ export const GUEST_USER: PublicUser = {
   ratingGames: 0,
 
   role: "student",
+  /* ⚠ Зочин ХЭЗЭЭ Ч тестер биш: туг нь админаар олгогддог. */
+  tester: false,
   secondaryRole: null,
   status: "active",
   createdAt: new Date(0),

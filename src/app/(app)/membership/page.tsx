@@ -17,6 +17,7 @@ import {
 
 import type { QpayCheckout } from "@/components/tactiq/QpayInvoice";
 import type { MembershipTierId } from "@/lib/billing";
+import { t } from "@/lib/i18n/t";
 
 /**
  * ТЭМЦЭЭНИЙ ГИШҮҮНЧЛЭЛ — Bronze / Silver / Gold / Premium.
@@ -99,10 +100,8 @@ export default function MembershipPage() {
   return (
     <div className="space-y-5">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Тэмцээний гишүүнчлэл</h1>
-        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          Гишүүн бол сар бүр тэмцээнд үнэгүй оролцоно. Гишүүнгүй бол тэмцээн бүрт төлнө.
-        </p>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t("Тэмцээний гишүүнчлэл")}</h1>
+        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{t("Гишүүн бол сар бүр тэмцээнд үнэгүй оролцоно. Гишүүнгүй бол тэмцээн бүрт төлнө.")}</p>
       </div>
 
       {current && until ? (
@@ -127,22 +126,18 @@ export default function MembershipPage() {
           <span className="grid size-16 place-items-center rounded-full bg-emerald-50 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-300">
             <Check className="size-8" aria-hidden />
           </span>
-          <h2 className="text-xl font-bold text-gray-900 dark:text-white">Гишүүнчлэл идэвхжлээ!</h2>
-          <Link href="/play" className="btn-primary px-5 py-2.5 text-sm">
-            Тэмцээн үзэх
-          </Link>
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white">{t("Гишүүнчлэл идэвхжлээ!")}</h2>
+          <Link href="/play" className="btn-primary px-5 py-2.5 text-sm">{t("Тэмцээн үзэх")}</Link>
         </div>
       ) : failed ? (
         <div className="surface flex flex-col items-center gap-3 p-8 text-center">
-          <h2 className="text-xl font-bold text-gray-900 dark:text-white">Төлбөр баталгаажсангүй</h2>
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white">{t("Төлбөр баталгаажсангүй")}</h2>
           <p className="max-w-sm text-sm text-gray-500 dark:text-gray-400">{failed}</p>
           <button
             type="button"
             onClick={() => setFailed(null)}
             className="btn-primary px-5 py-2.5 text-sm"
-          >
-            Дахин оролдох
-          </button>
+          >{t("Дахин оролдох")}</button>
         </div>
       ) : checkout ? (
         <InvoiceCard
@@ -186,7 +181,7 @@ export default function MembershipPage() {
                 <p className="num mt-1 text-2xl font-extrabold tracking-tight text-gray-900 dark:text-white">
                   {money(tier.amountMnt)}
                 </p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">сард</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">{t("сард")}</p>
 
                 <ul className="mt-4 space-y-2 text-[13px] leading-snug text-gray-600 dark:text-gray-300">
                   {tierFeatures(tierId).map((line) => (
@@ -213,9 +208,7 @@ export default function MembershipPage() {
                         : "Сонгох"}
                 </button>
                 {isDowngrade && (
-                  <p className="mt-2 text-center text-xs text-gray-500 dark:text-gray-400">
-                    Одоогийн гишүүнчлэл дууссаны дараа сонгоно.
-                  </p>
+                  <p className="mt-2 text-center text-xs text-gray-500 dark:text-gray-400">{t("Одоогийн гишүүнчлэл дууссаны дараа сонгоно.")}</p>
                 )}
               </div>
             );

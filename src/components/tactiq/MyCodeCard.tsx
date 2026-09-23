@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Check, Copy, KeyRound, Link2, Share2 } from "lucide-react";
+import { t } from "@/lib/i18n/t";
 
 /**
  * "Миний код" — хэрэглэгчийн хувийн урилгын кодыг харуулах ЦОРЫН ГАНЦ газар.
@@ -93,9 +94,7 @@ export default function MyCodeCard({
             className={`text-gray-900 dark:text-white ${
               compact ? "font-bold" : "text-lg font-bold"
             }`}
-          >
-            Миний код
-          </h2>
+          >{t("Миний код")}</h2>
           <p className="text-xs text-gray-500 dark:text-gray-400">
             {isStudent
               ? "Найз, эцэг эх, багшдаа өгнө"

@@ -10,6 +10,8 @@ import {
 } from "@/lib/api/promo";
 import { db } from "@/lib/db";
 import { users } from "@/lib/db/schema";
+
+import type { PromoTier } from "@/lib/db/schema";
 import { PROMO_COMMISSION_PERCENT, PROMO_DISCOUNT_PERCENT } from "@/lib/billing";
 import { eq } from "drizzle-orm";
 
@@ -114,6 +116,11 @@ export async function POST(request: NextRequest) {
       ownerUid: owner.uid,
       discountPercent: Number(body.discountPercent ?? PROMO_DISCOUNT_PERCENT),
       commissionPercent: Number(body.commissionPercent ?? PROMO_COMMISSION_PERCENT),
+      /*
+       * ШАТАЛСАН ХУВЬ — «эхний 50 хүүхэд 50%, дараагийн 75 нь 25%».
+       * Шалгалт нь `createPromoCode` дотор (`lib/api/promo.ts`).
+       */
+      tiers: Array.isArray(body.tiers) ? (body.tiers as PromoTier[]) : null,
       note: typeof body.note === "string" ? body.note.slice(0, 200) : "",
       createdBy: result.caller.uid,
     });

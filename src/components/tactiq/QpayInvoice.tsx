@@ -7,6 +7,7 @@ import { apiFetch } from "@/lib/apiClient";
 import { BANK_ACCOUNTS } from "@/lib/tactiq/bankAccounts";
 
 import type { PublicUser } from "@/lib/api/publicUser";
+import { t } from "@/lib/i18n/t";
 
 /**
  * QPay нэхэмжлэлийн карт — QR, банкны холбоос, төлбөрийн poll.
@@ -189,17 +190,11 @@ export function InvoiceCard({
         <p className="rounded-xl bg-amber-50 px-3 py-2 text-xs text-amber-700 dark:bg-amber-500/10 dark:text-amber-300">
           Туршилтын (sandbox) мерчант: QR, банкны холбоос жинхэнэ хэлбэртэй ч
           БОДИТ мөнгө хөдлөхгүй. Бодит горимд `QPAY_BASE_URL`-ыг
-          <span className="font-mono"> merchant.qpay.mn/v2</span> болгож,
-          өөрийн мерчантын түлхүүрээ тохируулна.
-        </p>
+          <span className="font-mono"> merchant.qpay.mn/v2</span>{" "}{t("болгож, өөрийн мерчантын түлхүүрээ тохируулна.")}</p>
       )}
 
       {checkout.mock && (
-        <p className="rounded-xl bg-amber-50 px-3 py-2 text-xs text-amber-700 dark:bg-amber-500/10 dark:text-amber-300">
-          Туршилтын горим: QPay тохируулаагүй тул энэ QR ЖИНХЭНЭ БИШ бөгөөд
-          төлбөр баталгаажихгүй. Локал турших бол
-          <span className="font-mono"> QPAY_SANDBOX_AUTOPAY=true</span> тохируулна.
-        </p>
+        <p className="rounded-xl bg-amber-50 px-3 py-2 text-xs text-amber-700 dark:bg-amber-500/10 dark:text-amber-300">{t("Туршилтын горим: QPay тохируулаагүй тул энэ QR ЖИНХЭНЭ БИШ бөгөөд төлбөр баталгаажихгүй. Локал турших бол")}<span className="font-mono"> QPAY_SANDBOX_AUTOPAY=true</span>{" "}{t("тохируулна.")}</p>
       )}
 
       {/*
@@ -228,7 +223,7 @@ export function InvoiceCard({
               <p className="break-all text-[10px] text-gray-400">{checkout.qrText}</p>
             </div>
           )}
-          <p className="text-xs font-semibold text-gray-500 dark:text-gray-400">QPay төлөх</p>
+          <p className="text-xs font-semibold text-gray-500 dark:text-gray-400">{t("QPay төлөх")}</p>
 
           {/*
             ⚠ КОМПЬЮТЕРТ ЗОРИУЛСАН ЗАМ. Доорх банкны товчнууд нь
@@ -243,14 +238,12 @@ export function InvoiceCard({
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1.5 text-xs font-semibold text-brand-600 underline hover:text-brand-700 dark:text-brand-300"
             >
-              <ExternalLink className="size-3.5" aria-hidden />
-              Хөтчөөр нээх
-            </a>
+              <ExternalLink className="size-3.5" aria-hidden />{t("Хөтчөөр нээх")}</a>
           )}
         </div>
 
         <div className="text-left">
-          <p className="mb-2 text-sm font-bold text-gray-900 dark:text-white">Банкаар төлөх</p>
+          <p className="mb-2 text-sm font-bold text-gray-900 dark:text-white">{t("Банкаар төлөх")}</p>
 
           {/*
             ⚠ Жагсаалт ХООСОН байхыг ЧИМЭЭГҮЙ нуухгүй. QPay тохируулаагүй
@@ -278,10 +271,7 @@ export function InvoiceCard({
                 дарахад юу ч болохгүйг УРЬДЧИЛЖ хэлэхгүй бол хэрэглэгч
                 дахин дахин дарж, эцэст нь төлбөрөө орхино.
               */}
-              <p className="mb-2 text-[11px] text-gray-400">
-                Гар утсан дээр дарвал банкны апп нээгдэнэ. Компьютер дээр QR
-                кодыг уншуулна уу.
-              </p>
+              <p className="mb-2 text-[11px] text-gray-400">{t("Гар утсан дээр дарвал банкны апп нээгдэнэ. Компьютер дээр QR кодыг уншуулна уу.")}</p>
             <ul className="grid max-h-64 grid-cols-3 gap-2 overflow-y-auto pr-1">
               {checkout.bankLinks.map((bank) => (
                 <li key={bank.name}>
@@ -348,7 +338,7 @@ export function InvoiceCard({
       */}
       {BANK_ACCOUNTS.length > 0 && (
         <div className="rounded-xl border border-gray-200 p-4 text-left dark:border-white/10">
-          <p className="text-sm font-bold text-gray-900 dark:text-white">Дансаар шилжүүлэх</p>
+          <p className="text-sm font-bold text-gray-900 dark:text-white">{t("Дансаар шилжүүлэх")}</p>
 
           <ul className="mt-2 space-y-2">
             {BANK_ACCOUNTS.map((account) => (
@@ -364,7 +354,7 @@ export function InvoiceCard({
                     {account.accountNo}
                   </span>
                 </span>
-                <CopyButton value={account.accountNo} label="Дансны дугаар" />
+                <CopyButton value={account.accountNo} label={t("Дансны дугаар")} />
               </li>
             ))}
           </ul>
@@ -382,7 +372,7 @@ export function InvoiceCard({
                 {checkout.senderInvoiceNo}
               </span>
             </span>
-            <CopyButton value={checkout.senderInvoiceNo} label="Гүйлгээний утга" />
+            <CopyButton value={checkout.senderInvoiceNo} label={t("Гүйлгээний утга")} />
           </div>
 
           <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
@@ -430,9 +420,7 @@ export function InvoiceCard({
           type="button"
           onClick={onCancel}
           className="text-sm text-gray-500 underline hover:text-gray-700 dark:hover:text-gray-300"
-        >
-          Цуцлах
-        </button>
+        >{t("Цуцлах")}</button>
       </div>
     </div>
   );

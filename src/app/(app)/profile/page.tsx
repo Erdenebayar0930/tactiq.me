@@ -33,7 +33,7 @@ import { findSpecies } from "@/lib/tactiq/pets";
 import { signOutCompletely } from "@/lib/session";
 import { asRole, isStudentRole, roleLabels } from "@/lib/permissions";
 import { ratingTitle } from "@/lib/tactiq/rating";
-import { useSchools } from "@/context/SchoolsContext";
+import { t } from "@/lib/i18n/t";
 
 /** Миний профайл (#9 дэлгэц) — угталт, ахиц, хөтөлбөрийн хурдан холбоос. */
 export default function ProfilePage() {
@@ -125,18 +125,16 @@ export default function ProfilePage() {
       */}
       <AchievementsSection limit={6} />
 
-      <SchoolShortcuts />
-
       <section className="surface p-0">
         <div className="grid grid-cols-3 divide-x divide-gray-200 dark:divide-white/10">
-          <Stat label="Түвшин" value={user.level} />
-          <Stat label="Зоос" value={user.gems} href="/shop" />
+          <Stat label={t("Түвшин")} value={user.level} />
+          <Stat label={t("Зоос")} value={user.gems} href="/shop" />
           {/*
             ⚠ «Зүрх» энд байсныг ХАСАВ — амь гэсэн механик бүхэлдээ
             устсан. Оронд нь ДАРААЛАЛ: сурагчийн бодит хичээл зүтгэлийг
             хэмждэг цорын ганц үлдсэн өдөр тутмын үзүүлэлт.
           */}
-          <Stat label="Дараалал" value={user.streakDays} />
+          <Stat label={t("Дараалал")} value={user.streakDays} />
         </div>
       </section>
 
@@ -146,14 +144,12 @@ export default function ProfilePage() {
         <section className="surface p-5">
           <div className="mb-3 flex items-center gap-2">
             <Swords className="size-4 text-gray-400" aria-hidden />
-            <span className="text-sm font-semibold text-gray-900 dark:text-white">
-              Шатрын тоглолт
-            </span>
+            <span className="text-sm font-semibold text-gray-900 dark:text-white">{t("Шатрын тоглолт")}</span>
           </div>
           <div className="grid grid-cols-3 divide-x divide-gray-200 dark:divide-white/10">
-            <Stat label="Ялалт" value={user.chessWins} />
-            <Stat label="Хожигдол" value={user.chessLosses} />
-            <Stat label="Тэнцээ" value={user.chessDraws} />
+            <Stat label={t("Ялалт")} value={user.chessWins} />
+            <Stat label={t("Хожигдол")} value={user.chessLosses} />
+            <Stat label={t("Тэнцээ")} value={user.chessDraws} />
           </div>
         </section>
       )}
@@ -176,18 +172,16 @@ export default function ProfilePage() {
           ч хэрэглэгчид нээлттэй боловч ЗӨВХӨН ӨӨРИЙНХӨӨ мэдээллийг
           харуулдаг (`api/promo/me`).
         */}
-        {isPromoter && <Row href="/promo" Icon={Tag} label="Сурталчлагч" />}
-        <Row href="/pets" Icon={Sprout} label="Миний тэжээвэр" />
-        <Row href="/shop" Icon={Coins} label="Дэлгүүр" />
-        <Row href="/settings" Icon={Settings} label="Тохиргоо" />
+        {isPromoter && <Row href="/promo" Icon={Tag} label={t("Сурталчлагч")} />}
+        <Row href="/pets" Icon={Sprout} label={t("Миний тэжээвэр")} />
+        <Row href="/shop" Icon={Coins} label={t("Дэлгүүр")} />
+        <Row href="/settings" Icon={Settings} label={t("Тохиргоо")} />
         <button
           type="button"
           onClick={() => void signOutCompletely()}
           className="flex w-full items-center gap-3 px-4 py-3.5 text-left text-sm font-medium text-rose-600 hover:bg-rose-50 dark:text-rose-400 dark:hover:bg-rose-500/10"
         >
-          <LogOut className="size-5" aria-hidden />
-          Гарах
-        </button>
+          <LogOut className="size-5" aria-hidden />{t("Гарах")}</button>
       </nav>
 
       <p className="text-center text-xs text-gray-400">
@@ -258,17 +252,13 @@ function WelcomeBanner({
           <p className="truncate text-xl font-extrabold">
             Сайн байна уу, {greetingName}!
           </p>
-          <p className="mt-0.5 text-sm text-white/75">
-            Өнөөдөр шинэ зүйл сурч, өөрийгөө хөгжүүлээрэй
-          </p>
+          <p className="mt-0.5 text-sm text-white/75">{t("Өнөөдөр шинэ зүйл сурч, өөрийгөө хөгжүүлээрэй")}</p>
         </div>
 
         <Link
           href="/settings"
           className="hidden shrink-0 items-center gap-1 rounded-full bg-white/15 px-3.5 py-2 text-xs font-semibold text-white transition-colors hover:bg-white/25 sm:inline-flex"
-        >
-          Засах
-          <ChevronRight className="size-3.5" aria-hidden />
+        >{t("Засах")}<ChevronRight className="size-3.5" aria-hidden />
         </Link>
       </div>
 
@@ -365,9 +355,7 @@ function StreakCard({ days, frozen }: { days: number; frozen: boolean }) {
         </p>
         <p className="num mt-0.5 text-2xl font-extrabold text-gray-900 dark:text-white">
           {days}
-          <span className="ml-1 text-sm font-semibold text-gray-500 dark:text-gray-400">
-            өдөр
-          </span>
+          <span className="ml-1 text-sm font-semibold text-gray-500 dark:text-gray-400">{t("өдөр")}</span>
         </p>
         <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
           {frozen
@@ -407,9 +395,7 @@ function XpCard({
           <Zap className="size-5" fill="currentColor" aria-hidden />
         </span>
         <div className="min-w-0 flex-1">
-          <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
-            Нийт XP
-          </p>
+          <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{t("Нийт XP")}</p>
           <p className="num text-2xl font-extrabold text-gray-900 dark:text-white">
             {xp.toLocaleString("mn-MN")}
           </p>
@@ -428,44 +414,10 @@ function XpCard({
         </span>
       </div>
       <div className="mt-2">
-        <ProgressBar percent={percent} tone="bg-xp-500" label="Түвшний явц" />
+        <ProgressBar percent={percent} tone="bg-xp-500" label={t("Түвшний явц")} />
       </div>
-      <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-        Дараагийн түвшинд <span className="num">{xpToNext}</span> оноо үлдлээ.
-      </p>
+      <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">{t("Дараагийн түвшинд")}{" "}<span className="num">{xpToNext}</span>{" "}{t("оноо үлдлээ.")}</p>
     </div>
-  );
-}
-
-/**
- * Сургуулиудын хурдан холбоос.
- *
- * ⚠ Бүгд `/courses` руу заана, сургууль тус бүрийн ТУСДАА дэлгэц рүү БИШ.
- * Шалтгаан: сургуулийн дэлгэц гэж байхгүй — `/courses` нь курсуудыг аль
- * хэдийн сургуулиар бүлэглэж харуулдаг. Байхгүй зам руу заасан "гоё" карт
- * нь 404 болж, ажиллаж буй холбоосоос дор.
- */
-function SchoolShortcuts() {
-  const schools = useSchools();
-
-  return (
-    <section>
-      <h2 className="mb-3 text-sm font-bold text-gray-900 dark:text-white">
-        Курсууд
-      </h2>
-      <div className="grid grid-cols-3 gap-3">
-        {schools.map((school) => (
-          <Link
-            key={school.slug}
-            href="/courses"
-            className={`flex flex-col items-center gap-2 rounded-2xl bg-gradient-to-br p-4 text-center text-white shadow-md transition-transform hover:-translate-y-0.5 ${school.gradient} ${school.glow}`}
-          >
-            <school.Icon className="size-6" aria-hidden />
-            <span className="text-xs font-bold leading-tight">{school.title}</span>
-          </Link>
-        ))}
-      </div>
-    </section>
   );
 }
 
@@ -484,9 +436,7 @@ function RatingCard({ rating, games }: { rating: number; games: number }) {
       </span>
 
       <div className="min-w-0 flex-1">
-        <p className="text-sm font-semibold text-gray-900 dark:text-white">
-          Тоглолтын үнэлгээ
-        </p>
+        <p className="text-sm font-semibold text-gray-900 dark:text-white">{t("Тоглолтын үнэлгээ")}</p>
         <p className="text-xs text-gray-500 dark:text-gray-400">
           {games > 0
             ? `${ratingTitle(rating)} · ${games} тоглолт`

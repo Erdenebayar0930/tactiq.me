@@ -321,22 +321,34 @@ function Spark({ x, y, delay }: { x: number; y: number; delay: string }) {
  * болж, лого хэмжээ өөрчлөгдөх бүрт зөрөх байв.
  */
 export function LogoMark({ className = "size-9" }: { className?: string }) {
+  /*
+   * БРЭНДИЙН ТЭМДЭГ — Daamal-ын дүр (робот толгой).
+   *
+   * ⚠ Урьд нь кодоор зурсан «D» үсэг байсан. Одоо брэндийн дүр өөрөө
+   * тэмдэг болсон: апп даяар (хичээл дуусгах, тоглолт, лобби) ижил
+   * дүр харагддаг тул логог түүнээс салгах нь хоёр брэнд шиг
+   * мэдрэгдэнэ.
+   *
+   * ⚠ ГРАДИЕНТ ХАВТАН ХАССАН: дүрийн бие өөрөө хөх тул түүний доор
+   * хөх хавтан тавихад зах нь уусаж, дүрс бүдгэрнэ.
+   *
+   * ⚠ ЗАМД `v2` — `/images/**` нь service worker дээр CacheFirst-ээр 30
+   * хоног кэшлэгддэг (`next.config.ts`). Ижил нэрээр дарж бичвэл
+   * хэрэглэгч хуучин логог сараар харсаар байна.
+   *
+   * ⚠ `next/image` БИШ: логоны хэмжээ нь дуудагч тал бүрд өөр
+   * (`size-6`…`size-10`), CSS-ээр тодорхойлогддог. `next/image` нь
+   * `width`/`height` шаардах ба тэдгээр нь CSS-тэй зөрчилдөнө. Файл нь
+   * 20 КБ тул оптимизацаас олох зүйл ч бага.
+   */
   return (
-    <span
-      className={`relative grid shrink-0 place-items-center overflow-hidden rounded-xl bg-gradient-to-br from-brand-400 via-brand-500 to-xp-500 shadow-sm ${className}`}
-    >
-      <svg viewBox="0 0 24 24" className="size-[62%]" aria-hidden>
-        {/* "D" — гадна контур ба доторх нүх нэг зам дээр, evenodd-оор хайчилна */}
-        <path
-          fillRule="evenodd"
-          clipRule="evenodd"
-          d="M5.6 4.2h5.6a7.8 7.8 0 0 1 0 15.6H5.6V4.2Zm3.6 3.4v8.8h2a4.4 4.4 0 0 0 0-8.8h-2Z"
-          fill="#fff"
-        />
-        {/* Ирээдүй рүү заасан жижиг хошуу — логоны ганц дулаан бус өргөлт */}
-        <path d="M5.6 4.2h4.3L5.6 10.9V4.2Z" fill="#34d399" />
-      </svg>
-    </span>
+    /* eslint-disable-next-line @next/next/no-img-element */
+    <img
+      src="/images/logo/v2/mark-128.png"
+      alt=""
+      aria-hidden
+      className={`shrink-0 object-contain ${className}`}
+    />
   );
 }
 

@@ -93,7 +93,18 @@ const BLANK = {
   sponsorLogo: "",
   sponsorUrl: "",
   prize: "",
+  /**
+   * ⚠ ЧАНСАА анхдагчаар УНТРААЛТТАЙ: хөгжөөнт тэмцээнд оролцоод
+   * чансаагаа унагана гэвэл шинэ сурагч тэмцээнээс эмээнэ. Зохион
+   * байгуулагч ЗОРИУД сонгоно.
+   */
+  rated: false,
+  /** Байр тус бүрийн шагнал — хоосон бол «дэлгэрэнгүй» хэсэг гарахгүй. */
+  prizes: [] as PrizeRow[],
 };
+
+/** Админ хэлбэр дээрх нэг шагналын мөр. */
+type PrizeRow = { place: number; title: string; image: string; note: string };
 
 export default function AdminTournamentsPage() {
   const [series, setSeries] = useState<Series[] | null>(null);
@@ -690,7 +701,129 @@ function SharedFields<T extends typeof BLANK>({
           className={inputClass}
         />
       </Field>
+
+      {/*
+        ⚠ ЧАНСАА ТОГТООХ — ил сонголт: чансаа ЗӨВХӨН энэ тугтай
+        тэмцээнээр өрнөнө (`api/tournament/game`). Хожигдвол оноо
+        хасагддаг тул үүнийг санамсаргүй нээх нь оролцогчдын итгэлийг
+        унагана.
+      */}
+      <label className="flex items-start gap-2 rounded-xl bg-amber-50 p-3 text-sm dark:bg-amber-500/10">
+        <input
+          type="checkbox"
+          checked={form.rated}
+          onChange={(event) => setForm({ ...form, rated: event.target.checked })}
+          className="mt-0.5 size-4"
+        />
+        <span>
+          <span className="font-semibold text-gray-900 dark:text-white">
+            {t("Чансаа тогтоох тэмцээн")}
+          </span>
+          <span className="block text-[11px] leading-snug text-gray-500 dark:text-gray-400">
+            {t("Хожигдвол оноо хасагдана. Хөгжөөнт тэмцээнд сонгохгүй.")}
+          </span>
+        </span>
+      </label>
+
+      <PrizeFields form={form} setForm={setForm} />
     </>
+  );
+}
+
+/**
+ * БАЙР ТУС БҮРИЙН ШАГНАЛ — «1-р байр: дрон» гэх мэт, зурагтай.
+ *
+ * ⚠ `prize` МӨРӨӨС ТУСДАА: тэр нь жагсаалтад нэг харцаар уншигдах
+ * хураангуй («Шагналын сан: 1,000,000₮»), энэ нь «Дэлгэрэнгүй» дарж
+ * үздэг зурагтай жагсаалт.
+ *
+ * ⚠ БАЙРЫГ АВТОМАТААР өгнө (мөрийн дугаар + 1), гараар бичүүлэхгүй:
+ * админ хоёр «1-р байр» оруулбал сервер татгалзана. Дараалал нь
+ * жагсаалтын дараалал байх нь ойлгомжтой.
+ */
+function PrizeFields<T extends typeof BLANK>({
+  form,
+  setForm,
+}: {
+  form: T;
+  setForm: (next: T) => void;
+}) {
+  const rows: PrizeRow[] = form.prizes ?? [];
+
+  const update = (index: number, patch: Partial<PrizeRow>) =>
+    setForm({
+      ...form,
+      prizes: rows.map((row, i) => (i === index ? { ...row, ...patch } : row)),
+    });
+
+  /* ⚠ Устгасны дараа байрыг ДАХИН дугаарлана: 1, 3, 4 гэсэн цоорхой
+     дараалал нь «2-р байрын шагнал байхгүй» гэсэн буруу мессеж болно. */
+  const renumber = (list: PrizeRow[]) => list.map((row, i) => ({ ...row, place: i + 1 }));
+
+  return (
+    <div className="space-y-2 rounded-xl bg-gray-50 p-3 dark:bg-white/5">
+      <p className="text-xs font-semibold text-gray-500 dark:text-gray-400">
+        {t("Байр тус бүрийн шагнал (сонгомол)")}
+      </p>
+
+      {rows.map((row, index) => (
+        <div key={index} className="space-y-1.5 rounded-xl bg-white p-2.5 dark:bg-black/20">
+          <div className="flex items-center gap-2">
+            <span className="grid size-6 shrink-0 place-items-center rounded-full bg-amber-500 text-[11px] font-extrabold text-white">
+              {row.place}
+            </span>
+            <input
+              value={row.title}
+              onChange={(event) => update(index, { title: event.target.value })}
+              placeholder={t("Дрон")}
+              className={inputClass}
+            />
+            <button
+              type="button"
+              onClick={() => setForm({ ...form, prizes: renumber(rows.filter((_, i) => i !== index)) })}
+              className="shrink-0 rounded-lg px-2 py-1 text-xs font-semibold text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-500/10"
+            >
+              {t("Устгах")}
+            </button>
+          </div>
+
+          <input
+            value={row.image}
+            onChange={(event) => update(index, { image: event.target.value })}
+            placeholder="/images/prizes/drone.png"
+            className={inputClass}
+          />
+          <input
+            value={row.note}
+            onChange={(event) => update(index, { note: event.target.value })}
+            placeholder={t("Тайлбар (DJI Mini)")}
+            className={inputClass}
+          />
+        </div>
+      ))}
+
+      {/*
+        ⚠ ЗУРГИЙН ХЯЗГААРЛАЛТЫГ ЭНД БИЧНЭ: аппын CSP нь дурын домэйны
+        зургийг ЧИМЭЭГҮЙ хаадаг тул админ «яагаад зураг гарахгүй байна»
+        гэж хайх бөгөөд консолоос өөр газар алдаа гарахгүй.
+      */}
+      <p className="text-[11px] leading-snug text-gray-400">
+        {t("Зураг: зөвхөн аппын өөрийн зам (/images/…) эсвэл Firebase Storage-ийн хаяг.")}
+      </p>
+
+      <button
+        type="button"
+        onClick={() =>
+          setForm({
+            ...form,
+            prizes: [...rows, { place: rows.length + 1, title: "", image: "", note: "" }],
+          })
+        }
+        className="rounded-xl bg-gray-200 px-3 py-1.5 text-xs font-bold text-gray-700 hover:bg-gray-300 dark:bg-white/10 dark:text-gray-200 dark:hover:bg-white/15"
+      >
+        {t("Шагнал нэмэх")}
+      </button>
+    </div>
   );
 }
 

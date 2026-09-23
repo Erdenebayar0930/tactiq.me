@@ -78,6 +78,18 @@ export type RemoteTournament = {
    */
   recurring: boolean;
   /**
+   * ЧАНСАА ТОГТООХ эсэх.
+   *
+   * ⚠ ЧАНСАА ЗӨВХӨН ЭНЭ ТУГТАЙ тэмцээнээр өрнөнө: ердийн онлайн
+   * тоглолт, ботын дадлага, хөгжөөнт тэмцээн нь чансааг хөндөхгүй.
+   * Тиймээс жагсаалт дээр ИЛ шошго харуулах ёстой — оролцогч чансаагаа
+   * хөдөлгөх эсэхээ бүртгэхээсээ ӨМНӨ мэдэх ёстой.
+   *
+   * ⚠ `=== true` гэж шалгана: туг байхгүй бол ЧАНСААГҮЙ. Анхдагч нь
+   * ямагт хамгийн хөнөөлгүй тал.
+   */
+  rated: boolean;
+  /**
    * ИВЭЭН ТЭТГЭГЧ — хоосон бол ивээн тэтгэгчгүй тэмцээн.
    *
    * ⚠ ЛОГОНЫ ХАЯГ нь ЭНД ДАХИН шалгагдана: тэмцээний сервер нь
@@ -89,8 +101,16 @@ export type RemoteTournament = {
   sponsorName: string;
   sponsorLogo: string;
   sponsorUrl: string;
-  /** Шагналын чөлөөт тайлбар — «1-р шагнал: 100,000₮». */
+  /** Шагналын чөлөөт тайлбар — «Шагналын сан: 500,000₮». */
   prize: string;
+  /**
+   * БАЙР ТУС БҮРИЙН ШАГНАЛ — «Дэлгэрэнгүй» дарахад гарна.
+   *
+   * ⚠ ЗУРГИЙН ХАЯГ нь ЭНД ДАХИН шалгагдана (`safeLogo`): тэмцээний
+   * сервер хязгаарладаг ч тэр нь ГАДНЫ сервер. Танихгүй домэйны зургийг
+   * CSP чимээгүй хааж, хоосон хайрцаг үлдэнэ.
+   */
+  prizes: TournamentPrize[] | null;
   seats: number | null;
   registered: number;
   entryFeeMnt: number;
@@ -168,10 +188,12 @@ function parseTournament(raw: unknown): RemoteTournament | null {
     access: parseTournamentAccess(r.access),
     format: parseTournamentFormat(r.format),
     recurring: r.recurring === true,
+    rated: r.rated === true,
     sponsorName: text(r.sponsorName, 80),
     sponsorLogo: safeLogo(text(r.sponsorLogo, 400)),
     sponsorUrl: safeLink(text(r.sponsorUrl, 400)),
     prize: text(r.prize, 300),
+    prizes: parsePrizes(r.prizes),
     seats: r.seats as number | null,
     registered: r.registered,
     entryFeeMnt: r.entryFeeMnt,
@@ -336,4 +358,40 @@ export async function listAllTournaments(): Promise<RemoteTournament[]> {
   const raw = await adminCall("/tournaments?status=upcoming");
   const list = Array.isArray(raw.tournaments) ? raw.tournaments : [];
   return list.map(parseTournament).filter((item): item is RemoteTournament => item !== null);
+}
+
+export type TournamentPrize = {
+  /** 1, 2, 3 … */
+  place: number;
+  title: string;
+  /** Хоосон мөр = зураггүй. */
+  image: string;
+  note: string;
+};
+
+/**
+ * Шагналын жагсаалтыг ЦЭВЭРЛЭЖ уншина.
+ *
+ * ⚠ ГАДНЫ СЕРВЕРЭЭС ирсэн jsonb — бүтэц нь ямар ч байж болно. Шалгахгүй
+ * бол `prizes.map` нь `undefined.map` болж хуудсыг унагана (тэмцээний
+ * хуудсанд ЯГ ТЭР эвдрэл нэгэнт тохиолдсон — ивээн тэтгэгчийн талбар).
+ *
+ * ⚠ БАЙРААР ЭРЭМБЭЛНЭ: сервер эрэмбэлсэн ч энэ нь бидний хариуцлага.
+ */
+function parsePrizes(value: unknown): TournamentPrize[] | null {
+  if (!Array.isArray(value)) return null;
+
+  const items = value
+    .filter((raw): raw is Record<string, unknown> => typeof raw === "object" && raw !== null)
+    .map((raw) => ({
+      place: isInt(raw.place, 1) ? Math.min(raw.place as number, 99) : 0,
+      title: text(raw.title, 80),
+      image: safeLogo(text(raw.image, 400)),
+      note: text(raw.note, 120),
+    }))
+    /* ⚠ Нэргүй шагнал ХАЯГДАНА: зөвхөн зурагтай мөр нь ойлгомжгүй. */
+    .filter((item) => item.place > 0 && item.title.length > 0)
+    .sort((a, b) => a.place - b.place);
+
+  return items.length > 0 ? items : null;
 }

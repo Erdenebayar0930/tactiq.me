@@ -16,9 +16,10 @@ import { asRole, hasRole, homeForRole, isAdminRole, roleLabels } from "@/lib/per
 import type { ClientDeviceInfo } from "@/context/UserContext";
 import type { UserRole } from "@/lib/permissions";
 
+import { WelcomeRobotGif } from "./LoopGif";
 import { Mascot } from "./Mascot";
 import { ErrorNote, Skeleton } from "./ui";
-import { t } from "@/lib/i18n/t";
+import { activeLocale, t } from "@/lib/i18n/t";
 
 /**
  * Нэвтрэлтийн хаалга.
@@ -139,9 +140,9 @@ export default function Protected({
     return (
       <CenteredNotice
         title={t("Энэ хэсэг танд зориулагдаагүй")}
-        description={`Энэ хэсэг зөвхөн ${allowedRoles
+        description={`${t("Энэ хэсэг зөвхөн")} ${allowedRoles
           .map((allowed) => roleLabels[allowed])
-          .join(", ")}-д нээлттэй. Таны эрх: ${roleLabels[role]}.`}
+          .join(", ")}${t("-д нээлттэй. Таны эрх")}: ${roleLabels[role]}.`}
         actionLabel={t("Миний хэсэг рүү очих")}
         onAction={() => router.replace(homeForRole(role))}
       />
@@ -160,13 +161,22 @@ export default function Protected({
 function GuestLocked({ pathname }: { pathname: string }) {
   return (
     <div className="mx-auto flex max-w-md flex-col items-center gap-4 p-8 text-center">
-      <Mascot mood="cheer" className="size-28" />
+      {/*
+        ⚠ ХӨДӨЛГӨӨНТ РОБОТ (хөлдүү зураг БИШ): бүртгэлийн урилга нь
+        «хана» шиг мэдрэгддэг мөч — хөдөлгөөн нь тэр хананд амь оруулж,
+        «энд хийх зүйл байна» гэдгийг хэлнэ.
+
+        ⚠ Титэмтэй `Mascot`-ыг ОРЛОВ: титэм нь БАЯРЫН дохио. Хэрэглэгч
+        юу ч хийгээгүй байхад баярлах нь зөрүү үүсгэдэг.
+      */}
+      <WelcomeRobotGif className="size-28 object-contain" />
       <h1 className="text-xl font-bold text-gray-900 dark:text-white">
         {t("Энэ хэсэг бүртгэлтэй хүнд нээлттэй")}
       </h1>
       <p className="text-sm text-gray-500 dark:text-gray-400">
-        Бүртгүүлбэл оноо, дараалал, найзууд, дэлгүүр бүгд нээгдэнэ. Одоохондоо
-        эхний хичээлүүдийг үнэгүй туршиж үзээрэй.
+        {t(
+          "Бүртгүүлбэл оноо, дараалал, найзууд, дэлгүүр бүгд нээгдэнэ. Одоохондоо эхний хичээлүүдийг үнэгүй туршиж үзээрэй."
+        )}
       </p>
       <div className="flex flex-wrap items-center justify-center gap-2">
         <Link
@@ -235,8 +245,9 @@ function RepairScreen({ onDone }: { onDone: () => Promise<void> }) {
         {t("Бүртгэл чинь дутуу үлджээ")}
       </h1>
       <p className="text-sm text-gray-500 dark:text-gray-400">
-        Нэвтрэлт амжилттай боловч профайл үүсээгүй байна. Доорх товчийг дарж
-        гүйцээнэ үү.
+        {t(
+          "Нэвтрэлт амжилттай боловч профайл үүсээгүй байна. Доорх товчийг дарж гүйцээнэ үү."
+        )}
       </p>
       {message && <ErrorNote message={message} />}
       <button
@@ -298,9 +309,11 @@ function DeviceLimitScreen({
         {t("Төхөөрөмжийн хязгаарт хүрлээ")}
       </h1>
       <p className="text-sm text-gray-500 dark:text-gray-400">
-        Нэг дансаар зэрэг {MAX_DEVICES} хүртэл төхөөрөмж дээр нэвтрэх
-        боломжтой. Энэ шинэ төхөөрөмжөөр үргэлжлүүлэхийн тулд доорх
-        жагсаалтаас хуучин нэгийг нь хасна уу.
+        {/* ⚠ ТООГ бичвэрээс ГАДНА: толь бүтэн мөрөөр тааруулдаг. */}
+        {t("Нэг дансаар зэрэг")} {MAX_DEVICES}{" "}
+        {t(
+          "хүртэл төхөөрөмж дээр нэвтрэх боломжтой. Энэ шинэ төхөөрөмжөөр үргэлжлүүлэхийн тулд доорх жагсаалтаас хуучин нэгийг нь хасна уу."
+        )}
       </p>
 
       {error && <ErrorNote message={error} />}
@@ -319,7 +332,12 @@ function DeviceLimitScreen({
                 {device.label}
               </span>
               <span className="block text-xs text-gray-500 dark:text-gray-400">
-                Сүүлд идэвхтэй: {new Date(device.lastSeenAt).toLocaleString("mn-MN")}
+                {t("Сүүлд идэвхтэй")}:{" "}
+                {new Date(device.lastSeenAt).toLocaleString(
+                  /* ⚠ Хэлнээс хамаарна: `mn-MN` хатуу байхад англи
+                     хэрэглэгч монгол форматтай огноо харж байв. */
+                  activeLocale() === "en" ? "en-GB" : "mn-MN"
+                )}
               </span>
             </span>
             <button
@@ -327,7 +345,7 @@ function DeviceLimitScreen({
               onClick={() => void remove(device.id)}
               disabled={busyId === device.id}
               className="grid size-9 shrink-0 place-items-center rounded-lg text-rose-500 hover:bg-rose-50 disabled:opacity-50 dark:hover:bg-rose-500/10"
-              aria-label={`${device.label} устгах`}
+              aria-label={`${device.label} ${t("устгах")}`}
             >
               <Trash2 className="size-4" aria-hidden />
             </button>

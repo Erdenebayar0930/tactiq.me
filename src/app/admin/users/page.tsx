@@ -29,6 +29,8 @@ type Row = {
   streakDays: number;
   role: string;
   status: string;
+  /** ТЕСТЕР — бүх хичээл нээлттэй сурагч. */
+  tester: boolean;
   createdAt: string;
 };
 
@@ -72,7 +74,7 @@ export default function AdminUsersPage() {
 
   const actor = { uid: me.uid, role: asRole(me.role) };
 
-  const change = async (uid: string, patch: Record<string, string>) => {
+  const change = async (uid: string, patch: Record<string, string | boolean>) => {
     setBusyUid(uid);
     setActionError(null);
 
@@ -179,6 +181,15 @@ export default function AdminUsersPage() {
                 <th className="px-4 py-3 font-semibold">Дараалал</th>
                 <th className="px-4 py-3 font-semibold">Эрх</th>
                 <th className="px-4 py-3 font-semibold">Төлөв</th>
+                {/*
+                  ТЕСТЕР — бүх хичээл нээлттэй сурагч.
+
+                  ⚠ Эрхийн шатлал дээр ТӨЛӨВТЭЙ ИЖИЛ дүрэмтэй
+                  (`canChangeStatus`): админ өөртөө, эсвэл өөртэй ижил
+                  эрхтэй хүнд тестер туг тавьж, төлбөртэй агуулгыг
+                  чимээгүй нээх зам байх ёсгүй.
+                */}
+                <th className="px-4 py-3 font-semibold">Тестер</th>
               </tr>
             </thead>
 
@@ -272,6 +283,27 @@ export default function AdminUsersPage() {
                         >
                           {statusLabels[row.status as UserStatus] ?? row.status}
                         </Badge>
+                      )}
+                    </td>
+
+                    <td className="px-4 py-3">
+                      {statusAllowed.allowed ? (
+                        <label className="inline-flex cursor-pointer items-center gap-2 text-xs text-gray-600 dark:text-gray-300">
+                          <input
+                            type="checkbox"
+                            checked={row.tester === true}
+                            disabled={busy}
+                            onChange={(event) =>
+                              void change(row.uid, { tester: event.target.checked })
+                            }
+                            className="size-4"
+                          />
+                          {row.tester ? "Бүх хичээл" : "—"}
+                        </label>
+                      ) : (
+                        <span className="text-xs text-gray-400">
+                          {row.tester ? "Бүх хичээл" : "—"}
+                        </span>
                       )}
                     </td>
                   </tr>

@@ -5,6 +5,7 @@ import Image from "next/image";
 import { readableBg } from "@/lib/tactiq/theme";
 
 import type { AchievementProgress } from "@/lib/tactiq/achievements";
+import { t } from "@/lib/i18n/t";
 
 /**
  * Амжилтын ТЭМДЭГ — загварын макетаас тасдсан гурван хэмжээст дүрс.
@@ -93,7 +94,7 @@ export default function AchievementBadge({
           locked ? "text-gray-400 dark:text-gray-500" : "text-gray-900 dark:text-white"
         }`}
       >
-        {item.title}
+        {t(item.title)}
       </p>
 
       {/*

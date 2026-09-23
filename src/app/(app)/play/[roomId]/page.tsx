@@ -2,7 +2,7 @@
 
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Flag } from "lucide-react";
+import { Flag, WifiOff } from "lucide-react";
 import { Chess } from "chess.js";
 
 import { apiFetch, ApiError } from "@/lib/apiClient";
@@ -10,8 +10,11 @@ import { ChessWebRTC } from "@/lib/chess/webrtc";
 import { findKingSquare, resolveMove } from "@/lib/chess/utils";
 import { ChessBoard } from "@/components/chess/ChessBoard";
 import { MatchHeader } from "@/components/chess/MatchHeader";
+import { useGameClock } from "@/lib/tactiq/gameClock";
 import { GameOverAd } from "@/components/tactiq/GameOverAd";
 import { GameRobot } from "@/components/tactiq/GameRobot";
+import { CelebrationVideo } from "@/components/tactiq/CelebrationVideo";
+import { EncourageGif } from "@/components/tactiq/LoopGif";
 import { Mascot } from "@/components/tactiq/Mascot";
 import { ErrorNote, Skeleton } from "@/components/tactiq/ui";
 import { useCurrentUser, useUser } from "@/context/UserContext";
@@ -32,9 +35,21 @@ type RoomInfo = {
 type ConnState = "loading" | "connecting" | "playing" | "ended" | "error";
 
 type EndInfo = {
-  reason: "checkmate" | "resignation" | "draw" | "disconnect";
+  reason: "checkmate" | "resignation" | "draw" | "disconnect" | "timeout";
   didIWin: boolean | null; // null = draw
 };
+
+/**
+ * ЦАГИЙН ХЯНАЛТ — онлайн тоглолт.
+ *
+ * ⚠ ХОЁР ТАЛ ИЖИЛ ТОГТМОЛЫГ уншина тул тохиролцоо шаардлагагүй. Хожим
+ * өрөө үүсгэхэд цаг сонгох болбол `chess_rooms` дээр багана нэмэгдэж,
+ * энэ тогтмол нь анхдагч болно.
+ *
+ * ⚠ Нэмэлттэй (10+5): P2P холболтын хоцролт нь цагаас хасагддаг тул
+ * нэмэлтгүй цаг нь сүлжээ сул талыг шийтгэнэ.
+ */
+const CLOCK = { baseMin: 10, incrementSec: 5 };
 
 /** Хоёр тоглогчийн шатрын өрөө — WebRTC P2P холболт + жинхэнэ хөлөг. */
 export default function ChessRoomPage() {
@@ -51,10 +66,29 @@ export default function ChessRoomPage() {
   // Зөвхөн rerender өдөөхөд хэрэглэнэ — `chessRef` mutable тул утгыг нь уншихгүй.
   const [, forceUpdate] = useState(0);
 
+  /*
+   * ⚠ `room`-ыг REF-д ЧУ хадгална: цагны `onFlag` нь интервал дотроос
+   * дуудагдах ба тэр callback нь `room` төлөвийн ХУУЧИН хуулбарыг
+   * барьж болно (stale closure) — тэр үед өрөөний өнгө, өрсөлдөгч
+   * `null` болж, хожигдол буруу талд бичигдэнэ.
+   */
+  const roomRef = useRef<RoomInfo | null>(null);
   const chessRef = useRef(new Chess());
   const rtcRef = useRef<ChessWebRTC | null>(null);
   const lastMoveRef = useRef<{ from: Square; to: Square } | null>(null);
   const endedRef = useRef(false);
+
+  useEffect(() => {
+    roomRef.current = room;
+  }, [room]);
+
+  /*
+   * ⚠ Цагийг REF-ээр ч барина: WebRTC-ийн `onMessage` нь НЭГ УДАА
+   * (холбогдох эффектэд) тавигддаг тул тэр closure дахь `clock` нь
+   * эхний render-ийн хуулбар болно. Ref нь ямагт ОДООГИЙН цагийг
+   * хүргэнэ.
+   */
+  const clockRef = useRef<ReturnType<typeof useGameClock> | null>(null);
 
   const reportEnd = useCallback(
     async (reason: EndInfo["reason"], winnerUid: string | null) => {
@@ -85,6 +119,34 @@ export default function ChessRoomPage() {
 
   const myUid = me.uid;
 
+  /**
+   * ЦАГ ДУУСЛАА.
+   *
+   * ⚠ ЗӨВХӨН ӨӨРИЙН ЦАГИЙГ зарлана: хоёр клиентийн цаг сүлжээний
+   * хоцролтоор зөрдөг тул «өрсөлдөгчийн цаг дууслаа» гэж зарлах эрхийг
+   * хэнд ч өгвөл сүлжээ сул тал шударга бусаар хожигдоно. Өөрийн цаг
+   * дуусахад өөрөө хожигдлоо мэдэгдэх нь ЯМАГТ зөв тал руу тайрна.
+   *
+   * ⚠ Өрсөлдөгчид DataChannel-ээр ч мэдэгдэнэ: түүний дэлгэц дээр
+   * тоглолт ШУУД дуусах ёстой, эс бөгөөс тэр хүн хоосон хөлөг рүү
+   * нүүсээр байна.
+   */
+  const flag = useCallback(
+    (side: "w" | "b") => {
+      const room = roomRef.current;
+      if (!room || endedRef.current) return;
+
+      const iAmSide = room.color === "white" ? "w" : "b";
+      if (side !== iAmSide) return;
+
+      rtcRef.current?.send({ type: "timeout" });
+      setEnd({ reason: "timeout", didIWin: false });
+      setState("ended");
+      void reportEnd("timeout", room.opponent?.uid ?? null);
+    },
+    [reportEnd]
+  );
+
   const checkGameOver = useCallback(
     (myColor: Color, opponentUid: string | null) => {
       const chess = chessRef.current;
@@ -103,6 +165,21 @@ export default function ChessRoomPage() {
     },
     [finishLocally, reportEnd, myUid]
   );
+
+  /*
+   * ⚠ Цаг нь ЗӨВХӨН `playing` үед явна: холбогдож байх хугацаа (ICE
+   * цуглуулга, сүлжээний зөвшилцөл) нь тоглогчийн бодсон хугацаа БИШ.
+   */
+  const clock = useGameClock({
+    ...CLOCK,
+    turn: chessRef.current.turn(),
+    running: state === "playing",
+    onFlag: flag,
+  });
+
+  useEffect(() => {
+    clockRef.current = clock;
+  }, [clock]);
 
   useEffect(() => {
     let cancelled = false;
@@ -144,8 +221,20 @@ export default function ChessRoomPage() {
             });
             if (!applied) return;
             lastMoveRef.current = { from: msg.from as Square, to: msg.to as Square };
+            /* ⚠ Өрсөлдөгчийн нүүдэл — түүний цаг зогсож, нэмэлт олгогдоно. */
+            clockRef.current?.onMove(applied.color === "w" ? "w" : "b");
             forceUpdate((v) => v + 1);
             checkGameOver(data.color, data.opponent?.uid ?? null);
+            return;
+          }
+
+          /*
+           * ⚠ Өрсөлдөгчийн цаг дууслаа — ТЭР ӨӨРӨӨ мэдэгдсэн. Бид
+           * өөрсдөө түүний цагийг тоолж дүгнэхгүй (сүлжээний зөрүү).
+           */
+          if (msg.type === "timeout") {
+            finishLocally("timeout", true);
+            void reportEnd("timeout", myUid);
             return;
           }
 
@@ -188,6 +277,7 @@ export default function ChessRoomPage() {
     if (!applied) return;
 
     lastMoveRef.current = { from, to };
+    clock.onMove(applied.color === "w" ? "w" : "b");
     forceUpdate((v) => v + 1);
     rtcRef.current?.send({ type: "move", from, to, promotion: match.promotion });
     checkGameOver(room.color, room.opponent?.uid ?? null);
@@ -251,6 +341,11 @@ export default function ChessRoomPage() {
       <MatchHeader
         leftName={me.displayName || t("Та")}
         rightName={room.opponent?.displayName || t("Өрсөлдөгч")}
+        /* ⚠ Зүүн цаг нь ЯМАГТ миний цаг — хөлгийн чиглэлээс хамаарахгүй. */
+        leftMs={room.color === "white" ? clock.white : clock.black}
+        rightMs={room.color === "white" ? clock.black : clock.white}
+        activeSide={chess.turn()}
+        myColor={room.color === "white" ? "w" : "b"}
       />
 
       <ChessBoard
@@ -278,7 +373,52 @@ export default function ChessRoomPage() {
 
       {state === "ended" && end && adDone && (
         <div className="surface flex flex-col items-center gap-3 p-6 text-center">
-          <Mascot mood={end.didIWin ? "cheer" : "think"} className="size-24" />
+          {/*
+            ⚠ ЯЛАЛТ үед БАЯР ХҮРГЭХ ВИДЕО (хичээл дуусгах дэлгэцтэй
+            ижил `CelebrationVideo`): хөдөлгөөнтэй баяр нь ялалтыг
+            «дараагийн дэлгэц» биш, ҮЙЛ ЯВДАЛ болгоно. Хоёр газарт
+            ижил баяр хэрэглэх нь платформыг нэг хэлтэй болгоно.
+
+            ⚠ ХОЖИГДОЛ, ТЭНЦЭЭ үед баяр ХЭРЭГЛЭХГҮЙ: хожигдсон
+            хүүхдэд баяр хүргэх нь гутаан доромжлол шиг мэдрэгдэнэ.
+            Тэр үед бодолтой дүрс (`think`) хэвээр.
+
+            ⚠ `size-28` + дугуй хүрээ: видео нь дөрвөлжин тул хүрээгүй
+            бол картын дэвсгэр дээр тэгш өнцөгт хэсэг болж харагдана.
+          */}
+          {end.didIWin ? (
+            <div className="size-28 overflow-hidden rounded-full ring-4 ring-brand-100 dark:ring-white/15">
+              <CelebrationVideo className="size-full object-cover" />
+            </div>
+          ) : end.reason === "disconnect" ? (
+            /*
+              ⚠ ТАСАРСАН ҮЕД дүрс БИШ, ХОЛБООНЫ тэмдэг: өмнө нь
+              бодолтой дүрс (титэмтэй) гарч байсан тул «би яллаа»
+              эсвэл «би бодож байна» гэсэн ойлголт төрүүлдэг байв.
+              Үнэндээ тоглолт нь ҮР ДҮНГҮЙ дууссан — тэр нь ялалт ч,
+              хожигдол ч биш.
+
+              ⚠ Дүрс сонголт: `WifiOff` нь хэлээс хамааралгүй бөгөөд
+              шалтгааныг (сүлжээ) шууд хэлнэ. Өнгө нь БҮДЭГ (саарал) —
+              баяр ч, сэрэмжлүүлэг ч биш, зүгээр л «болоогүй».
+            */
+            <span className="grid size-24 place-items-center rounded-full bg-gray-100 text-gray-400 dark:bg-white/10 dark:text-gray-500">
+              <WifiOff className="size-10" aria-hidden />
+            </span>
+          ) : end.didIWin === false ? (
+            /*
+              ⚠ ХОЖИГДОЛ үед ЗОРИГЖУУЛАХ хөдөлгөөнт зураг
+              (`EncourageGif`): урьд нь бодолтой дүрс гарч байсан тул
+              «яагаад бодож байна?» гэсэн ойлгомжгүй мэдрэмж төрдөг
+              байв. Хожигдол нь дасгалын нэг хэсэг — дүрс нь түүнийг
+              шийтгэл БИШ гэдгийг хэлэх ёстой.
+            */
+            <div className="size-28 overflow-hidden rounded-full ring-4 ring-gray-100 dark:ring-white/10">
+              <EncourageGif className="size-full object-cover" />
+            </div>
+          ) : (
+            <Mascot mood="think" className="size-24" />
+          )}
           <h2 className="text-xl font-bold text-gray-900 dark:text-white">
             {endMessage(end)}
           </h2>
@@ -300,7 +440,9 @@ function endMessage(end: EndInfo): string {
     return end.reason === "disconnect" ? t("Өрсөлдөгч тасарлаа") : t("Тэнцээ");
   }
   if (end.didIWin) {
+    if (end.reason === "timeout") return t("Өрсөлдөгчийн цаг дууслаа — Та яллаа!");
     return end.reason === "resignation" ? t("Өрсөлдөгч бууж өгсөн — Та яллаа!") : t("Мад! Та яллаа!");
   }
+  if (end.reason === "timeout") return t("Таны цаг дууслаа");
   return end.reason === "resignation" ? t("Та бууж өглөө") : t("Мад хийгдлээ — Та хожигдлоо");
 }

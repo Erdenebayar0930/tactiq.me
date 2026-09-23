@@ -26,7 +26,7 @@ export const BRAND_TAGLINE = "Оюун ухаан · Ур чадвар · Ирэ
 export const BRAND_TAGLINE_PARTS = ["Оюун ухаан", "Ур чадвар", "Ирээдүй"];
 
 /** Нүүр хуудасны гол уриа — hero болон metadata-д хоёуланд нь */
-export const BRAND_PROMISE = "Өнөөдрөөс илүү сайн болгооё";
+export const BRAND_PROMISE = "Өнөөдрөөс илүү сайн болгоё";
 
 /** `<meta name="description">` ба нийгмийн сүлжээний хуваалцлагад */
 export const BRAND_DESCRIPTION =

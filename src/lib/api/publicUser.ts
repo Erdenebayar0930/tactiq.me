@@ -80,6 +80,14 @@ export function toPublicUser(row: UserRow, heartRefillMinutes = 30) {
     /** Нэмэлт эрх ("teacher" | "parent" | null) — `lib/permissions.ts`-ийн `hasRole` үзнэ үү. */
     secondaryRole: row.secondaryRole,
     status: row.status,
+    /**
+     * ТЕСТЕР — бүх хичээл нээлттэй.
+     *
+     * ⚠ КЛИЕНТ рүү гаргах нь ЗӨВ: зам дээрх түгжээ нь харагдацын шийдвэр
+     * (`(app)/learn/page.tsx`). Агуулгын жинхэнэ хаалт нь серверийн
+     * route-уудад хэвээр — туг нь тэднийг тойрохгүй.
+     */
+    tester: row.tester === true,
     createdAt: row.createdAt,
     /** Эцэг эх, багш ЭНЭ кодоор хэрэглэгчтэй холбогдоно. */
     studentInviteCode: row.studentInviteCode,

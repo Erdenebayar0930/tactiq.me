@@ -54,7 +54,10 @@ export default async function SiteLayout({
     <div className="flex min-h-dvh flex-col bg-ink-950">
       <header className="sticky top-0 z-40 border-b border-white/10 bg-ink-950/80 backdrop-blur-xl">
         <div className="mx-auto flex h-18 max-w-6xl items-center gap-4 px-4 lg:gap-8">
-          <Link href="/" className="min-w-0 shrink-0" aria-label={BRAND_NAME}>
+          {/* ⚠ `/about` — `/` нь одоо хичээлийн хэсэг рүү шилждэг
+              (`app/page.tsx`). Логог дарахад танилцуулга хуудсаа эхнээс
+              харах нь энэ бүрхүүлд байгаа хүний хүлээлт. */}
+          <Link href="/about" className="min-w-0 shrink-0" aria-label={BRAND_NAME}>
             <Logo tagline tone="light" />
           </Link>
 

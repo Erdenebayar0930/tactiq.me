@@ -5,6 +5,7 @@ import { useState } from "react";
 
 import { useUser } from "@/context/UserContext";
 import { apiFetch, ApiError } from "@/lib/apiClient";
+import { t } from "@/lib/i18n/t";
 import { useApiData } from "@/hooks/useApiData";
 import { CourseCard } from "@/components/courses/CourseCard";
 import { ErrorNote, Skeleton } from "@/components/tactiq/ui";
@@ -37,8 +38,16 @@ export default function CoursesPage() {
    * шаарддаг тул зочны нэрийн өмнөөс дуудвал «Нэвтэрсэн байх
    * шаардлагатай» гэсэн алдаа л гарна.
    */
+  /*
+   * ⚠ `authOptional` ЗААВАЛ: `apiFetch` нь анхдагчаар нэвтрэлт ШААРДдаг
+   * бөгөөд токен байхгүй бол хүсэлтийг СЕРВЭР РҮҮ ЯВУУЛАХГҮЙ, клиент
+   * дээрээ «Нэвтэрсэн байх шаардлагатай» гэж шиднэ. Тиймээс сервер
+   * талын хаягийг нээлттэй болгосон нь ӨӨРӨӨ ХҮРЭЛЦЭХГҮЙ — зочны
+   * дэлгэц дээр яг тэр алдаа гарч байв.
+   */
   const { data, loading, error: loadError } = useApiData<{ courses: Course[] }>(
-    isGuest ? "/api/trial/courses" : "/api/courses"
+    isGuest ? "/api/trial/courses" : "/api/courses",
+    { authOptional: true }
   );
   /*
    * Хувийн мэдээлэл — ТУСДАА хүсэлтүүд. `/api/courses` нь хувийн бус тул
@@ -92,7 +101,7 @@ export default function CoursesPage() {
       if (response.user) apply(response.user);
       router.push("/learn");
     } catch (cause) {
-      setError(cause instanceof ApiError ? cause.message : "Алдаа гарлаа.");
+      setError(cause instanceof ApiError ? cause.message : t("Алдаа гарлаа."));
       setBusySlug(null);
     }
   };
@@ -106,10 +115,10 @@ export default function CoursesPage() {
       */}
       <header>
         <h1 className="text-2xl font-extrabold tracking-tight text-gray-900 dark:text-white sm:text-3xl">
-          Курс сонгох
+          {t("Курс сонгох")}
         </h1>
         <p className="mt-1 text-sm text-gray-500 dark:text-gray-400 sm:text-base">
-          Юу сурахаа сонгоорой. Хүссэн үедээ энд буцаж ирээд сольж болно.
+          {t("Юу сурахаа сонгоорой. Хүссэн үедээ энд буцаж ирээд сольж болно.")}
         </p>
       </header>
 

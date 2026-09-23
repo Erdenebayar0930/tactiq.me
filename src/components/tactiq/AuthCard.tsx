@@ -7,9 +7,9 @@ import { Eye, EyeOff } from "lucide-react";
 
 import { Icon } from "@/components/tactiq/Icon";
 import { useUser } from "@/context/UserContext";
+import { t } from "@/lib/i18n/t";
 import { REFERRAL_BONUS_DAYS, TRIAL_DAYS } from "@/lib/billing";
 import { asRole, homeForRole } from "@/lib/permissions";
-import { COACHES } from "@/lib/tactiq/coaches";
 import {
   registerWithEmail,
   sendResetEmail,
@@ -20,11 +20,23 @@ import {
 
 type Mode = "login" | "register";
 
-const ROLE_OPTIONS: { value: "student" | "teacher" | "parent"; label: string }[] = [
-  { value: "student", label: "Сурагч" },
-  { value: "teacher", label: "Багш" },
-  { value: "parent", label: "Эцэг эх" },
-];
+/**
+ * ⚠ ЭРХ СОНГОХ, ДАСГАЛЖУУЛАГЧ СОНГОХ ХЭСГҮҮД ХАСАГДСАН.
+ *
+ * Бүртгэл нь ГУРВАН талбар (нэр, имэйл, нууц үг) л байх ёстой: хүн
+ * бүртгүүлэхээр шийдсэн мөчид нэмэгдэх алхам бүр хаягдалт үүсгэдэг.
+ *
+ *   • «Та хэн бэ?» (Сурагч / Багш / Эцэг эх) — бүх шинэ хэрэглэгч
+ *     СУРАГЧ болно (`role: "student"`). Багш, эцэг эхийн эрхийг АДМИН
+ *     өгнө (`/admin/users`) — тэр нь хүүхдийн өгөгдөл рүү хандах эрх
+ *     тул өөрөө сонгуулах нь эхнээсээ буруу байсан: хэн ч «Багш» гэж
+ *     дараад сурагчдын жагсаалт рүү ойртох гэж оролдож болно.
+ *
+ *   • Дасгалжуулагчийн дүр — зөвхөн ГАДААД ТӨРХ (`coachId`,
+ *     `lib/tactiq/coaches.ts`). Хичээлийн агуулгад нөлөөлдөггүй тул
+ *     бүртгэлийн замд байх шаардлагагүй; анхдагч дүртэй эхэлж, дараа
+ *     нь тохиргооноос солино.
+ */
 
 /**
  * Нэвтрэх / бүртгүүлэх карт (#2 дэлгэц).
@@ -41,17 +53,6 @@ export default function AuthCard({ mode }: { mode: Mode }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
-  const [role, setRole] = useState<"student" | "teacher" | "parent">("student");
-  /**
-   * Бүртгэлийн эхний алхам — зөвхөн `mode === "register"` үед л харагдана,
-   * нэвтрэх карт шууд "form" алхамаас эхэлнэ.
-   */
-  const [wizardStep, setWizardStep] = useState<"coach" | "form">(
-    mode === "register" ? "coach" : "form"
-  );
-  const [coachId, setCoachId] = useState<string>(COACHES[0].id);
-  /** "Мөн X эсэх" чекбокс — зөвхөн `role` нь teacher/parent үед л утга учиртай. */
-  const [alsoOtherRole, setAlsoOtherRole] = useState(false);
   const [referralCode, setReferralCode] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -60,16 +61,12 @@ export default function AuthCard({ mode }: { mode: Mode }) {
 
   /**
    * `/register?ref=CODE` холбоосоор ирсэн бол найзын кодыг тэр дороо
-   * бөглөнө — сурагч гараар хуулах шаардлагагүй. Зөвхөн сурагчийн эрхэд л
-   * бонус олгодог тул эрхийг мөн "Сурагч"-аар автоматаар түгжинэ.
+   * бөглөнө — сурагч гараар хуулах шаардлагагүй.
    */
   useEffect(() => {
     if (mode !== "register") return;
     const ref = searchParams.get("ref")?.trim();
-    if (ref) {
-      setReferralCode(ref.toUpperCase());
-      setRole("student");
-    }
+    if (ref) setReferralCode(ref.toUpperCase());
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode]);
 
@@ -108,14 +105,6 @@ export default function AuthCard({ mode }: { mode: Mode }) {
     if (status === "ready" && !needsRegistration && !busy) router.replace(nextPath ?? "/profile");
   }, [status, needsRegistration, busy, router, nextPath]);
 
-  /** `role`-той хосолсон нэмэлт эрх — checkbox идэвхтэй БА `role` teacher/parent үед л утгатай. */
-  const secondaryRole =
-    alsoOtherRole && role === "parent"
-      ? "teacher"
-      : alsoOtherRole && role === "teacher"
-        ? "parent"
-        : undefined;
-
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
     setError(null);
@@ -128,10 +117,13 @@ export default function AuthCard({ mode }: { mode: Mode }) {
           displayName,
           email,
           password,
-          role,
-          secondaryRole,
-          referralCode: role === "student" ? referralCode : undefined,
-          coachId,
+          /*
+           * ⚠ ЯМАГТ СУРАГЧ: багш, эцэг эхийн эрхийг админ өгнө
+           * (`/admin/users`) — тэр нь хүүхдийн өгөгдөлд хүрэх эрх тул
+           * өөрөө сонгуулах нь болохгүй.
+           */
+          role: "student",
+          referralCode,
         });
         // `UserProvider` аль хэдийн НЭГ удаа /api/users/me татсан байна —
         // Firebase-д нэвтэрсэн даруйд (энэ функц Postgres мөр үүсгэхээс
@@ -158,10 +150,11 @@ export default function AuthCard({ mode }: { mode: Mode }) {
 
     try {
       const user = await signInWithGoogle(
-        mode === "register" ? role : undefined,
-        mode === "register" && role === "student" ? referralCode : undefined,
-        mode === "register" ? secondaryRole : undefined,
-        mode === "register" ? coachId : undefined
+        mode === "register" ? "student" : undefined,
+        mode === "register" ? referralCode : undefined,
+        /* ⚠ Нэмэлт эрх, дасгалжуулагчийн дүр хоёулаа бүртгэлээс хасагдсан. */
+        undefined,
+        undefined
       );
       // Доорх тайлбарыг `submit()`-ийн адил зорилготой `refresh()` дуудлагаас үзнэ үү.
       await refresh();
@@ -174,97 +167,38 @@ export default function AuthCard({ mode }: { mode: Mode }) {
 
   const reset = async () => {
     if (!email.trim()) {
-      setError("Нууц үг сэргээхийн тулд имэйлээ бичнэ үү.");
+      setError(t("Нууц үг сэргээхийн тулд имэйлээ бичнэ үү."));
       return;
     }
 
     setError(null);
     try {
       await sendResetEmail(email);
-      setNotice("Нууц үг сэргээх холбоосыг имэйлээр илгээлээ.");
+      setNotice(t("Нууц үг сэргээх холбоосыг имэйлээр илгээлээ."));
     } catch (cause) {
       setError(friendlyError(cause));
     }
   };
 
-  if (mode === "register" && wizardStep === "coach") {
-    return (
-      <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm dark:border-white/10 dark:bg-gray-900">
-        <CoachStep
-          value={coachId}
-          onSelect={setCoachId}
-          onContinue={() => setWizardStep("form")}
-        />
-      </div>
-    );
-  }
-
   return (
     <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm dark:border-white/10 dark:bg-gray-900">
       <div className="mb-6 flex border-b border-gray-200 dark:border-white/10">
         <Tab href={`/login${nextQuery}`} active={mode === "login"}>
-          Нэвтрэх
+          {t("Нэвтрэх")}
         </Tab>
         <Tab href={`/register${nextQuery}`} active={mode === "register"}>
-          Бүртгүүлэх
+          {t("Бүртгүүлэх")}
         </Tab>
       </div>
 
       <form onSubmit={submit} className="space-y-4">
         {mode === "register" && (
-          <button
-            type="button"
-            onClick={() => setWizardStep("coach")}
-            className="-mt-1 mb-1 text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
-          >
-            ← Дасгалжуулагч сонголт руу буцах
-          </button>
-        )}
-
-        {mode === "register" && (
-          <Field label="Та хэн бэ?">
-            <div className="grid grid-cols-3 gap-2">
-              {ROLE_OPTIONS.map((option) => (
-                <button
-                  key={option.value}
-                  type="button"
-                  onClick={() => {
-                    setRole(option.value);
-                    // Өөр эрх сонговол хуучин "мөн X эсэх" тэмдэглэгээ утгагүй болно.
-                    setAlsoOtherRole(false);
-                  }}
-                  className={`rounded-xl border px-2 py-2 text-sm font-medium transition-colors ${
-                    role === option.value
-                      ? "border-brand-500 bg-brand-50 text-brand-700 dark:bg-brand-500/15 dark:text-brand-300"
-                      : "border-gray-300 text-gray-600 hover:bg-gray-50 dark:border-white/15 dark:text-gray-300 dark:hover:bg-white/5"
-                  }`}
-                >
-                  {option.label}
-                </button>
-              ))}
-            </div>
-
-            {(role === "teacher" || role === "parent") && (
-              <label className="mt-2.5 flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
-                <input
-                  type="checkbox"
-                  checked={alsoOtherRole}
-                  onChange={(event) => setAlsoOtherRole(event.target.checked)}
-                  className="size-4 rounded border-gray-300 text-brand-600 focus:ring-brand-400 dark:border-white/20"
-                />
-                {role === "parent" ? "Би багш ч мөн" : "Би эцэг эх ч мөн"}
-              </label>
-            )}
-          </Field>
-        )}
-
-        {mode === "register" && (
-          <Field label="Нэр">
+          <Field label={t("Нэр")}>
             <input
               type="text"
               value={displayName}
               onChange={(event) => setDisplayName(event.target.value)}
-              placeholder="Батаа"
+              placeholder={t("Батаа")}
               autoComplete="nickname"
               maxLength={120}
               className={inputClass}
@@ -272,24 +206,29 @@ export default function AuthCard({ mode }: { mode: Mode }) {
           </Field>
         )}
 
-        {mode === "register" && role === "student" && (
-          <Field label="Найзын код (заавал биш)">
+        {mode === "register" && (
+          <Field label={t("Найзын код (заавал биш)")}>
             <input
               type="text"
               value={referralCode}
               onChange={(event) => setReferralCode(event.target.value)}
-              placeholder="Жишээ нь ABC123"
+              placeholder={t("Жишээ нь ABC123")}
               maxLength={12}
               className={inputClass}
             />
             <p className="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
-              Имэйлээ баталгаажуулж, эхний хичээлээ дуусгамагц ХОЁУЛАА{" "}
-              {REFERRAL_BONUS_DAYS} хоногийн нэмэлт Premium авна.
+              {/*
+                ⚠ ТООГ БИЧВЭРЭЭС ГАДНА тавина: толь нь бүтэн мөрөөр
+                тааруулдаг тул `${REFERRAL_BONUS_DAYS}` тоо мөрийн дотор
+                орвол бонус хоног солигдоход орчуулга АЛГА болно.
+              */}
+              {t("Имэйлээ баталгаажуулж, эхний хичээлээ дуусгамагц ХОЁУЛАА")}{" "}
+              {REFERRAL_BONUS_DAYS} {t("хоногийн нэмэлт Premium авна.")}
             </p>
           </Field>
         )}
 
-        <Field label="Имэйл хаяг">
+        <Field label={t("Имэйл хаяг")}>
           <input
             type="email"
             required
@@ -301,7 +240,7 @@ export default function AuthCard({ mode }: { mode: Mode }) {
           />
         </Field>
 
-        <Field label="Нууц үг">
+        <Field label={t("Нууц үг")}>
           <div className="relative">
             <input
               type={showPassword ? "text" : "password"}
@@ -321,7 +260,7 @@ export default function AuthCard({ mode }: { mode: Mode }) {
               type="button"
               onClick={() => setShowPassword((value) => !value)}
               className="absolute inset-y-0 right-0 grid w-11 place-items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
-              aria-label={showPassword ? "Нууц үг нуух" : "Нууц үг харуулах"}
+              aria-label={showPassword ? t("Нууц үг нуух") : t("Нууц үг харуулах")}
             >
               {showPassword ? (
                 <EyeOff className="size-4" aria-hidden />
@@ -352,23 +291,23 @@ export default function AuthCard({ mode }: { mode: Mode }) {
           className="w-full rounded-xl bg-brand-500 py-2.5 font-semibold text-white transition-colors hover:bg-brand-600 disabled:opacity-60"
         >
           {busy
-            ? "Түр хүлээнэ үү…"
+            ? t("Түр хүлээнэ үү…")
             : mode === "register"
-              ? "Бүртгүүлэх"
-              : "Нэвтрэх"}
+              ? t("Бүртгүүлэх")
+              : t("Нэвтрэх")}
         </button>
 
         {mode === "register" && (
           <p className="text-center text-xs text-gray-500 dark:text-gray-400">
-            🎁 Бүртгүүлмэгц {TRIAL_DAYS} хоногийн Premium ҮНЭГҮЙ — карт
-            шаардахгүй.
+            🎁 {t("Бүртгүүлмэгц")} {TRIAL_DAYS}{" "}
+            {t("хоногийн Premium ҮНЭГҮЙ — карт шаардахгүй.")}
           </p>
         )}
       </form>
 
       <div className="my-5 flex items-center gap-3 text-xs text-gray-400">
         <span className="h-px flex-1 bg-gray-200 dark:bg-white/10" />
-        эсвэл
+        {t("эсвэл")}
         <span className="h-px flex-1 bg-gray-200 dark:bg-white/10" />
       </div>
 
@@ -379,18 +318,18 @@ export default function AuthCard({ mode }: { mode: Mode }) {
         className="flex w-full items-center justify-center gap-2.5 rounded-xl border border-gray-300 py-2.5 font-medium text-gray-700 transition-colors hover:bg-gray-50 disabled:opacity-60 dark:border-white/15 dark:text-gray-200 dark:hover:bg-white/5"
       >
         <GoogleMark />
-        Google-ээр нэвтрэх
+        {t("Google-ээр нэвтрэх")}
       </button>
 
       <p className="mt-5 text-center text-sm text-gray-500 dark:text-gray-400">
         {mode === "login" ? (
           <>
-            Бүртгэлгүй юу?{" "}
+            {t("Бүртгэлгүй юу?")}{" "}
             <Link
               href={`/register${nextQuery}`}
               className="font-semibold text-brand-600 hover:underline dark:text-brand-400"
             >
-              Бүртгүүлэх
+              {t("Бүртгүүлэх")}
             </Link>
             <br />
             <button
@@ -398,17 +337,17 @@ export default function AuthCard({ mode }: { mode: Mode }) {
               onClick={() => void reset()}
               className="mt-2 text-xs hover:underline"
             >
-              Нууц үгээ мартсан уу?
+              {t("Нууц үгээ мартсан уу?")}
             </button>
           </>
         ) : (
           <>
-            Бүртгэлтэй юу?{" "}
+            {t("Бүртгэлтэй юу?")}{" "}
             <Link
               href={`/login${nextQuery}`}
               className="font-semibold text-brand-600 hover:underline dark:text-brand-400"
             >
-              Нэвтрэх
+              {t("Нэвтрэх")}
             </Link>
           </>
         )}
@@ -420,63 +359,6 @@ export default function AuthCard({ mode }: { mode: Mode }) {
 const inputClass =
   "w-full rounded-xl border border-gray-300 bg-white px-3.5 py-2.5 text-sm text-gray-900 outline-none transition-colors placeholder:text-gray-400 focus:border-brand-400 focus:ring-2 focus:ring-brand-100 dark:border-white/15 dark:bg-white/5 dark:text-white dark:focus:ring-brand-500/20";
 
-/** Бүртгэлийн 1-р алхам — дасгалжуулагч сонгох. Дүрсүүд ЗӨВХӨН манай өөрсдийн (lucide + градиент) — chess.com-ийн зохиогчийн эрхтэй дүрсийг хуулбарлаагүй. */
-function CoachStep({
-  value,
-  onSelect,
-  onContinue,
-}: {
-  value: string;
-  onSelect: (id: string) => void;
-  onContinue: () => void;
-}) {
-  const selected = COACHES.find((coach) => coach.id === value) ?? COACHES[0];
-
-  return (
-    <div className="space-y-4">
-      <div className="text-center">
-        <h2 className="text-lg font-bold text-gray-900 dark:text-white">
-          Дасгалжуулагчаа сонго
-        </h2>
-        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          {selected.name} — {selected.blurb}
-        </p>
-      </div>
-
-      <div className="grid grid-cols-4 gap-3">
-        {COACHES.map((coach) => (
-          <button
-            key={coach.id}
-            type="button"
-            onClick={() => onSelect(coach.id)}
-            className="flex flex-col items-center gap-1.5"
-          >
-            <span
-              className={`grid size-14 place-items-center rounded-full bg-gradient-to-br text-white ${coach.gradient} ${
-                value === coach.id
-                  ? "ring-4 ring-brand-400 ring-offset-2 dark:ring-offset-gray-900"
-                  : ""
-              }`}
-            >
-              <Icon name={coach.icon} className="size-6" />
-            </span>
-            <span className="max-w-[4.5rem] truncate text-[11px] font-medium text-gray-600 dark:text-gray-300">
-              {coach.name.split(" ").pop()}
-            </span>
-          </button>
-        ))}
-      </div>
-
-      <button
-        type="button"
-        onClick={onContinue}
-        className="w-full rounded-xl bg-brand-500 py-2.5 font-semibold text-white transition-colors hover:bg-brand-600"
-      >
-        Үргэлжлүүлэх
-      </button>
-    </div>
-  );
-}
 
 function Field({
   label,
@@ -544,6 +426,11 @@ function GoogleMark() {
 /**
  * Firebase-ийн алдааны кодыг хүүхэд ойлгохоор мессеж болгоно.
  *
+ * ⚠ ХЭРЭГЛЭГЧИД ХАРАГДАХ мессежүүд `t()`-ээр дамжина. Харин ТОХИРУУЛГЫН
+ * алдаанууд (Firebase Console дээр юу асаах) нь ЗӨВХӨН хөгжүүлэгчид
+ * зориулагдсан тул орчуулаагүй — тэднийг орчуулах нь толийг хөгжүүлэгчийн
+ * заавраар дүүргэх бөгөөд хэрэглэгч тэднийг хэзээ ч харах ёсгүй.
+ *
  * Түүхий код (`auth/invalid-credential`) нь юу болсныг огт хэлдэггүй.
  * Ялангуяа `invalid-credential` нь "имэйл олдсонгүй" ба "нууц үг буруу"
  * ХОЁУЛАНГ нь илэрхийлдэг — Firebase санаатайгаар нэгтгэсэн (данс байгаа
@@ -559,20 +446,20 @@ function friendlyError(error: unknown): string {
     case "auth/invalid-credential":
     case "auth/wrong-password":
     case "auth/user-not-found":
-      return "Имэйл эсвэл нууц үг буруу байна.";
+      return t("Имэйл эсвэл нууц үг буруу байна.");
     case "auth/email-already-in-use":
-      return "Энэ имэйлээр бүртгэл аль хэдийн үүссэн байна.";
+      return t("Энэ имэйлээр бүртгэл аль хэдийн үүссэн байна.");
     case "auth/weak-password":
-      return "Нууц үг дор хаяж 6 тэмдэгт байх ёстой.";
+      return t("Нууц үг дор хаяж 6 тэмдэгт байх ёстой.");
     case "auth/invalid-email":
-      return "Имэйл хаяг буруу байна.";
+      return t("Имэйл хаяг буруу байна.");
     case "auth/too-many-requests":
-      return "Хэт олон оролдлого. Түр хүлээгээд дахин оролдоно уу.";
+      return t("Хэт олон оролдлого. Түр хүлээгээд дахин оролдоно уу.");
     case "auth/popup-closed-by-user":
     case "auth/cancelled-popup-request":
-      return "Нэвтрэх цонх хаагдлаа. Дахин оролдоно уу.";
+      return t("Нэвтрэх цонх хаагдлаа. Дахин оролдоно уу.");
     case "auth/network-request-failed":
-      return "Сүлжээнд холбогдож чадсангүй. Интернэтээ шалгана уу.";
+      return t("Сүлжээнд холбогдож чадсангүй. Интернэтээ шалгана уу.");
 
     /**
      * ТОХИРУУЛГЫН алдаанууд — хэрэглэгч юу ч буруу хийгээгүй.
@@ -612,6 +499,6 @@ function friendlyError(error: unknown): string {
       );
 
     default:
-      return error instanceof Error ? error.message : "Алдаа гарлаа.";
+      return error instanceof Error ? error.message : t("Алдаа гарлаа.");
   }
 }

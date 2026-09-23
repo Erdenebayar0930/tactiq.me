@@ -8,6 +8,7 @@ import { BRAND_DOMAIN, BRAND_NAME, BRAND_URL } from "@/lib/brand";
 import { renderShareCard } from "@/lib/tactiq/shareCard";
 
 import type { AchievementRecord } from "@/lib/api/achievements";
+import { t } from "@/lib/i18n/t";
 
 /**
  * Профайлын товч мэдээлэл ба ХУВААЛЦАХ товч — `/achievements` дээр.
@@ -142,18 +143,16 @@ export default function ProfileShareCard({
       </div>
 
       {failed && (
-        <p className="mt-2 text-xs font-semibold text-rose-600 dark:text-rose-400">
-          Зураг бэлдэж чадсангүй. Дахин оролдоно уу.
-        </p>
+        <p className="mt-2 text-xs font-semibold text-rose-600 dark:text-rose-400">{t("Зураг бэлдэж чадсангүй. Дахин оролдоно уу.")}</p>
       )}
 
       {/* Товч үзүүлэлт — хуваалцах текстэд ЯГ эдгээр тоо орно. */}
       <div className="mt-4 grid grid-cols-3 divide-x divide-gray-200 dark:divide-white/10">
-        <Stat Icon={Zap} label="Оноо" value={user.xp.toLocaleString("mn-MN")} />
-        <Stat Icon={Flame} label="Дараалал" value={`${user.streakDays}`} />
+        <Stat Icon={Zap} label={t("Оноо")} value={user.xp.toLocaleString("mn-MN")} />
+        <Stat Icon={Flame} label={t("Дараалал")} value={`${user.streakDays}`} />
         <Stat
           Icon={Trophy}
-          label="Лиг"
+          label={t("Лиг")}
           value={league?.value ?? "—"}
         />
       </div>

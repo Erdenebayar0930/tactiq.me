@@ -6,6 +6,7 @@ import { CourseCover } from "@/components/tactiq/CourseCover";
 import { Icon } from "@/components/tactiq/Icon";
 import { CourseProgress } from "@/components/courses/CourseProgress";
 import { CourseStats } from "@/components/courses/CourseStats";
+import { t } from "@/lib/i18n/t";
 import { localized } from "@/lib/i18n/content";
 import { CONTINUE_ACCENT, courseAccent } from "@/lib/tactiq/courseAccent";
 
@@ -32,7 +33,7 @@ function formatDuration(seconds: number): string {
  *   • Эс бөгөөс         → нэг хичээлийн ойролцоо урт (дасгал ≈ 45 секунд)
  */
 function timeLabel(slug: string, spentSeconds: number, stat: CourseStat | undefined): string | null {
-  if (slug.endsWith("-kids")) return "4–6 нас";
+  if (slug.endsWith("-kids")) return t("4–6 нас");
   if (spentSeconds > 0) return formatDuration(spentSeconds);
   if (stat && stat.exercisesPerLesson > 0) return `~${Math.max(1, Math.round(stat.exercisesPerLesson * 0.75))} мин`;
   return null;
@@ -78,7 +79,9 @@ export function CourseCard({
       type="button"
       onClick={onSelect}
       disabled={isComingSoon || isBusy}
-      aria-label={`${title}${isActive ? " — идэвхтэй курс, үргэлжлүүлэх" : isComingSoon ? " — тун удахгүй" : " — сонгох"}`}
+      aria-label={`${title} — ${
+        isActive ? t("идэвхтэй курс, үргэлжлүүлэх") : isComingSoon ? t("тун удахгүй") : t("сонгох")
+      }`}
       className={`group flex h-full w-full flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-white text-left shadow-sm transition-all duration-200 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-500/40 dark:border-white/10 dark:bg-gray-900 ${
         isComingSoon ? "cursor-not-allowed opacity-70" : "hover:-translate-y-0.5 hover:shadow-md"
       }`}
@@ -111,7 +114,7 @@ export function CourseCard({
         {isComingSoon ? (
           <span className="absolute left-2.5 top-2.5 inline-flex items-center gap-1 rounded-full bg-white/95 px-2 py-0.5 text-[11px] font-semibold text-gray-600 shadow-sm dark:bg-gray-900/90 dark:text-gray-300">
             <Lock className="size-3 shrink-0" aria-hidden />
-            Тун удахгүй
+            {t("Тун удахгүй")}
           </span>
         ) : (
           time && (
@@ -139,7 +142,7 @@ export function CourseCard({
               {isActive && (
                 <span className="inline-flex items-center gap-1 whitespace-nowrap rounded-full bg-emerald-50 px-1.5 py-0.5 text-[11px] font-semibold text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300">
                   <CheckCircle2 className="size-3 shrink-0" aria-hidden />
-                  Идэвхтэй
+                  {t("Идэвхтэй")}
                 </span>
               )}
             </div>
@@ -169,7 +172,13 @@ export function CourseCard({
           style={{ backgroundColor: isComingSoon ? "#9ca3af" : isActive ? CONTINUE_ACCENT : accent }}
           aria-hidden
         >
-          {isBusy ? "Түр хүлээнэ үү…" : isComingSoon ? "Тун удахгүй" : isActive ? "Үргэлжлүүлэх" : "Сонгох"}
+          {isBusy
+            ? t("Түр хүлээнэ үү…")
+            : isComingSoon
+              ? t("Тун удахгүй")
+              : isActive
+                ? t("Үргэлжлүүлэх")
+                : t("Сонгох")}
           {!isBusy && !isComingSoon && <ArrowRight className="size-4" aria-hidden />}
         </span>
       </div>

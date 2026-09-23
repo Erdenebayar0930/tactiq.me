@@ -10,6 +10,7 @@ import { DRAUGHTS_BOT_DIFFICULTIES, pickBotMove } from "@/lib/draughts/bot";
 import { Draughts } from "@/lib/draughts/engine";
 import { DraughtsBoard } from "@/components/draughts/DraughtsBoard";
 import { MatchHeader } from "@/components/chess/MatchHeader";
+import { useGameClock } from "@/lib/tactiq/gameClock";
 import { CoachReview } from "@/components/tactiq/CoachReview";
 import { CoachTip } from "@/components/tactiq/CoachTip";
 import { GameOverAd } from "@/components/tactiq/GameOverAd";
@@ -17,6 +18,8 @@ import { analyzeDraughtsGame } from "@/lib/draughts/analysis";
 import { DAAMAL } from "@/lib/tactiq/coaches";
 
 import type { GameReview } from "@/lib/tactiq/moveQuality";
+import { CelebrationVideo } from "@/components/tactiq/CelebrationVideo";
+import { EncourageGif } from "@/components/tactiq/LoopGif";
 import { Mascot } from "@/components/tactiq/Mascot";
 import { DIFFICULTY_LABELS } from "@/lib/tactiq/theme";
 import { useUser } from "@/context/UserContext";
@@ -40,7 +43,18 @@ const BOT_PAUSE_MS = 550;
 
 type EndInfo = {
   didIWin: boolean | null; // null = тэнцээ
+  /** Цагаар дууссан эсэх — дүнгийн бичвэр өөр. */
+  timeout?: boolean;
 };
+
+/**
+ * ЦАГИЙН ХЯНАЛТ — ботын дадлага (шатрынхтай ИЖИЛ).
+ *
+ * ⚠ Даам нь идэлтийн урт цуваатай тоглоом: нэг нүүдэлд хэд хэдэн
+ * идэлтийг тооцох шаардлагатай тул бодох хугацаа шатраас БАГА
+ * шаардлагатай гэж үзэх нь буруу. Тиймээс ижил 10+5.
+ */
+const CLOCK = { baseMin: 10, incrementSec: 5 };
 
 /**
  * Ботоор дадлагажих "100 нүдэн шашки" (Олон улсын дам) — `/play/bot`-тэй
@@ -115,6 +129,37 @@ export default function DraughtsBotPage() {
     return true;
   }, [apply]);
 
+  /**
+   * ЦАГ ДУУСЛАА — цаг хэтрүүлсэн тал хожигдоно (хоёр талд ижил дүрэм).
+   */
+  const flag = useCallback(
+    (side: "w" | "b") => {
+      const didIWin = side === "b";
+      setEnd({ didIWin, timeout: true });
+
+      apiFetch<{ user: PublicUser }>("/api/play/draughts/bot/result", {
+        method: "POST",
+        body: { result: didIWin ? "win" : "loss" },
+      })
+        .then((data) => apply(data.user))
+        .catch(() => {
+          // Статистик бичихэд алдаа гарсан ч UI-г эвдэхгүй.
+        });
+    },
+    [apply]
+  );
+
+  /*
+   * ⚠ ЦАГ нь `end` тавигдмагц ЗОГСоно; шинжилгээний (review) байрлал
+   * үзэж байх нь тоглолтыг үргэлжлүүлэхгүй тул цагт нөлөөлөхгүй.
+   */
+  const clock = useGameClock({
+    ...CLOCK,
+    turn: gameRef.current.turn() === "b" ? "b" : "w",
+    running: end === null,
+    onFlag: (side) => flag(side),
+  });
+
   const botTurn = useCallback(async () => {
     const game = gameRef.current;
     if (game.isGameOver() || game.turn() !== "b") return;
@@ -144,6 +189,8 @@ export default function DraughtsBotPage() {
     if (move) {
       game.applyMove(move);
       lastMoveRef.current = { from: move.from, to: move.to };
+      /* ⚠ Ботын нүүдэлд ч цаг зогсож, нэмэлт олгогдоно. */
+      clock.onMove("b");
       // ⚠ Хөдөлгөөнийг нүүдэл ХИЙГДСЭНИЙ ДАРАА эхлүүлнэ: хөлөг шинэ
       // байрлалаа зурсан байх ёстой, гулсах дүрс нь зөвхөн харагдац.
       setBotAnim({ from: move.from, to: move.to });
@@ -152,7 +199,7 @@ export default function DraughtsBotPage() {
     setThinking(false);
     forceUpdate((v) => v + 1);
     checkGameOver();
-  }, [difficulty, checkGameOver]);
+  }, [difficulty, checkGameOver, clock]);
 
   const handleMove = (from: Square, to: Square) => {
     if (thinking || end || gameRef.current.turn() !== "w") return;
@@ -162,6 +209,7 @@ export default function DraughtsBotPage() {
     if (!applied) return;
 
     lastMoveRef.current = { from, to };
+    clock.onMove("w");
     forceUpdate((v) => v + 1);
 
     if (!checkGameOver()) void botTurn();
@@ -169,6 +217,7 @@ export default function DraughtsBotPage() {
 
   const restart = () => {
     gameRef.current = new Draughts();
+    clock.reset();
     lastMoveRef.current = null;
     setEnd(null);
     setReview(null);
@@ -269,6 +318,10 @@ export default function DraughtsBotPage() {
       <MatchHeader
         leftName={user?.displayName || t("Та")}
         rightName={`${t("Бот")} · ${t(DIFFICULTY_LABELS[difficulty])}`}
+        leftMs={clock.white}
+        rightMs={clock.black}
+        activeSide={snapshot.turn === "b" ? "b" : "w"}
+        myColor="w"
       />
 
       <DraughtsBoard
@@ -308,7 +361,33 @@ export default function DraughtsBotPage() {
 
       {end && adDone && (
         <div className="surface flex flex-col items-center gap-3 p-6 text-center">
-          <Mascot mood={end.didIWin ? "cheer" : "think"} className="size-24" />
+          {/*
+            ⚠ ЯЛАЛТ үед БАЯР ХҮРГЭХ ВИДЕО — онлайн тоглолт, хичээл
+            дуусгах дэлгэцтэй ИЖИЛ (`CelebrationVideo`). Ботыг ялах нь
+            ч ялалт; өөр баяр хэрэглэвэл «бот ялах нь дутуу ялалт»
+            гэсэн мессеж чимээгүй гарна.
+
+            ⚠ ХОЖИГДОЛ, ТЭНЦЭЭ үед баяр ХЭРЭГЛЭХГҮЙ: хожигдсон
+            хүүхдэд баяр хүргэх нь доромжлол шиг мэдрэгдэнэ.
+          */}
+          {end.didIWin ? (
+            <div className="size-28 overflow-hidden rounded-full ring-4 ring-brand-100 dark:ring-white/15">
+              <CelebrationVideo className="size-full object-cover" />
+            </div>
+          ) : end.didIWin === false ? (
+            /*
+              ⚠ ХОЖИГДОЛ үед ЗОРИГЖУУЛАХ хөдөлгөөнт зураг
+              (`EncourageGif`): урьд нь бодолтой дүрс гарч байсан тул
+              «яагаад бодож байна?» гэсэн ойлгомжгүй мэдрэмж төрдөг
+              байв. Хожигдол нь дасгалын нэг хэсэг — дүрс нь түүнийг
+              шийтгэл БИШ гэдгийг хэлэх ёстой.
+            */
+            <div className="size-28 overflow-hidden rounded-full ring-4 ring-gray-100 dark:ring-white/10">
+              <EncourageGif className="size-full object-cover" />
+            </div>
+          ) : (
+            <Mascot mood="think" className="size-24" />
+          )}
           <h2 className="text-xl font-bold text-gray-900 dark:text-white">{endMessage(end)}</h2>
           <div className="flex flex-wrap justify-center gap-3">
             <button
@@ -345,5 +424,8 @@ export default function DraughtsBotPage() {
 
 function endMessage(end: EndInfo): string {
   if (end.didIWin === null) return t("Тэнцээ");
-  return end.didIWin ? t("Та ялсан! Ботын бүх нүүдэл дуусав.") : t("Бот яллаа — дахин оролдоорой");
+  if (end.timeout) {
+    return end.didIWin ? t("Ботын цаг дууслаа — Та яллаа!") : t("Таны цаг дууслаа");
+  }
+  return end.didIWin ? t("Та ялсан! Ботын бүх дүрсийг идлээ.") : t("Бот яллаа — дахин оролдоорой");
 }

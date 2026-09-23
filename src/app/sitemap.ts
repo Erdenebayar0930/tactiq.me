@@ -17,7 +17,7 @@ import type { MetadataRoute } from "next";
 export default function sitemap(): MetadataRoute.Sitemap {
   return [
     {
-      url: BRAND_URL,
+      url: `${BRAND_URL}/about`,
       lastModified: new Date(),
       changeFrequency: "weekly",
       priority: 1,

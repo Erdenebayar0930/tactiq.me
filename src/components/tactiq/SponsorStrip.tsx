@@ -20,12 +20,21 @@ import { t } from "@/lib/i18n/t";
  * гарахгүй байх нь гарцаагүй.
  */
 
+import type { TournamentPrize } from "@/lib/api/tournamentServer";
+
 export type Sponsor = {
   sponsorName: string;
   sponsorLogo: string;
   sponsorUrl: string;
-  /** Шагналын сан — чөлөөт текст («1-р шагнал: 100,000₮»). */
+  /** Шагналын сан — чөлөөт текст («Шагналын сан: 500,000₮»). */
   prize: string;
+  /**
+   * БАЙР ТУС БҮРИЙН ШАГНАЛ — «Дэлгэрэнгүй» дарахад гарна.
+   *
+   * ⚠ `prize` мөрөөс ТУСДАА: тэр нь нэг харцаар уншигдах хураангуй,
+   * энэ нь зурагтай жагсаалт («1-р байр: дрон»).
+   */
+  prizes?: TournamentPrize[] | null;
 };
 
 /**
@@ -41,7 +50,14 @@ export type Sponsor = {
  * эвдрэл БИШ.
  */
 export function hasSponsor(item: Partial<Sponsor>): boolean {
-  return (item.sponsorName ?? "").length > 0 || (item.prize ?? "").length > 0;
+  return (
+    (item.sponsorName ?? "").length > 0 ||
+    (item.prize ?? "").length > 0 ||
+    /* ⚠ Шагналын ЖАГСААЛТ дангаараа ч тууз гаргах шалтгаан: ивээн
+       тэтгэгчгүй, «шагналын сан» бичээгүй ч «1-р байр: дрон» гэсэн
+       жагсаалт байвал тэр нь харагдах ёстой. */
+    (item.prizes?.length ?? 0) > 0
+  );
 }
 
 export function SponsorStrip({
@@ -57,6 +73,7 @@ export function SponsorStrip({
 
   const name = item.sponsorName ?? "";
   const prize = item.prize ?? "";
+  const prizes = item.prizes ?? [];
 
   /*
    * ⚠ ЛОГО нь `next/image` БИШ, ердийн `img`: `next/image` нь гадаад
@@ -139,6 +156,74 @@ export function SponsorStrip({
           <span className="truncate">{prize}</span>
         </span>
       )}
+
+      {/*
+        ⚠ БАЙР ТУС БҮРИЙН ШАГНАЛ — ЗӨВХӨН бүтэн харагдацад (`compact`
+        БИШ): хуанлийн нэг мөрөнд эвхмэл хайрцаг нэмбэл тэр мөр дарж
+        нээгддэг зүйл болж, өдөр сонгох үйлдэлтэй зөрчилдөнө.
+      */}
+      {!compact && prizes.length > 0 && <PrizeList prizes={prizes} />}
     </div>
+  );
+}
+
+/**
+ * БАЙР ТУС БҮРИЙН ШАГНАЛ — «Дэлгэрэнгүй» дарахад нээгдэнэ.
+ *
+ * ⚠ ЭВХЭГДСЭН (`details`) байх нь ЗОРИУД: тэмцээний жагсаалт нь «хэзээ,
+ * ямар тэмцээн» гэдгийг хэлэх зорилготой. Шагналын зургуудыг бүтнээр
+ * зурвал нэг тэмцээн хагас дэлгэц эзэлж, хуваарь живнэ.
+ *
+ * ⚠ `next/image` БИШ, ердийн `img`: шагналын зураг нь гадны (Firebase
+ * Storage) хаягтай, хэмжээ нь урьдчилан мэдэгддэггүй бөгөөд тэмцээн
+ * бүрд өөр. `next/image`-ийн оптимизаци нь эдгээрт ашиг өгөхгүй, харин
+ * тохируулга шаардана (`remotePatterns`).
+ */
+function PrizeList({ prizes }: { prizes: TournamentPrize[] }) {
+  return (
+    <details className="w-full">
+      <summary className="cursor-pointer list-none text-xs font-bold text-amber-800 underline decoration-dotted dark:text-amber-200">
+        {t("Шагналууд")} · {t("Дэлгэрэнгүй")}
+      </summary>
+
+      <ul className="mt-2 space-y-1.5">
+        {prizes.map((item) => (
+          <li
+            key={item.place}
+            className="flex items-center gap-2.5 rounded-xl bg-white/70 p-2 dark:bg-black/20"
+          >
+            {/*
+              ⚠ БАЙРНЫ ДУГААР нь ЯМАГТ харагдана (зурагтай ч, зураггүй
+              ч): «дрон» гэсэн бичвэр дангаараа аль байрны шагнал болохыг
+              хэлэхгүй.
+            */}
+            <span className="grid size-6 shrink-0 place-items-center rounded-full bg-amber-500 text-[11px] font-extrabold text-white">
+              {item.place}
+            </span>
+
+            {item.image && (
+              /* eslint-disable-next-line @next/next/no-img-element */
+              <img
+                src={item.image}
+                alt=""
+                aria-hidden
+                className="size-10 shrink-0 rounded-lg object-cover"
+              />
+            )}
+
+            <span className="min-w-0 flex-1">
+              <span className="block truncate text-xs font-bold text-amber-900 dark:text-amber-100">
+                {item.title}
+              </span>
+              {item.note && (
+                <span className="block truncate text-[11px] text-amber-700/80 dark:text-amber-200/70">
+                  {item.note}
+                </span>
+              )}
+            </span>
+          </li>
+        ))}
+      </ul>
+    </details>
   );
 }

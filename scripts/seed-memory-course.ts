@@ -141,7 +141,7 @@ function buildUnits(): Unit[] {
       color: "sky",
       explanation: "Нээсэн хөзрийнхөө БАЙРЛАЛЫГ сана — зөвхөн зургийг нь биш.",
       lessons: cardPairs.map((pairs, index) => ({
-        title: `Хөзөр ${index + 1}`,
+        title: `Хос олох ${index + 1}`,
         xp: xpFor(index, 8),
         exercise: memoryExercise(pairs, index, `${pairs} хос — ижил зургуудыг ол.`),
       })),

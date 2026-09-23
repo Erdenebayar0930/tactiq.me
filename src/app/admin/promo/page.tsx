@@ -13,9 +13,17 @@ type PromoCode = {
   ownerEmail: string | null;
   discountPercent: number;
   commissionPercent: number;
+  /**
+   * ШАТАЛСАН ХУВЬ — «эхний 50 хүүхэд 50%, дараагийн 75 нь 25%».
+   *
+   * ⚠ `limit` нь ТУХАЙН ШАТНЫ хэмжээ, нийлбэр БИШ.
+   */
+  tiers: PromoTier[] | null;
   active: boolean;
   note: string;
 };
+
+type PromoTier = { limit: number; discountPercent: number; commissionPercent: number };
 
 type OwnerStats = {
   sales: number;
@@ -50,6 +58,13 @@ export default function AdminPromoPage() {
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
   const [note, setNote] = useState("");
+  /**
+   * ШАТУУД — хоосон бол үндсэн хувь ямагт хэрэгжинэ.
+   *
+   * ⚠ ЖАГСААЛТААР барина, нийлбэрээр БИШ: админ «эхний 50», «дараагийн
+   * 75» гэж бодох нь бодит нөхцөлтэй ижил дараалалтай.
+   */
+  const [tiers, setTiers] = useState<PromoTier[]>([]);
   const [busy, setBusy] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
 
@@ -59,11 +74,12 @@ export default function AdminPromoPage() {
     try {
       await apiFetch("/api/admin/promo", {
         method: "POST",
-        body: { email, code, note },
+        body: { email, code, note, tiers: tiers.length > 0 ? tiers : null },
       });
       setEmail("");
       setCode("");
       setNote("");
+      setTiers([]);
       reload();
     } catch (cause) {
       setFormError(cause instanceof ApiError ? cause.message : "Алдаа гарлаа.");
@@ -138,6 +154,110 @@ export default function AdminPromoPage() {
             />
           </div>
 
+          {/*
+            ШАТАЛСАН ХУВЬ — сонгомол.
+
+            ⚠ Хоосон бол код нь урьдын адил ямагт үндсэн хувиар
+            ажиллана. Шат нэмбэл ЗӨВХӨН тэр хязгаарт л хэрэгжинэ:
+            «эхний 50 хүүхэд 50%», дараа нь «75 хүүхэд 25%», шат
+            дүүрвэл үндсэн хувь.
+
+            ⚠ ТООЛОЛТ нь ТӨЛБӨРӨӨ БАТАЛГААЖУУЛСАН, ӨӨР ӨӨР хүүхдээр
+            (`lib/api/promo.ts`) — нэхэмжлэл үүсгээд төлөөгүй нь
+            тоологдохгүй.
+          */}
+          <div className="space-y-2 rounded-xl bg-gray-50 p-3 dark:bg-white/5">
+            <p className="text-xs font-semibold text-gray-500 dark:text-gray-400">
+              Шаталсан хувь (сонгомол) — шат дүүрвэл үндсэн хувь хэрэгжинэ
+            </p>
+
+            {tiers.map((tier, index) => (
+              <div key={index} className="flex flex-wrap items-center gap-2 text-sm">
+                <span className="grid size-6 shrink-0 place-items-center rounded-full bg-brand-500 text-[11px] font-extrabold text-white">
+                  {index + 1}
+                </span>
+                <label className="flex items-center gap-1">
+                  <span className="text-xs text-gray-500 dark:text-gray-400">хүүхэд</span>
+                  <input
+                    type="number"
+                    min={1}
+                    value={tier.limit}
+                    onChange={(event) =>
+                      setTiers(
+                        tiers.map((row, i) =>
+                          i === index ? { ...row, limit: Number(event.target.value) } : row
+                        )
+                      )
+                    }
+                    className="w-20 rounded-lg border border-gray-300 px-2 py-1 text-sm dark:border-white/15 dark:bg-white/5 dark:text-white"
+                  />
+                </label>
+                <label className="flex items-center gap-1">
+                  <span className="text-xs text-gray-500 dark:text-gray-400">хямдрал %</span>
+                  <input
+                    type="number"
+                    min={1}
+                    max={90}
+                    value={tier.discountPercent}
+                    onChange={(event) =>
+                      setTiers(
+                        tiers.map((row, i) =>
+                          i === index
+                            ? { ...row, discountPercent: Number(event.target.value) }
+                            : row
+                        )
+                      )
+                    }
+                    className="w-20 rounded-lg border border-gray-300 px-2 py-1 text-sm dark:border-white/15 dark:bg-white/5 dark:text-white"
+                  />
+                </label>
+                <label className="flex items-center gap-1">
+                  <span className="text-xs text-gray-500 dark:text-gray-400">шимтгэл %</span>
+                  <input
+                    type="number"
+                    min={0}
+                    max={50}
+                    value={tier.commissionPercent}
+                    onChange={(event) =>
+                      setTiers(
+                        tiers.map((row, i) =>
+                          i === index
+                            ? { ...row, commissionPercent: Number(event.target.value) }
+                            : row
+                        )
+                      )
+                    }
+                    className="w-20 rounded-lg border border-gray-300 px-2 py-1 text-sm dark:border-white/15 dark:bg-white/5 dark:text-white"
+                  />
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setTiers(tiers.filter((_, i) => i !== index))}
+                  className="rounded-lg px-2 py-1 text-xs font-semibold text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-500/10"
+                >
+                  Устгах
+                </button>
+              </div>
+            ))}
+
+            <button
+              type="button"
+              onClick={() =>
+                setTiers([
+                  ...tiers,
+                  {
+                    limit: 50,
+                    discountPercent: 50,
+                    commissionPercent: data?.defaults.commissionPercent ?? 10,
+                  },
+                ])
+              }
+              className="rounded-xl bg-gray-200 px-3 py-1.5 text-xs font-bold text-gray-700 hover:bg-gray-300 dark:bg-white/10 dark:text-gray-200"
+            >
+              Шат нэмэх
+            </button>
+          </div>
+
           <div className="flex flex-wrap items-center gap-3">
             <button
               type="button"
@@ -182,6 +302,20 @@ export default function AdminPromoPage() {
                         <span className="text-xs text-gray-500 dark:text-gray-400">
                           −{row.discountPercent}% / +{row.commissionPercent}%
                         </span>
+                        {/*
+                          ⚠ ШАТУУДЫГ ИЛ ХАРУУЛНА: тэдгээр нь үндсэн хувийг
+                          ДАРДАГ тул зөвхөн «−10% / +10%» гэж харуулбал
+                          админ бодит хямдралыг мэдэхгүй.
+                        */}
+                        {row.tiers?.map((tier, index) => (
+                          <span
+                            key={index}
+                            className="rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-bold text-amber-800 dark:bg-amber-500/20 dark:text-amber-200"
+                          >
+                            {tier.limit} хүүхэд · −{tier.discountPercent}% / +
+                            {tier.commissionPercent}%
+                          </span>
+                        ))}
                         {!row.active && (
                           <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-bold text-gray-500 dark:bg-white/10">
                             Идэвхгүй

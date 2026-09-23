@@ -14,7 +14,10 @@ import { ChessBoard } from "@/components/chess/ChessBoard";
 import { CoachReview } from "@/components/tactiq/CoachReview";
 import { CoachTip } from "@/components/tactiq/CoachTip";
 import { MatchHeader } from "@/components/chess/MatchHeader";
+import { useGameClock } from "@/lib/tactiq/gameClock";
 import { GameOverAd } from "@/components/tactiq/GameOverAd";
+import { CelebrationVideo } from "@/components/tactiq/CelebrationVideo";
+import { EncourageGif } from "@/components/tactiq/LoopGif";
 import { Mascot } from "@/components/tactiq/Mascot";
 import { DIFFICULTY_LABELS } from "@/lib/tactiq/theme";
 import { useUser } from "@/context/UserContext";
@@ -42,9 +45,18 @@ const THINK_MS: Record<BotDifficulty, [min: number, max: number]> = {
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 type EndInfo = {
-  reason: "checkmate" | "draw";
+  reason: "checkmate" | "draw" | "timeout";
   didIWin: boolean | null; // null = тэнцээ
 };
+
+/**
+ * ЦАГИЙН ХЯНАЛТ — ботын дадлага.
+ *
+ * ⚠ 10 минут + 5 секунд: дадлага нь БОДОХ газар байх ёстой. Блиц цаг нь
+ * шинэ сурагчийг цагаар л хожигдуулж, дүрэм сурах боломжийг үгүй
+ * болгоно. Нэмэлт нь урт тоглолтод цаг дуусахаас хамгаална.
+ */
+const CLOCK = { baseMin: 10, incrementSec: 5 };
 
 /** Ботоор дадлагажих — сервер, WebRTC огт шаардлагагүй, бүхэлдээ клиент дээр. */
 export default function BotPage() {
@@ -68,6 +80,43 @@ export default function BotPage() {
   /** 0..1 — шинжилгээний явц, "Шинжилж байна…" мөрөнд харуулна */
   const [progress, setProgress] = useState(0);
   const [analyzing, setAnalyzing] = useState(false);
+
+  /*
+   * ⚠ ЦАГ — `end` тавигдсаны дараа ЗОГСОНО (`running`). Дууссан
+   * тоглолтын цаг үргэлжилбэл дүнгийн дэлгэц дээр тоо буусаар байх ба
+   * «тоглолт дуусаагүй» гэсэн буруу мэдрэмж төрүүлнэ.
+   */
+  const clock = useGameClock({
+    ...CLOCK,
+    turn: chessRef.current.turn(),
+    running: end === null,
+    onFlag: (side) => flag(side),
+  });
+
+  /**
+   * ЦАГ ДУУСЛАА.
+   *
+   * ⚠ Ботын цаг ч дуусаж БОЛНО: бот өөрөө хүлээдэггүй ч тоглогч
+   * дэлгэцээ хааж, эргэж ирэхэд ботын ээлж байсан бол цаг нь
+   * хасагдсан байна. Тэр үед тоглогч хожсон гэж үзэх нь зөв —
+   * «хэн цаг хэтрүүлсэн, тэр хожигдоно» гэсэн дүрэм хоёр талд ижил.
+   */
+  const flag = useCallback(
+    (side: "w" | "b") => {
+      const didIWin = side === "b";
+      setEnd({ reason: "timeout", didIWin });
+
+      apiFetch<{ user: PublicUser }>("/api/play/bot/result", {
+        method: "POST",
+        body: { result: didIWin ? "win" : "loss", difficulty },
+      })
+        .then((data) => apply(data.user))
+        .catch(() => {
+          // Статистик бичихэд алдаа гарсан ч тоглогчийн UI-г эвдэхгүй.
+        });
+    },
+    [apply, difficulty]
+  );
 
   const checkGameOver = useCallback(() => {
     const chess = chessRef.current;
@@ -119,12 +168,14 @@ export default function BotPage() {
     if (move) {
       chess.move(move);
       lastMoveRef.current = { from: move.from as Square, to: move.to as Square };
+      /* ⚠ Ботын нүүдэлд ч цаг зогсож, нэмэлт олгогдоно. */
+      clock.onMove("b");
     }
 
     setThinking(false);
     forceUpdate((v) => v + 1);
     checkGameOver();
-  }, [difficulty, checkGameOver]);
+  }, [difficulty, checkGameOver, clock]);
 
   const handleMove = (from: Square, to: Square) => {
     if (thinking || end || chessRef.current.turn() !== "w") return;
@@ -137,6 +188,7 @@ export default function BotPage() {
     if (!applied) return;
 
     lastMoveRef.current = { from, to };
+    clock.onMove("w");
     forceUpdate((v) => v + 1);
 
     if (!checkGameOver()) void botTurn();
@@ -146,6 +198,7 @@ export default function BotPage() {
     // `chessRef.current`-ыг ДАХИН ОНОХГҮЙ (`= new Chess()`) — зөвхөн ижил
     // instance-ийг эхний байрлал руу шинэчилнэ, `/play/[roomId]`-тэй адил.
     chessRef.current.reset();
+    clock.reset();
     lastMoveRef.current = null;
     setEnd(null);
     setAdDone(false);
@@ -236,6 +289,11 @@ export default function BotPage() {
       <MatchHeader
         leftName={user?.displayName || t("Та")}
         rightName={`${t("Бот")} · ${t(DIFFICULTY_LABELS[difficulty])}`}
+        /* ⚠ Тоглогч ЯМАГТ цагаанаар тоглодог тул зүүн цаг нь цагааны цаг. */
+        leftMs={clock.white}
+        rightMs={clock.black}
+        activeSide={chessRef.current.turn()}
+        myColor="w"
       />
 
       <ChessBoard
@@ -260,7 +318,33 @@ export default function BotPage() {
 
       {end && adDone && (
         <div className="surface flex flex-col items-center gap-3 p-6 text-center">
-          <Mascot mood={end.didIWin ? "cheer" : "think"} className="size-24" />
+          {/*
+            ⚠ ЯЛАЛТ үед БАЯР ХҮРГЭХ ВИДЕО — онлайн тоглолт, хичээл
+            дуусгах дэлгэцтэй ИЖИЛ (`CelebrationVideo`). Ботыг ялах нь
+            ч ялалт; өөр баяр хэрэглэвэл «бот ялах нь дутуу ялалт»
+            гэсэн мессеж чимээгүй гарна.
+
+            ⚠ ХОЖИГДОЛ, ТЭНЦЭЭ үед баяр ХЭРЭГЛЭХГҮЙ: хожигдсон
+            хүүхдэд баяр хүргэх нь доромжлол шиг мэдрэгдэнэ.
+          */}
+          {end.didIWin ? (
+            <div className="size-28 overflow-hidden rounded-full ring-4 ring-brand-100 dark:ring-white/15">
+              <CelebrationVideo className="size-full object-cover" />
+            </div>
+          ) : end.didIWin === false ? (
+            /*
+              ⚠ ХОЖИГДОЛ үед ЗОРИГЖУУЛАХ хөдөлгөөнт зураг
+              (`EncourageGif`): урьд нь бодолтой дүрс гарч байсан тул
+              «яагаад бодож байна?» гэсэн ойлгомжгүй мэдрэмж төрдөг
+              байв. Хожигдол нь дасгалын нэг хэсэг — дүрс нь түүнийг
+              шийтгэл БИШ гэдгийг хэлэх ёстой.
+            */
+            <div className="size-28 overflow-hidden rounded-full ring-4 ring-gray-100 dark:ring-white/10">
+              <EncourageGif className="size-full object-cover" />
+            </div>
+          ) : (
+            <Mascot mood="think" className="size-24" />
+          )}
           <h2 className="text-xl font-bold text-gray-900 dark:text-white">{endMessage(end)}</h2>
           <div className="flex flex-wrap justify-center gap-3">
             <button
@@ -315,5 +399,8 @@ function ThinkingDots() {
 
 function endMessage(end: EndInfo): string {
   if (end.didIWin === null) return t("Тэнцээ");
+  if (end.reason === "timeout") {
+    return end.didIWin ? t("Ботын цаг дууслаа — Та яллаа!") : t("Таны цаг дууслаа");
+  }
   return end.didIWin ? t("Мад! Та ботыг яллаа!") : t("Мад хийгдлээ — Бот яллаа");
 }

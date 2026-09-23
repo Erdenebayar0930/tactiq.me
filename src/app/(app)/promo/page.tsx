@@ -7,6 +7,7 @@ import { useState } from "react";
 import { ErrorNote, Skeleton } from "@/components/tactiq/ui";
 import { useApiData } from "@/hooks/useApiData";
 import { BRAND_URL } from "@/lib/brand";
+import { t } from "@/lib/i18n/t";
 
 type PromoCode = {
   code: string;
@@ -16,8 +17,24 @@ type PromoCode = {
   note: string;
 };
 
+/**
+ * Код тус бүрийн ОДООГИЙН нөхцөл (`lib/api/promo.ts`-ийн `PromoCodeState`).
+ *
+ * ⚠ Шаталсан кодод үндсэн хувь нь ХЭРЭГЖЭХГҮЙ байж болно — тиймээс
+ * харагдацад ЭНЭ утгууд давамгайлна.
+ */
+type CodeState = {
+  code: string;
+  usedBuyers: number;
+  discountPercent: number;
+  commissionPercent: number;
+  tierIndex: number | null;
+  remaining: number | null;
+};
+
 type Stats = {
   codes: PromoCode[];
+  states: Record<string, CodeState>;
   sales: number;
   revenueMnt: number;
   earnedMnt: number;
@@ -69,10 +86,8 @@ export default function PromoPage() {
   return (
     <div className="space-y-5">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Сурталчлагч</h1>
-        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          Таны кодоор худалдан авалт хийх бүрд танд шимтгэл ногдоно.
-        </p>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t("Сурталчлагч")}</h1>
+        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{t("Таны кодоор худалдан авалт хийх бүрд танд шимтгэл ногдоно.")}</p>
       </div>
 
       {data.codes.length === 0 ? (
@@ -83,26 +98,22 @@ export default function PromoPage() {
          * сонгож бүртгэдэг тул хүсэлт цуглуулах суваг хэрэггүй.
          */
         <div className="surface space-y-3 p-5">
-          <p className="font-bold text-gray-900 dark:text-white">
-            Энэ хэсэг танд нээлттэй биш байна
-          </p>
-          <Link href="/profile" className="btn-primary inline-block px-4 py-2 text-sm">
-            Профайл руу буцах
-          </Link>
+          <p className="font-bold text-gray-900 dark:text-white">{t("Энэ хэсэг танд нээлттэй биш байна")}</p>
+          <Link href="/profile" className="btn-primary inline-block px-4 py-2 text-sm">{t("Профайл руу буцах")}</Link>
         </div>
       ) : (
         <>
           <div className="grid gap-3 sm:grid-cols-3">
             <StatCard
               Icon={TrendingUp}
-              label="Худалдан авалт"
+              label={t("Худалдан авалт")}
               value={String(data.sales)}
               hint={`${money(data.revenueMnt)} борлуулалт`}
             />
-            <StatCard Icon={Wallet} label="Нийт олсон" value={money(data.earnedMnt)} />
+            <StatCard Icon={Wallet} label={t("Нийт олсон")} value={money(data.earnedMnt)} />
             <StatCard
               Icon={Wallet}
-              label="Үлдэгдэл"
+              label={t("Үлдэгдэл")}
               value={money(data.balanceMnt)}
               hint={`${money(data.paidOutMnt)} олгогдсон`}
               accent
@@ -118,21 +129,52 @@ export default function PromoPage() {
                   </span>
 
                   {code.active ? (
-                    <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-bold text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300">
-                      Идэвхтэй
-                    </span>
+                    <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-bold text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300">{t("Идэвхтэй")}</span>
                   ) : (
-                    <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-bold text-gray-500 dark:bg-white/10 dark:text-gray-400">
-                      Идэвхгүй
-                    </span>
+                    <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-bold text-gray-500 dark:bg-white/10 dark:text-gray-400">{t("Идэвхгүй")}</span>
                   )}
                 </div>
 
+                {/*
+                  ⚠ ОДООГИЙН хувийг харуулна, кодын ҮНДСЭН хувийг БИШ:
+                  шаталсан код дээр («эхний 50 хүүхэд 50%») тэр хоёр
+                  ЗӨРНӨ. Сурталчлагч амлалт өгдөг хүн тул бодит,
+                  тухайн мөчийн нөхцөлийг харах ёстой.
+                */}
                 <p className="text-sm text-gray-600 dark:text-gray-300">
-                  Худалдан авагчид{" "}
-                  <span className="font-bold">{code.discountPercent}% хямдрал</span>, танд{" "}
-                  <span className="font-bold">{code.commissionPercent}% шимтгэл</span>.
+                  {t("Худалдан авагчид")}{" "}
+                  <span className="font-bold">
+                    {(data.states?.[code.code]?.discountPercent ?? code.discountPercent)}
+                    {t("% хямдрал")}
+                  </span>
+                  , {t("танд")}{" "}
+                  <span className="font-bold">
+                    {(data.states?.[code.code]?.commissionPercent ?? code.commissionPercent)}
+                    {t("% шимтгэл")}
+                  </span>
+                  .
                 </p>
+
+                {/*
+                  ШАТНЫ ҮЛДЭГДЭЛ — «эхний 50» гэсэн нөхцөл хэр дүүрсэн.
+
+                  ⚠ Шатгүй код дээр ОГТ гарахгүй: хязгааргүй нөхцөлийг
+                  «үлдсэн …» гэж харуулбал худал болно.
+                */}
+                {data.states?.[code.code]?.tierIndex !== null &&
+                  data.states?.[code.code] !== undefined && (
+                    <p className="rounded-xl bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-800 dark:bg-amber-500/15 dark:text-amber-200">
+                      {t("Шат")} {data.states[code.code].tierIndex} ·{" "}
+                      {t("төлбөр баталгаажсан")} {data.states[code.code].usedBuyers}{" "}
+                      {t("хүүхэд")}
+                      {data.states[code.code].remaining !== null && (
+                        <>
+                          {" · "}
+                          {t("энэ шатанд")} {data.states[code.code].remaining} {t("хүүхэд үлдсэн")}
+                        </>
+                      )}
+                    </p>
+                  )}
 
                 <button
                   type="button"
@@ -141,22 +183,17 @@ export default function PromoPage() {
                 >
                   {copied === code.code ? (
                     <>
-                      <Copy className="size-4" aria-hidden /> Хуулагдлаа
-                    </>
+                      <Copy className="size-4" aria-hidden />{t("Хуулагдлаа")}</>
                   ) : (
                     <>
-                      <Share2 className="size-4" aria-hidden /> Холбоос хуулах
-                    </>
+                      <Share2 className="size-4" aria-hidden />{t("Холбоос хуулах")}</>
                   )}
                 </button>
               </div>
             ))}
           </div>
 
-          <p className="text-xs text-gray-500 dark:text-gray-400">
-            Шимтгэл нь ТӨЛӨГДСӨН худалдан авалтаас тооцогдоно. Үлдэгдлээ авахаар
-            админд хандана уу.
-          </p>
+          <p className="text-xs text-gray-500 dark:text-gray-400">{t("Шимтгэл нь ТӨЛӨГДСӨН худалдан авалтаас тооцогдоно. Үлдэгдлээ авахаар админд хандана уу.")}</p>
         </>
       )}
     </div>

@@ -33,7 +33,9 @@
     "seed:draughts:combo": "tsx --env-file=.env.local scripts/seed-draughts-combos.ts",
     "seed:draughts": "tsx --env-file=.env.local scripts/seed-draughts-tactics.ts",
     "seed:go": "tsx --env-file=.env.local scripts/seed-go-course.ts",
-    "seed:coding": "tsx --env-file=.env.local scripts/seed-kids-coding.ts"
+    "seed:coding": "tsx --env-file=.env.local scripts/seed-kids-coding.ts",
+    "audit:draughts": "tsx --env-file=.env.local scripts/audit-draughts-moves.ts",
+    "repair:draughts": "tsx --env-file=.env.local scripts/repair-draughts-moves.ts"
   },
   "dependencies": {
     "@tailwindcss/forms": "^0.5.10",

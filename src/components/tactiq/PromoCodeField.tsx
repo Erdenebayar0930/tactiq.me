@@ -6,6 +6,7 @@ import { Check, Tag, X } from "lucide-react";
 import { apiFetch, ApiError } from "@/lib/apiClient";
 
 import type { PlanId } from "@/lib/billing";
+import { t } from "@/lib/i18n/t";
 
 export type PromoPreview = {
   discountPercent: number;
@@ -66,6 +67,8 @@ export default function PromoCodeField({
     try {
       const data = await apiFetch<{
         valid: boolean;
+        /** "own-code" — өөрийн код; "unknown" — байхгүй эсвэл идэвхгүй. */
+        reason?: "own-code" | "unknown";
         code?: string;
         discountPercent?: number;
         discountMnt?: number;
@@ -76,7 +79,18 @@ export default function PromoCodeField({
       });
 
       if (!data.valid || !data.code) {
-        setError("Ийм код олдсонгүй эсвэл ашиглах боломжгүй байна.");
+        /*
+         * ⚠ ӨӨРИЙН КОДЫГ ТУСДАА хэлнэ: сурталчлагч кодоо өөрөө туршаад
+         * «ажиллахгүй байна» гэж бодох нь бодитоор тохиолдсон. Хямдрал
+         * + шимтгэлийг нэг хүн хоёуланг авбал хөтөлбөрийн эдийн засаг
+         * унана (`lib/api/promo.ts`) — тиймээс хориг нь ЗӨВ, зөвхөн
+         * тайлбар нь дутуу байв.
+         */
+        setError(
+          data.reason === "own-code"
+            ? t("Өөрийн кодоо өөртөө хэрэглэх боломжгүй. Найздаа илгээгээрэй — тэр хямдрал авч, танд шимтгэл ногдоно.")
+            : t("Ийм код олдсонгүй эсвэл ашиглах боломжгүй байна.")
+        );
         setPreview(null);
         return;
       }

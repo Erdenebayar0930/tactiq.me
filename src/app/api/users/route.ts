@@ -73,6 +73,8 @@ export async function GET(request: NextRequest) {
           streakFreezes: users.streakFreezes,
           role: users.role,
           status: users.status,
+          /* ТЕСТЕР туг — админ жагсаалтаас шууд харж, дарж тохируулна. */
+          tester: users.tester,
           createdAt: users.createdAt,
         })
         .from(users)

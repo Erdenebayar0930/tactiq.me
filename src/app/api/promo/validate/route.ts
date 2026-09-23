@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { badRequest, requireActiveUser, serverError } from "@/lib/api/auth";
-import { resolvePromo } from "@/lib/api/promo";
+import { isOwnPromoCode, resolvePromo } from "@/lib/api/promo";
 import { rateLimit } from "@/lib/api/rateLimit";
 import { isPlanId, PLANS } from "@/lib/billing";
 
@@ -48,11 +48,19 @@ export async function POST(request: NextRequest) {
 
     if (!promo) {
       /*
-       * ⚠ ЯАГААД ЯЛГААГҮЙ МЕССЕЖ ВЭ: "байхгүй код" ба "идэвхгүй код"-ыг
-       * ялгаж хэлбэл код таагч аль нь БОДИТ болохыг мэдэж авна. Мөн
-       * "өөрийн код" гэдгийг ил хэлэх нь ч шаардлагагүй.
+       * ⚠ "байхгүй код" ба "идэвхгүй код"-ыг ЯЛГАХГҮЙ: ялгавал код таагч
+       * аль нь БОДИТ болохыг мэдэж авна.
+       *
+       * ⚠ ГЭХДЭЭ "ӨӨРИЙН КОД" гэдгийг ИЛ ХЭЛНЭ. Тэр нь нуух зүйл БИШ
+       * (хэрэглэгч кодоо өөрөө эзэмшинэ) бөгөөс хэлэхгүй бол
+       * сурталчлагч өөрийн кодоо туршаад «код ажиллахгүй байна» гэсэн
+       * мухардалд ордог — бодитоор тохиолдсон.
        */
-      return NextResponse.json({ valid: false }, { status: 200 });
+      const own = await isOwnPromoCode(body.code, result.caller.uid);
+      return NextResponse.json(
+        { valid: false, reason: own ? "own-code" : "unknown" },
+        { status: 200 }
+      );
     }
 
     return NextResponse.json({

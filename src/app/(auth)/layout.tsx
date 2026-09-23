@@ -1,6 +1,7 @@
 import Link from "next/link";
 
-import { Logo, Mascot } from "@/components/tactiq/Mascot";
+import { Logo } from "@/components/tactiq/Mascot";
+import { WelcomeRobotGif } from "@/components/tactiq/LoopGif";
 import { ThemeToggle } from "@/components/tactiq/ThemeToggle";
 
 /** Нэвтрэх / бүртгүүлэх хуудсуудын хүрээ (#2 дэлгэц). */
@@ -26,11 +27,16 @@ export default function AuthLayout({
             Дүрийг картын баруун доод буланд наана — загварын байрлалыг
             давтана. `pointer-events-none` нь чухал: эс бөгөөс дүр нь
             картын доорх холбоос дээр давхарлаж товшилтыг залгина.
+
+            ⚠ ХӨДӨЛГӨӨНТ РОБОТ, титэмтэй `Mascot` БИШ: нэвтрэх, бүртгэх
+            нь аппын ХАМГИЙН ЭХНИЙ дэлгэц — тэнд хөдөлгөөнтэй дүр нь
+            «энэ апп амьд» гэдгийг хамгийн хямд аргаар хэлнэ. Титэм нь
+            баярын дохио тул нэвтрэхээс ӨМНӨ утгагүй.
+
+            ⚠ `object-contain`: робот дөрвөлжин биш тул `object-cover`
+            нь толгойн шар малгайг тайрна.
           */}
-          <Mascot
-            className="pointer-events-none absolute -bottom-14 -right-6 hidden size-28 sm:block"
-            mood="happy"
-          />
+          <WelcomeRobotGif className="pointer-events-none absolute -bottom-14 -right-6 hidden size-28 object-contain sm:block" />
         </div>
       </main>
     </div>
