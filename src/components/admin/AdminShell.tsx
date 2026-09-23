@@ -15,6 +15,7 @@ import {
   Tag,
   Trophy,
   Building2,
+  Wallet,
 } from "lucide-react";
 
 import { useUser } from "@/context/UserContext";
@@ -56,6 +57,7 @@ const NAV = [
   { href: "/admin/training-centers", label: "Сургалтын төв", Icon: Building2, adminOnly: true },
   { href: "/admin/apps", label: "Аппууд", Icon: LayoutGrid, adminOnly: true },
   { href: "/admin/promo", label: "Сурталчлагч", Icon: Tag, adminOnly: true },
+  { href: "/admin/payments", label: "Төлбөр", Icon: Wallet, adminOnly: true },
 ];
 
 /**
