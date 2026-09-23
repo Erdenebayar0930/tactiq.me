@@ -6,7 +6,7 @@ import { Building2, Eye, EyeOff, ImagePlus, Plus, Trash2 } from "lucide-react";
 import { apiFetch, ApiError } from "@/lib/apiClient";
 import { useApiData } from "@/hooks/useApiData";
 import { ErrorNote, Skeleton } from "@/components/tactiq/ui";
-import { getStorageLazy } from "@/lib/firebase";
+import { uploadImage } from "@/lib/uploadImage";
 
 /**
  * СУРГАЛТЫН ТӨВҮҮДИЙГ УДИРДАХ — зөвхөн админ.
@@ -102,21 +102,9 @@ function LogoPicker({
     setBusy(true);
     setError(null);
     try {
-      const [{ getDownloadURL, ref, uploadBytes }, storage] = await Promise.all([
-        import("firebase/storage"),
-        getStorageLazy(),
-      ]);
-
-      const ext = /\.[a-zA-Z0-9]+$/.exec(file.name)?.[0] ?? "";
-      const fileRef = ref(storage, `training_centers/${centerId}/logo-${Date.now()}${ext}`);
-      await uploadBytes(fileRef, file, { contentType: file.type });
-      onChange(await getDownloadURL(fileRef));
-    } catch {
-      /*
-       * ⚠ Ихэвчлэн Storage-ийн ДҮРЭМ унагаана: `storage.rules`-ийг
-       * Firebase рүү deploy хийгээгүй бол админ ч бичиж чадахгүй.
-       */
-      setError("Байршуулахад алдаа гарлаа. Storage дүрмийг deploy хийсэн эсэхээ шалгана уу.");
+      onChange(await uploadImage("center-logo", file, { centerId }));
+    } catch (cause) {
+      setError(cause instanceof ApiError ? cause.message : "Байршуулахад алдаа гарлаа.");
     } finally {
       setBusy(false);
     }

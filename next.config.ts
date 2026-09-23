@@ -266,7 +266,10 @@ const nextConfig: NextConfig = {
         // ⚠ `/images/` ч ОРОХГҮЙ — доорх тусдаа дүрмээр кэшлэгдэнэ. Урьд нь
         // зураг ч `no-cache` авч, хөтөч зураг бүрийг ачаалах бүрд сервер рүү
         // шалгуулдаг (304) байсан — хуудас бүр хэдэн арван дэмий хүсэлт.
-        source: "/((?!_next/static|_next/image|images/).*)",
+        //
+        // ⚠ `/api/uploads/` ч ОРОХГҮЙ — байршуулсан зураг бүр шинэ нэртэй тул
+        // route өөрөө `immutable` тавина (`app/api/uploads/[...path]`).
+        source: "/((?!_next/static|_next/image|images/|api/uploads/).*)",
         headers: [
           { key: "Cache-Control", value: "no-cache, must-revalidate" },
         ],
@@ -293,7 +296,10 @@ const nextConfig: NextConfig = {
         // API хариултыг хаана ч кэшлэхгүй: CDN, прокси, хөтчийн буцах товч.
         // Эдгээр нь хэрэглэгчийн эрхээр шүүгдсэн хувийн өгөгдөл тул нэг
         // төхөөрөмж дээр ээлжлэн нэвтэрсэн хоёр хүний хооронд урсаж болохгүй.
-        source: "/api/:path*",
+        //
+        // ⚠ `/api/uploads/` ОРОХГҮЙ: нийтийн зураг, санамсаргүй нэртэй, хувийн
+        // өгөгдөл биш — кэшлэгдэх ёстой (route өөрөө толгойгоо тавина).
+        source: "/api/:path((?!uploads/).*)",
         headers: [
           { key: "Cache-Control", value: "no-store, no-cache, must-revalidate, private" },
           { key: "Pragma", value: "no-cache" },

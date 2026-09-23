@@ -10,6 +10,7 @@ import {
 } from "@/lib/api/auth";
 import { describeUserAgent, touchDevice } from "@/lib/api/devices";
 import { toPublicUser } from "@/lib/api/publicUser";
+import { deleteUpload, isUploadIn } from "@/lib/api/uploads";
 import { db } from "@/lib/db";
 import { users } from "@/lib/db/schema";
 import { isSelectableCourseSlug } from "@/lib/db/courses";
@@ -68,27 +69,15 @@ const text = (value: unknown, max: number) =>
   String(value ?? "").trim().slice(0, max);
 
 /**
- * `photoUrl` нь ЗӨВХӨН дуудагчийн өөрийн `profile_photos/{uid}/…` замд
- * байгаа Firebase Storage download URL эсэхийг шалгана.
+ * `photoUrl` нь ЗӨВХӨН дуудагчийн өөрийн `profile_photos/{uid}/…` хавтсанд
+ * манай серверт байршсан зураг эсэхийг шалгана (`/api/uploads`).
  *
- * `storage.rules`-ийн бичих дүрэм энэ замыг л зөвшөөрдөг тул клиент энэ URL-г
- * ХУУРАМЧААР ч (жишээ нь: DevTools-оос PATCH явуулж) дурын өөр хаяг тавьж
- * болохгүй байх ёстой — эс бөгөөс аватар нь бусдын профайл эсвэл гадны
+ * Клиент энэ URL-г ХУУРАМЧААР (жишээ нь DevTools-оос PATCH явуулж) дурын
+ * өөр хаяг тавьж болохгүй — эс бөгөөс аватар нь бусдын зураг эсвэл гадны
  * зурагт орлож болзошгүй.
  */
 function isOwnProfilePhotoUrl(url: string, uid: string): boolean {
-  try {
-    const parsed = new URL(url);
-    if (parsed.hostname !== "firebasestorage.googleapis.com") return false;
-
-    const match = /^\/v0\/b\/[^/]+\/o\/(.+)$/.exec(parsed.pathname);
-    if (!match) return false;
-
-    const path = decodeURIComponent(match[1]);
-    return path.startsWith(`profile_photos/${uid}/`);
-  } catch {
-    return false;
-  }
+  return isUploadIn(url, ["profile_photos", uid]);
 }
 
 /**
@@ -189,6 +178,20 @@ export async function PATCH(request: NextRequest) {
     patch.updatedAt = new Date();
 
     await db.update(users).set(patch).where(eq(users.uid, caller.uid));
+
+    /*
+     * Хуучин профайл зургийг дискнээс устгана — зөвхөн ӨӨРИЙН хавтсанд
+     * байсан бол. Шинэ мөр хадгалагдсаны ДАРАА: бичилт унавал зураг алга
+     * болсон профайл үлдэхгүй.
+     */
+    const previousPhoto = caller.user?.photoUrl ?? "";
+    if (
+      patch.photoUrl !== undefined &&
+      previousPhoto !== patch.photoUrl &&
+      isOwnProfilePhotoUrl(previousPhoto, caller.uid)
+    ) {
+      await deleteUpload(previousPhoto);
+    }
 
     const [row] = await db
       .select()

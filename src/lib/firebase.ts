@@ -19,20 +19,3 @@ const app = initializeApp(getFirebaseClientConfig());
 export { app };
 
 export const auth = getAuth(app);
-
-/**
- * Профайлын зураг хадгалах Cloud Storage bucket — ЗАЛХУУ (lazy).
- *
- * ⚠ Модулийн түвшинд `getStorage(app)` гэж дуудаж БОЛОХГҮЙ. Энэ файлыг
- * АППЫН БҮХ хуудас импортолдог (`auth`-ийн төлөө) тул тэр дуудлага нь
- * Storage SDK-г БҮХ хуудасны эхний багцад оруулна. Бодит хэрэглээ нь
- * ганцхан газар — `/settings`-ийн аватар байршуулалт.
- *
- * `await getStorageLazy()` гэж дуудахад л SDK татагдана: тэр үед
- * хэрэглэгч аль хэдийн зураг сонгосон байгаа бөгөөд хэдэн зуун
- * миллисекунд хүлээх нь мэдрэгдэхгүй.
- */
-export async function getStorageLazy() {
-  const { getStorage } = await import("firebase/storage");
-  return getStorage(app);
-}

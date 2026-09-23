@@ -10,7 +10,7 @@ import { useCurrentUser, useUser } from "@/context/UserContext";
 import { ErrorNote, Skeleton } from "@/components/tactiq/ui";
 import { hasRole } from "@/lib/permissions";
 import { isAdminRole } from "@/lib/permissions";
-import { getStorageLazy } from "@/lib/firebase";
+import { uploadImage } from "@/lib/uploadImage";
 import { updateMe } from "@/lib/users";
 import { t } from "@/lib/i18n/t";
 
@@ -278,21 +278,13 @@ function CoachPhotoPicker() {
     setBusy(true);
     setError(null);
     try {
-      const [{ getDownloadURL, ref, uploadBytes }, storage] = await Promise.all([
-        import("firebase/storage"),
-        getStorageLazy(),
-      ]);
-
-      const ext = /\.[a-zA-Z0-9]+$/.exec(file.name)?.[0] ?? "";
-      const fileRef = ref(storage, `profile_photos/${user.uid}/${Date.now()}${ext}`);
-      await uploadBytes(fileRef, file, { contentType: file.type });
-      const url = await getDownloadURL(fileRef);
+      const url = await uploadImage("profile", file);
 
       // ⚠ Анкеттай ХАМТ биш, ТЭР ДОР НЬ хадгална: багш зургаа
       // солихад шууд харах ёстой, «Хадгалах» дарахыг хүлээхгүй.
       apply(await updateMe({ photoUrl: url }));
-    } catch {
-      setError(t("Зураг байршуулахад алдаа гарлаа."));
+    } catch (cause) {
+      setError(cause instanceof ApiError ? cause.message : t("Зураг байршуулахад алдаа гарлаа."));
     } finally {
       setBusy(false);
     }

@@ -10,8 +10,8 @@ import { useCurrentUser, useUser } from "@/context/UserContext";
 import MyCodeCard from "@/components/tactiq/MyCodeCard";
 import { ErrorNote, Skeleton } from "@/components/tactiq/ui";
 import { useApiData } from "@/hooks/useApiData";
-import { apiFetch } from "@/lib/apiClient";
-import { getStorageLazy } from "@/lib/firebase";
+import { apiFetch, ApiError } from "@/lib/apiClient";
+import { uploadImage } from "@/lib/uploadImage";
 import { sendResetEmail, updateMe } from "@/lib/users";
 import { isStudentRole } from "@/lib/permissions";
 import { signOutCompletely } from "@/lib/session";
@@ -21,44 +21,9 @@ import { t } from "@/lib/i18n/t";
 
 const MAX_PHOTO_BYTES = 5 * 1024 * 1024;
 
-/**
- * Firebase Storage-ийн алдааг хүн уншиж ойлгох мессеж болгоно.
- *
- * ⚠ ЯАГААД ХЭРЭГТЭЙ ВЭ: SDK-ийн ӨӨРИЙНХ нь мессеж нь шалтгааныг бараг үргэлж
- * нуудаг. Хамгийн муу тохиолдол нь bucket ОГТ ҮҮСЭЭГҮЙ үе: сервер 404
- * буцаахад SDK түүнийг тусад нь танихгүй (`sharedErrorHandler` нь зөвхөн
- * 401/402/403-ыг ялгадаг) тул "Firebase Storage: An unknown error occurred"
- * гэсэн утгагүй мөр л үлдэнэ. Хэрэглэгч "зураг ажиллахгүй байна" гэж мэдээлэх
- * боловч жинхэнэ шалтгаан нь Firebase Console дээр Storage-ыг асаагаагүйд
- * байдаг — үүнийг ил хэлж өгвөл олон цагийн эрэл хэмнэнэ.
- */
+/** Байршуулалтын алдааг хүн уншиж ойлгох мессеж болгоно. */
 function photoUploadMessage(cause: unknown): string {
-  const code = (cause as { code?: string } | null)?.code ?? "";
-  const status = (cause as { status?: number } | null)?.status;
-
-  if (code === "storage/unauthorized") {
-    return t("Зураг байршуулах эрх алга. Storage-ийн дүрэм (storage.rules) байршуулагдсан эсэхийг шалгана уу.");
-  }
-  if (code === "storage/unauthenticated") {
-    return t("Нэвтрэлт хүчингүй боллоо. Дахин нэвтэрч үзнэ үү.");
-  }
-  if (code === "storage/quota-exceeded") {
-    return t("Storage-ийн багтаамж дүүрсэн байна.");
-  }
-  if (code === "storage/retry-limit-exceeded") {
-    return t("Сүлжээ удаан байна. Дахин оролдоно уу.");
-  }
-  if (code === "storage/bucket-not-found" || status === 404) {
-    return (
-      t("Firebase Storage энэ төсөл дээр үүсээгүй байна. Firebase Console → ") +
-      t("Build → Storage → Get started дарж идэвхжүүлээд, дараа нь ") +
-      t("`firebase deploy --only storage` гүйцэтгэнэ үү.")
-    );
-  }
-
-  return cause instanceof Error
-    ? `Зураг байршуулахад алдаа гарлаа: ${cause.message}`
-    : t("Зураг байршуулахад алдаа гарлаа.");
+  return cause instanceof ApiError ? cause.message : t("Зураг байршуулахад алдаа гарлаа.");
 }
 
 /** Тохиргоо (#12 дэлгэц). */
@@ -146,33 +111,16 @@ export default function SettingsPage() {
       return;
     }
 
-    const previousUrl = user.photoUrl;
     setUploadingPhoto(true);
     setError(null);
 
     try {
       /*
-       * ⚠ Storage SDK-г ЭНД, хэрэгцээ гарсан үед татна. Модулийн түвшинд
-       * импортлобол `/settings` хуудасны эхний багцад (мөн `lib/firebase`-
-       * ээр дамжин бусад хуудсанд) орно — бодит хэрэглээ нь зөвхөн энэ
-       * функц. Хэрэглэгч аль хэдийн зураг сонгосон тул татах хугацаа
-       * мэдрэгдэхгүй.
+       * Манай сервер рүү байршуулна (`/api/uploads`). Хуучин зургийг
+       * `PATCH /api/users/me` сервер талдаа устгана.
        */
-      const [{ deleteObject, getDownloadURL, ref, uploadBytes }, storage] =
-        await Promise.all([import("firebase/storage"), getStorageLazy()]);
-
-      const extMatch = /\.[a-zA-Z0-9]+$/.exec(file.name);
-      const path = `profile_photos/${user.uid}/${Date.now()}${extMatch ? extMatch[0] : ""}`;
-      const fileRef = ref(storage, path);
-      await uploadBytes(fileRef, file, { contentType: file.type });
-      const url = await getDownloadURL(fileRef);
+      const url = await uploadImage("profile", file);
       await persist({ photoUrl: url });
-
-      if (previousUrl) {
-        // Хуучин зургийг устгана — байхгүй эсвэл манай сангийнх биш байж
-        // болох тул алдааг үл тоомсорлоно.
-        deleteObject(ref(storage, previousUrl)).catch(() => {});
-      }
     } catch (cause) {
       setError(photoUploadMessage(cause));
     } finally {

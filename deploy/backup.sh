@@ -99,6 +99,22 @@ else
   echo "▶ 2/3  Эх код — алгасав (BACKUP_CODE=0)"
 fi
 
+# --- 2b. Байршуулсан зураг ---------------------------------------------------
+#
+# ⚠ `BACKUP_CODE=0` үед ч ЗААВАЛ: эх код GitHub дээр байдаг бол профайл
+# зураг, лого нь ЗӨВХӨН энэ сервер дээр (`UPLOAD_DIR`, `lib/api/uploads.ts`).
+
+if [[ -z "${UPLOAD_DIR:-}" && -f "${APP_DIR}/.env.local" ]]; then
+  UPLOAD_DIR="$(grep -E '^UPLOAD_DIR=' "${APP_DIR}/.env.local" | cut -d= -f2- | tr -d '')"
+fi
+UPLOAD_DIR="${UPLOAD_DIR:-${APP_DIR}/.uploads}"
+
+if [[ -d "${UPLOAD_DIR}" ]]; then
+  echo "▶ Байршуулсан зураг: ${UPLOAD_DIR}"
+  tar -czf "${OUT}/uploads.tar.gz" -C "$(dirname "${UPLOAD_DIR}")" "$(basename "${UPLOAD_DIR}")"
+  echo "     $(du -h "${OUT}/uploads.tar.gz" | cut -f1)"
+fi
+
 # --- 3. Сэргээх заавар ------------------------------------------------------
 
 cat > "${OUT}/README.md" <<EOF

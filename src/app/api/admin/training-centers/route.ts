@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { asc, eq } from "drizzle-orm";
 
 import { badRequest, notFound, requireAdmin, serverError } from "@/lib/api/auth";
+import { isUploadUnder } from "@/lib/api/uploads";
 import { db } from "@/lib/db";
 import { trainingCenters } from "@/lib/db/schema";
 
@@ -63,9 +64,14 @@ const flag = (value: unknown): boolean => value === true;
  *
  * @returns цэвэрлэгдсэн хаяг, хоосон ч болох; `null` бол ХОРИГЛОХ.
  */
-function safeUrl(value: unknown, max: number): string | null {
+function safeUrl(value: unknown, max: number, allowUpload = false): string | null {
   const raw = text(value, max);
   if (!raw) return "";
+  /*
+   * Зураг, лого нь манай серверт байршсан (`/api/uploads/training_centers/…`)
+   * байж болно — харьцангуй хаяг тул `https:` шалгалтыг давахгүй.
+   */
+  if (allowUpload && isUploadUnder(raw, "training_centers")) return raw;
   try {
     const url = new URL(raw);
     return url.protocol === "https:" ? url.toString().slice(0, max) : null;
@@ -75,6 +81,8 @@ function safeUrl(value: unknown, max: number): string | null {
 }
 
 const URL_FIELDS = ["photoUrl", "logoUrl", "mapUrl", "link"] as const;
+/** Манай серверт байршуулсан зураг байж болох талбарууд. */
+const UPLOAD_FIELDS = new Set<string>(["photoUrl", "logoUrl"]);
 
 /** Админы бүрэн жагсаалт — нуусан төвүүд ч орно. */
 export async function GET(request: NextRequest) {
@@ -102,7 +110,7 @@ export async function POST(request: NextRequest) {
 
   const urls: Record<string, string> = {};
   for (const field of URL_FIELDS) {
-    const value = safeUrl(body[field], LIMITS[field]);
+    const value = safeUrl(body[field], LIMITS[field], UPLOAD_FIELDS.has(field));
     if (value === null) return badRequest("Холбоос https:// -ээр эхлэх ёстой.");
     urls[field] = value;
   }
@@ -159,7 +167,7 @@ export async function PATCH(request: NextRequest) {
   if ("description" in body) patch.description = text(body.description, 2000);
   for (const field of URL_FIELDS) {
     if (!(field in body)) continue;
-    const value = safeUrl(body[field], LIMITS[field]);
+    const value = safeUrl(body[field], LIMITS[field], UPLOAD_FIELDS.has(field));
     if (value === null) return badRequest("Холбоос https:// -ээр эхлэх ёстой.");
     patch[field] = value;
   }
