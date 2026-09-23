@@ -17,7 +17,6 @@ import type { ClientDeviceInfo } from "@/context/UserContext";
 import type { UserRole } from "@/lib/permissions";
 
 import { WelcomeRobotGif } from "./LoopGif";
-import { Mascot } from "./Mascot";
 import { ErrorNote, Skeleton } from "./ui";
 import { activeLocale, t } from "@/lib/i18n/t";
 
@@ -240,7 +239,7 @@ function RepairScreen({ onDone }: { onDone: () => Promise<void> }) {
 
   return (
     <div className="mx-auto flex max-w-md flex-col items-center gap-4 p-8 text-center">
-      <Mascot mood="think" className="size-28" />
+      <WelcomeRobotGif className="size-28 object-contain" />
       <h1 className="text-xl font-bold text-gray-900 dark:text-white">
         {t("Бүртгэл чинь дутуу үлджээ")}
       </h1>
@@ -304,7 +303,7 @@ function DeviceLimitScreen({
 
   return (
     <div className="mx-auto flex max-w-md flex-col items-center gap-4 p-8 text-center">
-      <Mascot mood="think" className="size-28" />
+      <WelcomeRobotGif className="size-28 object-contain" />
       <h1 className="text-xl font-bold text-gray-900 dark:text-white">
         {t("Төхөөрөмжийн хязгаарт хүрлээ")}
       </h1>
@@ -401,7 +400,7 @@ function CenteredNotice({
 }) {
   return (
     <div className="mx-auto flex max-w-md flex-col items-center gap-4 p-8 text-center">
-      <Mascot mood="think" className="size-28" />
+      <WelcomeRobotGif className="size-28 object-contain" />
       <h1 className="text-xl font-bold text-gray-900 dark:text-white">{title}</h1>
       <p className="text-sm text-gray-500 dark:text-gray-400">{description}</p>
       <button
