@@ -18,9 +18,6 @@ import {
   Languages,
   LayoutDashboard,
   LayoutGrid,
-  TrendingUp,
-  Building2,
-  Bot,
   LogOut,
   Menu as MenuIcon,
   Settings,
@@ -264,14 +261,10 @@ function buildRoleNav(user: PublicUser | null): NavItem[] {
     ...profile,
     { href: "/leaderboard", label: t("Тэргүүлэгчид"), Icon: Trophy, color: "amber" },
     /*
-     * ⚠ ГУРВУУЛАА ҮРГЭЛЖ `/tournament`-ИЙН ТАБ БАЙВ. Тэр хуудас
-     * «Апп» хөөргүүр болоход табууд хасагдсан тул тусдаа хаягтай
-     * болж, энэ жагсаалтад суув. Бүгд бүрэн ажилладаг — хүснэгт,
-     * API, админы удирдлагатай тул хүрэх аргагүй үлдээх боломжгүй.
+     * ⚠ Чансаа (`/rating`), Сургалтын төв (`/centers`), Дасгалжуулагч
+     * (`/coaches`) ЦЭСЭНД БАЙХГҮЙ — эзний шийдвэрээр хасав. Хуудас, API,
+     * админы удирдлага нь хэвээр тул буцааж нэмэхэд энд нэг мөр л хангалттай.
      */
-    { href: "/rating", label: t("Чансаа"), Icon: TrendingUp, color: "violet" },
-    { href: "/centers", label: t("Сургалтын төв"), Icon: Building2, color: "amber" },
-    { href: "/coaches", label: t("Дасгалжуулагч"), Icon: Bot, color: "sky" },
     { href: "/friends", label: t("Найзууд"), Icon: Handshake, color: "emerald" },
     { href: "/achievements", label: t("Амжилтууд"), Icon: Award, color: "orange" },
     /*
