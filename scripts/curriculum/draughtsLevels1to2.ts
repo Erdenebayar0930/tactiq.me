@@ -1,5 +1,5 @@
 /**
- * LEVEL 1–2 — дүрэм, эхний цохилтууд (7–9 нас).
+ * LEVEL 1–2 — дүрэм, эхний идэлтүүд (7–9 нас).
  *
  * Хичээл бүр ОЙЛГОЛТ (сонголттой асуулт) + ДАДЛАГА (хөлөг дээрх бодит
  * байрлал) хоёроос бүрдэнэ: зөвхөн асуулт бол хүүхэд дүрмийг «мэддэг» ч
@@ -35,12 +35,12 @@ export const LEVEL_1: SeedUnit = {
           ],
           0,
           [
-            "Олон улсын даам 10×10 самбар дээр, тал бүр 20 чулуутай тоглогдоно.",
+            "Олон улсын даам 10×10 самбар дээр, тал бүр 20 хүүтэй тоглогдоно.",
             "International draughts uses a 10×10 board with 20 pieces per side.",
           ]
         ),
         q(
-          ["Чулуунууд самбарын ямар нүдэн дээр байрлах вэ?", "Which squares do the pieces stand on?"],
+          ["Хүүнүүд самбарын ямар нүдэн дээр байрлах вэ?", "Which squares do the pieces stand on?"],
           [
             ["Зөвхөн ХАР (бараан) нүдэн дээр", "Only on the dark squares"],
             ["Зөвхөн цагаан нүдэн дээр", "Only on the light squares"],
@@ -65,11 +65,11 @@ export const LEVEL_1: SeedUnit = {
       ],
     },
     {
-      title: ["Чулуугаа зөв байрлуулах", "Setting up correctly"],
+      title: ["Хүүгээ зөв байрлуулах", "Setting up correctly"],
       xp: 10,
       exercises: [
         q(
-          ["Тал бүр хэдэн чулуутай эхлэх вэ?", "How many pieces does each side start with?"],
+          ["Тал бүр хэдэн хүүтэй эхлэх вэ?", "How many pieces does each side start with?"],
           [
             ["20", "20"],
             ["12", "12"],
@@ -77,7 +77,7 @@ export const LEVEL_1: SeedUnit = {
           ],
           0,
           [
-            "Тал бүр 20 чулуу — өөрийн талын дөрвөн эгнээг дүүргэнэ.",
+            "Тал бүр 20 хүү — өөрийн талын дөрвөн эгнээг дүүргэнэ.",
             "Each side has 20 pieces, filling the four rows on its own side.",
           ]
         ),
@@ -101,7 +101,7 @@ export const LEVEL_1: SeedUnit = {
       xp: 10,
       exercises: [
         q(
-          ["Энгийн бэр хэрхэн нүүдэг вэ?", "How does a man move?"],
+          ["Энгийн хүү хэрхэн нүүдэг вэ?", "How does a man move?"],
           [
             ["Ташуу, УРАГШ, нэг нүд", "Diagonally FORWARD, one square"],
             ["Ташуу, аль ч чигт, нэг нүд", "Diagonally in any direction, one square"],
@@ -109,14 +109,14 @@ export const LEVEL_1: SeedUnit = {
           ],
           0,
           [
-            "Бэр зөвхөн урагш ташуу нүүнэ. Хойш нүүх эрх нь дамка (хаан) болсны дараа гарна.",
+            "Хүү зөвхөн урагш ташуу нүүнэ. Хойш нүүх эрх нь даам (хаан) болсны дараа гарна.",
             "A man moves only diagonally forward. Moving backwards comes only after it becomes a king.",
           ]
         ),
         move(
           QUIET_PROMPT,
           [
-            "Энэ байрлалд ердөө нэг л хууль ёсны нүүдэл байна — бэр урагш ташуу.",
+            "Энэ байрлалд ердөө нэг л хууль ёсны нүүдэл байна — хүү урагш ташуу.",
             "There is only one legal move here — the man steps diagonally forward.",
           ],
           4,
@@ -126,19 +126,19 @@ export const LEVEL_1: SeedUnit = {
       ],
     },
     {
-      title: ["Цохилт", "Capturing"],
+      title: ["Идэлт", "Capturing"],
       xp: 15,
       exercises: [
         q(
-          ["Бэр хэрхэн ид вэ?", "How does a man capture?"],
+          ["Хүү хэрхэн иддэг вэ?", "How does a man capture?"],
           [
-            ["Дайсны чулуун дээгүүр үсэрч, ДАРААХ хоосон нүдэнд буух", "By jumping over an enemy piece to the empty square beyond"],
-            ["Дайсны чулуу дээр суух", "By landing on the enemy piece"],
+            ["Дайсны хүүгийн дээгүүр үсэрч, ДАРААХ хоосон нүдэнд буух", "By jumping over an enemy piece to the empty square beyond"],
+            ["Дайсны хүү дээр суух", "By landing on the enemy piece"],
             ["Хажуугаар гарах", "By passing beside it"],
           ],
           0,
           [
-            "Идэхдээ дайсны чулуун дээгүүр үсэрнэ — цаана нь ХООСОН нүд байх ёстой.",
+            "Идэхдээ дайсны хүүгийн дээгүүр үсэрнэ — цаана нь ХООСОН нүд байх ёстой.",
             "To capture you jump over the enemy piece — the square behind it must be empty.",
           ]
         ),
@@ -146,7 +146,7 @@ export const LEVEL_1: SeedUnit = {
       ],
     },
     {
-      title: ["Заавал цохих", "Capture is compulsory"],
+      title: ["Заавал идэх", "Capture is compulsory"],
       xp: 15,
       exercises: [
         q(
@@ -154,7 +154,7 @@ export const LEVEL_1: SeedUnit = {
           [
             ["Болохгүй — идэлт ЗААВАЛ", "No — the capture is compulsory"],
             ["Болно, хүссэнээ сонгоно", "Yes, you may choose freely"],
-            ["Зөвхөн дамка байвал болно", "Only if you have a king"],
+            ["Зөвхөн даам байвал болно", "Only if you have a king"],
           ],
           0,
           [
@@ -165,7 +165,7 @@ export const LEVEL_1: SeedUnit = {
         q(
           ["Хоёр өөр идэлт байвал аль нь вэ?", "If two captures are possible, which must you play?"],
           [
-            ["Хамгийн ОЛОН чулуу идэх цуваа", "The sequence that captures the MOST pieces"],
+            ["Хамгийн ОЛОН хүү идэх цуваа", "The sequence that captures the MOST pieces"],
             ["Хамгийн ойрхон нь", "The nearest one"],
             ["Хүссэнээ", "Either one"],
           ],
@@ -179,11 +179,11 @@ export const LEVEL_1: SeedUnit = {
       ],
     },
     {
-      title: ["Дараалсан цохилт", "Multiple captures"],
+      title: ["Дараалсан идэлт", "Multiple captures"],
       xp: 20,
       exercises: [
         move(
-          ["Цагаанаар тоглож байна. Нэг нүүдлээр хоёроос дээш чулуу ид.", "White to play. Capture two or more pieces in one move."],
+          ["Цагаанаар тоглож байна. Нэг нүүдлээр хоёроос дээш хүү ид.", "White to play. Capture two or more pieces in one move."],
           CHAIN_EXPLAIN,
           8,
           { minCaptures: 2 },
@@ -192,26 +192,26 @@ export const LEVEL_1: SeedUnit = {
       ],
     },
     {
-      title: ["Дамка", "The king"],
+      title: ["Даам", "The king"],
       xp: 15,
       exercises: [
         q(
-          ["Бэр хэзээ дамка болох вэ?", "When does a man become a king?"],
+          ["Хүү хэзээ даам болох вэ?", "When does a man become a king?"],
           [
             ["Өрсөлдөгчийн сүүлийн эгнээнд хүрэх үед", "When it reaches the opponent's last row"],
-            ["Таван чулуу идсэн үед", "After capturing five pieces"],
+            ["Таван хүү идсэн үед", "After capturing five pieces"],
             ["Тоглолтын дундуур", "Halfway through the game"],
           ],
           0,
           [
-            "Сүүлийн эгнээнд хүрсэн бэр тэр дор дамка болно.",
+            "Сүүлийн эгнээнд хүрсэн хүү тэр дор даам болно.",
             "A man that reaches the far row is promoted to a king immediately.",
           ]
         ),
         move(
-          ["Цагаанаар тоглож байна. Бэрээ дамка болго.", "White to play. Promote your man to a king."],
+          ["Цагаанаар тоглож байна. Хүүгээ даам болго.", "White to play. Promote your man to a king."],
           [
-            "Сүүлийн эгнээнд хүрсэн бэр дамка болно — дараа нь хойш ч нүүж чадна.",
+            "Сүүлийн эгнээнд хүрсэн хүү даам болно — дараа нь хойш ч нүүж чадна.",
             "Reaching the last row promotes the man — afterwards it can also move backwards.",
           ],
           5,
@@ -221,11 +221,11 @@ export const LEVEL_1: SeedUnit = {
       ],
     },
     {
-      title: ["Дамканы нүүдэл", "How the king moves"],
+      title: ["Даамын нүүдэл", "How the king moves"],
       xp: 15,
       exercises: [
         q(
-          ["Дамка хэрхэн нүүдэг вэ?", "How does a king move?"],
+          ["Даам хэрхэн нүүдэг вэ?", "How does a king move?"],
           [
             ["Ташуу, аль ч чигт, хэдэн ч нүд", "Diagonally, any direction, any distance"],
             ["Ташуу, зөвхөн нэг нүд", "Diagonally, one square only"],
@@ -233,14 +233,14 @@ export const LEVEL_1: SeedUnit = {
           ],
           0,
           [
-            "Дамка ташуу шугамаар урагш, хойш хэдэн ч нүд явна — тиймээс бэрээс хамаагүй хүчтэй.",
+            "Даам ташуу шугамаар урагш, хойш хэдэн ч нүд явна — тиймээс хүүгээс хамаагүй хүчтэй.",
             "A king slides any number of squares along a diagonal, forwards or backwards — far stronger than a man.",
           ]
         ),
         move(
-          ["Цагаанаар тоглож байна. Дамкаараа цохи.", "White to play. Capture with your king."],
+          ["Цагаанаар тоглож байна. Даамаараа ид.", "White to play. Capture with your king."],
           [
-            "Дамка холоос цохино: идсэн чулууны цаана хоосон нүд байвал аль ч зайд буух боломжтой.",
+            "Даам холоос иднэ: идсэн хүүгийн цаана хоосон нүд байвал аль ч зайд буух боломжтой.",
             "A king captures from a distance: it may land on any empty square beyond the captured piece.",
           ],
           5,
@@ -256,14 +256,14 @@ export const LEVEL_1: SeedUnit = {
         q(
           ["Тоглолтыг хэрхэн хожих вэ?", "How do you win a game?"],
           [
-            ["Өрсөлдөгчийн бүх чулууг идэх, эсвэл нүүх боломжгүй болгох", "Capture all the opponent's pieces, or leave them with no legal move"],
-            ["Илүү олон дамка гаргах", "Make more kings"],
+            ["Өрсөлдөгчийн бүх хүүг идэх", "Capture all of the opponent's pieces"],
+            ["Илүү олон даам гаргах", "Make more kings"],
             ["Самбарын төвийг эзлэх", "Occupy the centre"],
           ],
           0,
           [
-            "Нүүх боломжгүй болсон тал хожигдоно — чулуу нь үлдсэн ч гэсэн.",
-            "A side with no legal move loses, even if it still has pieces.",
+            "Бүх дүрсээ алдсан тал хожигдоно. Нүүх боломжгүй болсон нь ТЭНЦЭЭ — хожил биш.",
+            "The side that loses all its pieces loses. Being left with no move is a DRAW, not a loss.",
           ]
         ),
         move(CAPTURE_PROMPT, CAPTURE_EXPLAIN, 4, { minCaptures: 2 }, { whites: 2, blacks: 4 }),
@@ -277,12 +277,12 @@ export const LEVEL_1: SeedUnit = {
           ["Тэнцээ хэзээ болох вэ?", "When is the game a draw?"],
           [
             ["Хоёр тал ч хожиж чадахгүй байрлалд, эсвэл тохиролцсон үед", "When neither side can win, or by agreement"],
-            ["Чулуу тэнцүү үлдэхэд", "Whenever the material is equal"],
-            ["Дамка хоёулаа гарахад", "As soon as both sides have a king"],
+            ["Хүү тэнцүү үлдэхэд", "Whenever the material is equal"],
+            ["Даам хоёулаа гарахад", "As soon as both sides have a king"],
           ],
           0,
           [
-            "Хоёр тал ахиц гаргаж чадахгүй болбол тэнцээ. Чулуу тэнцүү байх нь өөрөө тэнцээ гэсэн үг биш.",
+            "Хоёр тал ахиц гаргаж чадахгүй болбол тэнцээ. Хүү тэнцүү байх нь өөрөө тэнцээ гэсэн үг биш.",
             "If neither side can make progress it is a draw. Equal material by itself is not a draw.",
           ]
         ),
@@ -296,18 +296,18 @@ export const LEVEL_2: SeedUnit = {
   color: "sky",
   lessons: [
     {
-      title: ["Шууд цохилт", "Direct capture"],
+      title: ["Шууд идэлт", "Direct capture"],
       xp: 15,
       exercises: [
         move(CAPTURE_PROMPT, CAPTURE_EXPLAIN, 8, { minCaptures: 1, maxCaptures: 1 }, { whites: 3, blacks: 4 }),
       ],
     },
     {
-      title: ["1 нүүдлийн цохилт", "One-move strike"],
+      title: ["1 нүүдлийн идэлт", "One-move strike"],
       xp: 15,
       exercises: [
         move(
-          ["Цагаанаар тоглож байна. Нэг нүүдлээр хамгийн их чулуу ид.", "White to play. Win as much material as you can in one move."],
+          ["Цагаанаар тоглож байна. Нэг нүүдлээр хамгийн их хүү ид.", "White to play. Win as much material as you can in one move."],
           CHAIN_EXPLAIN,
           8,
           { minCaptures: 2 },
@@ -316,19 +316,19 @@ export const LEVEL_2: SeedUnit = {
       ],
     },
     {
-      title: ["Аль чулуу цохих вэ?", "Which piece captures?"],
+      title: ["Аль хүүг идэх вэ?", "Which piece captures?"],
       xp: 15,
       exercises: [
         q(
-          ["Хоёр чулуу идэж чадвал аль нь идэх ёстой вэ?", "If two of your pieces can capture, which one must?"],
+          ["Хоёр хүү идэж чадвал аль нь идэх ёстой вэ?", "If two of your pieces can capture, which one must?"],
           [
-            ["Илүү ОЛОН чулуу идэж чаддаг нь", "The one that captures MORE pieces"],
+            ["Илүү ОЛОН хүү идэж чаддаг нь", "The one that captures MORE pieces"],
             ["Аль нь ч болно", "Either of them"],
-            ["Дамка нь л", "Only the king"],
+            ["Даам нь л", "Only the king"],
           ],
           0,
           [
-            "Хамгийн урт цувааны дүрэм аль чулуу идэхийг ч шийднэ — тиймээс бүх боломжийг тоолж хар.",
+            "Хамгийн урт цувааны дүрэм аль хүү идэхийг ч шийднэ — тиймээс бүх боломжийг тоолж хар.",
             "The longest-sequence rule also decides which piece captures — so count every option.",
           ]
         ),
@@ -336,19 +336,19 @@ export const LEVEL_2: SeedUnit = {
       ],
     },
     {
-      title: ["Цохилтын чиглэл", "Direction of the strike"],
+      title: ["Идэлтийн чиглэл", "Direction of the strike"],
       xp: 15,
       exercises: [
         q(
-          ["Бэр хойш нь ид чадах уу?", "Can a man capture backwards?"],
+          ["Хүү хойш нь идэж чадах уу?", "Can a man capture backwards?"],
           [
             ["Олон улсын даамд ТИЙМ — идэхдээ хойш ч үсэрнэ", "In international draughts YES — captures may go backwards"],
             ["Үгүй, хэзээ ч", "No, never"],
-            ["Зөвхөн дамка болсны дараа", "Only after promotion"],
+            ["Зөвхөн даам болсны дараа", "Only after promotion"],
           ],
           0,
           [
-            "Энэ бол хамгийн их андуурдаг дүрэм: НҮҮХДЭЭ бэр зөвхөн урагш, харин ИДЭХДЭЭ хойш ч үсэрч болно.",
+            "Энэ бол хамгийн их андуурдаг дүрэм: НҮҮХДЭЭ хүү зөвхөн урагш, харин ИДЭХДЭЭ хойш ч үсэрч болно.",
             "This is the most misunderstood rule: a man MOVES only forward, but it may CAPTURE backwards too.",
           ]
         ),
@@ -365,7 +365,7 @@ export const LEVEL_2: SeedUnit = {
       xp: 15,
       exercises: [
         q(
-          ["Өрсөлдөгч чулуу өгөх гэж байвал юу хийх ёстой вэ?", "When the opponent offers a piece, what should you do?"],
+          ["Өрсөлдөгч хүү өгөх гэж байвал юу хийх ёстой вэ?", "When the opponent offers a piece, what should you do?"],
           [
             ["Идсэний дараа ЮУ болохыг тооцох", "Calculate what happens AFTER you take"],
             ["Ямагт шууд идэх", "Always take at once"],
@@ -385,7 +385,7 @@ export const LEVEL_2: SeedUnit = {
       xp: 20,
       exercises: [
         combo(
-          ["Цагаанаар тоглож байна. Чулуугаа өгөөд илүүг эргүүлж ав.", "White to play. Give a piece and win more back."],
+          ["Цагаанаар тоглож байна. Хүүгээ өгөөд илүүг эргүүлж ав.", "White to play. Give a piece and win more back."],
           COMBO_EXPLAIN,
           6,
           { whites: 4, blacks: 5 },
@@ -400,13 +400,13 @@ export const LEVEL_2: SeedUnit = {
         q(
           ["Цохилтын дараа юуг хамгийн түрүүнд шалгах вэ?", "After a strike, what do you check first?"],
           [
-            ["Өрсөлдөгч эргээд цохих боломжтой эсэхийг", "Whether the opponent now has a counter-capture"],
-            ["Хэдэн чулуу үлдснийг", "How many pieces are left"],
+            ["Өрсөлдөгч эргээд идэх боломжтой эсэхийг", "Whether the opponent now has a counter-capture"],
+            ["Хэдэн хүү үлдснийг", "How many pieces are left"],
             ["Цаг хэр их үлдснийг", "How much time is left"],
           ],
           0,
           [
-            "Цохилт дууссаны дараа дүрс нь ил үлддэг. Тиймээс «идээд дараа нь юу?» гэдгийг ямагт тооцно.",
+            "Цохилт дууссаны дараа дүрс нь ил үлддэг. Тиймээс «цохиод дараа нь юу?» гэдгийг ямагт тооцно.",
             "After a capture your piece often stands exposed. Always ask: and then what?",
           ]
         ),
@@ -414,7 +414,7 @@ export const LEVEL_2: SeedUnit = {
       ],
     },
     {
-      title: ["Цохилтыг урьдчилан харах", "Seeing the strike in advance"],
+      title: ["Идэлтийг урьдчилан харах", "Seeing the strike in advance"],
       xp: 20,
       exercises: [
         move(CAPTURE_PROMPT, CHAIN_EXPLAIN, 6, { minCaptures: 3 }, { whites: 3, blacks: 6 }),

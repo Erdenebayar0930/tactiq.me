@@ -57,13 +57,13 @@ export type MoveSpec = {
   maxCaptures?: number;
   quietOnly?: boolean;
   mustPromote?: boolean;
-  /** Нүүх чулуу нь дамка байх. */
+  /** Нүүх дүрс нь даам байх. */
   byKing?: boolean;
-  /** Нүүх чулуу нь энгийн бэр байх. */
+  /** Нүүх дүрс нь энгийн хүү байх. */
   byMan?: boolean;
-  /** Бэрийн эхний үсрэлт ХОЙШ (цагааны хувьд доош) чиглэх. */
+  /** Хүүгийн эхний үсрэлт ХОЙШ (цагааны хувьд доош) чиглэх. */
   backward?: boolean;
-  /** Хөлөг дээр өөр (богино) цохилт ч эхэлж болох — «хамгийн их идэлт» дүрмийн дасгал. */
+  /** Хөлөг дээр өөр (богино) идэлт ч эхэлж болох — «хамгийн их идэлт» дүрмийн дасгал. */
   majority?: boolean;
 };
 
@@ -75,7 +75,7 @@ export type ComboSpec = {
   exchange?: boolean;
 };
 
-/** Сурагчийн 3 нүүдэлтэй цуваа: тулгуур → албадмал цохилт → албадмал хариу → эцсийн цохилт. */
+/** Сурагчийн 3 нүүдэлтэй цуваа: тулгуур → албадмал идэлт → албадмал хариу → эцсийн идэлт. */
 export type Combo3Spec = { type: "combo3"; pieces: Pieces; minGain?: number };
 
 export type GenSpec = MoveSpec | ComboSpec | Combo3Spec;
@@ -132,12 +132,12 @@ export const gen = (prompt: Bi, explain: Bi, count: number, spec: GenSpec): GenE
 // --- Дахин дахин хэрэглэгдэх даалгавар, тайлбар --------------------------
 
 export const CAPTURE_PROMPT: Bi = [
-  "Цагаанаар тоглож байна. Цохилтоо олж ид.",
+  "Цагаанаар тоглож байна. Идэх боломжоо ол.",
   "White to play. Find the capture.",
 ];
 
 export const CAPTURE_EXPLAIN: Bi = [
-  "Даамд идэх боломж гарвал ЗААВАЛ идэх ёстой — тиймээс цохилтыг эхлээд хай.",
+  "Даамд идэх боломж гарвал ЗААВАЛ идэх ёстой — тиймээс идэлтийг эхлээд хай.",
   "In draughts a capture is compulsory — so always look for captures first.",
 ];
 

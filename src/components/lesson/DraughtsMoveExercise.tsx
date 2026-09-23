@@ -141,7 +141,19 @@ export default function DraughtsMoveExercise({
             const at = chainPosition(chain);
             return at.row === square.row && at.col === square.col ? chainTargets(chain) : [];
           }
-          return gameRef.current.movesFrom(square).map((m) => m.to);
+                    /*
+           * ⚠ `move.to` БИШ, `move.landings[0]`: `to` нь БҮТЭН хэлхээний
+           * ТӨГСГӨЛ, харин `startChain` нь ЭХНИЙ буултаар тааруулдаг
+           * (`lib/draughts/chain.ts`). Хоёр идэлттэй нүүдэлд эдгээр нь
+           * ӨӨР нүд болох тул хөлөг нь төгсгөлийн нүдийг тодруулж,
+           * сурагч түүн рүү нүүхэд `startChain` нь «хууль бус» гэж
+           * буцаадаг байв — дүрс байрандаа эргэж очно. ОЛОН ИДЭЛТТЭЙ
+           * 348 дасгал бүхэлдээ тоглогдохгүй байсан.
+           *
+           * ⚠ Ганц идэлттэй нүүдэлд `landings[0] === to` тул тэдгээр нь
+           * ажилласаар байсан — алдаа яг ТИЙМ УЧРААС нуугдсан.
+           */
+          return gameRef.current.movesFrom(square).map((m) => m.landings[0] ?? m.to);
         }}
         onMove={handleMove}
         lastMove={lastMove}

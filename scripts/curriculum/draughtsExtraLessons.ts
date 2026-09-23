@@ -25,29 +25,29 @@ import {
 // --- Даалгавар ------------------------------------------------------------
 
 const ONLY_PROMPT: Bi = ["Цагаанаар тоглож байна. Цорын ганц нүүдлээ ол.", "White to play. Find your only move."];
-const TWO_PROMPT: Bi = ["Цагаанаар тоглож байна. Нэг нүүдлээр хоёр чулуу ид.", "White to play. Capture two pieces in one move."];
+const TWO_PROMPT: Bi = ["Цагаанаар тоглож байна. Нэг нүүдлээр хоёр хүү ид.", "White to play. Capture two pieces in one move."];
 const CHAIN2_PROMPT: Bi = [
-  "Цагаанаар тоглож байна. Нэг нүүдлээр хоёроос дээш чулуу ид.",
+  "Цагаанаар тоглож байна. Нэг нүүдлээр хоёроос дээш хүү ид.",
   "White to play. Capture two or more pieces in one move.",
 ];
 const CHAIN3_PROMPT: Bi = [
-  "Цагаанаар тоглож байна. Нэг нүүдлээр гурваас дээш чулуу ид.",
+  "Цагаанаар тоглож байна. Нэг нүүдлээр гурваас дээш хүү ид.",
   "White to play. Capture three or more pieces in one move.",
 ];
 const CHAIN4_PROMPT: Bi = [
-  "Цагаанаар тоглож байна. Нэг нүүдлээр дөрвөөс дээш чулуу ид.",
+  "Цагаанаар тоглож байна. Нэг нүүдлээр дөрвөөс дээш хүү ид.",
   "White to play. Capture four or more pieces in one move.",
 ];
-const BACK_PROMPT: Bi = ["Цагаанаар тоглож байна. Бэрээрээ хойш нь цохи.", "White to play. Capture backwards with a man."];
+const BACK_PROMPT: Bi = ["Цагаанаар тоглож байна. Хүүгээрээ хойш нь ид.", "White to play. Capture backwards with a man."];
 const MAJORITY_PROMPT: Bi = [
-  "Цагаанаар тоглож байна. Хамгийн олон чулуу иддэг цувааг ол.",
+  "Цагаанаар тоглож байна. Хамгийн олон хүү иддэг цувааг ол.",
   "White to play. Find the sequence that captures the most pieces.",
 ];
-const PROMOTE_PROMPT: Bi = ["Цагаанаар тоглож байна. Бэрээ дамка болго.", "White to play. Promote your man to a king."];
-const CAPTURE_PROMOTE_PROMPT: Bi = ["Цагаанаар тоглож байна. Цохиод дамка бол.", "White to play. Capture and promote."];
-const KING_PROMPT: Bi = ["Цагаанаар тоглож байна. Дамкаараа цохи.", "White to play. Capture with your king."];
+const PROMOTE_PROMPT: Bi = ["Цагаанаар тоглож байна. Хүүгээ даам болго.", "White to play. Promote your man to a king."];
+const CAPTURE_PROMOTE_PROMPT: Bi = ["Цагаанаар тоглож байна. Идээд даам бол.", "White to play. Capture and promote."];
+const KING_PROMPT: Bi = ["Цагаанаар тоглож байна. Даамаараа ид.", "White to play. Capture with your king."];
 const EXCHANGE_PROMPT: Bi = [
-  "Цагаанаар тоглож байна. Чулуугаа өгөөд буцааж ав — солилцоо хий.",
+  "Цагаанаар тоглож байна. Хүүгээ өгөөд буцааж ав — солилцоо хий.",
   "White to play. Give a piece and take one back — make an exchange.",
 ];
 const LONG_COMBO_PROMPT: Bi = [
@@ -58,7 +58,7 @@ const LONG_COMBO_PROMPT: Bi = [
 // --- Тайлбар --------------------------------------------------------------
 
 const QUIET_EXPLAIN: Bi = [
-  "Энэ байрлалд ердөө нэг л хууль ёсны нүүдэл байна — бэр урагш ташуу.",
+  "Энэ байрлалд ердөө нэг л хууль ёсны нүүдэл байна — хүү урагш ташуу.",
   "There is only one legal move here — the man steps diagonally forward.",
 ];
 const ONLY_EXPLAIN: Bi = [
@@ -66,35 +66,35 @@ const ONLY_EXPLAIN: Bi = [
   "A forced position: there is no choice. Avoid drifting into these with every move you make.",
 ];
 const BACK_EXPLAIN: Bi = [
-  "Бэр НҮҮХДЭЭ зөвхөн урагш, харин ИДЭХДЭЭ хойш ч үсэрч болно.",
+  "Хүү НҮҮХДЭЭ зөвхөн урагш, харин ИДЭХДЭЭ хойш ч үсэрч болно.",
   "A man MOVES only forward, but it may CAPTURE backwards too.",
 ];
 const MAJORITY_EXPLAIN: Bi = [
-  "Хэд хэдэн цохилт байвал хамгийн олон чулуу иддэг цувааг заавал сонгоно. Цохилт бүрийг тоолж хар.",
+  "Хэд хэдэн идэлт байвал хамгийн олон хүү иддэг цувааг заавал сонгоно. Идэлт бүрийг тоолж хар.",
   "When several captures exist you must take the one that captures the most pieces. Count every option.",
 ];
 const PROMOTE_EXPLAIN: Bi = [
-  "Сүүлийн эгнээнд хүрсэн бэр дамка болно — дараа нь хойш ч нүүж чадна.",
+  "Сүүлийн эгнээнд хүрсэн хүү даам болно — дараа нь хойш ч нүүж чадна.",
   "Reaching the last row promotes the man — afterwards it can also move backwards.",
 ];
 const CAPTURE_PROMOTE_EXPLAIN: Bi = [
-  "Хамгийн хүчтэй цохилт нь материал ба дамка хоёуланг зэрэг өгдөг нь.",
+  "Хамгийн хүчтэй идэлт нь материал ба даам хоёуланг зэрэг өгдөг нь.",
   "The strongest strike wins material and a king at the same time.",
 ];
 const KING_EXPLAIN: Bi = [
-  "Дамка холоос цохино: идсэн чулууны цаана хоосон нүд байвал аль ч зайд буух боломжтой.",
+  "Даам холоос иднэ: идсэн хүүгийн цаана хоосон нүд байвал аль ч зайд буух боломжтой.",
   "A king captures from a distance: it may land on any empty square beyond the captured piece.",
 ];
 const ENDGAME_KING_EXPLAIN: Bi = [
-  "Төгсгөлийн техник нь нарийн тооцоо: дамка холоос цохиж чадна.",
+  "Төгсгөлийн техник нь нарийн тооцоо: даам холоос идэж чадна.",
   "Endgame technique is precise calculation: the king strikes from a distance.",
 ];
 const EXCHANGE_EXPLAIN: Bi = [
-  "Солилцоо: чулуугаа өгөөд, яг тэр тооны чулууг буцааж авна. Идэлт заавал тул хар тал сонголтгүй.",
+  "Солилцоо: хүүгээ өгөөд, яг тэр тооны хүүг буцааж авна. Идэлт заавал тул хар тал сонголтгүй.",
   "An exchange: you give pieces and take back the same number. Capture is compulsory, so Black has no choice.",
 ];
 const LONG_COMBO_EXPLAIN: Bi = [
-  "Урт комбинаци: эхний нүүдэл тулгуур, дараагийн бүх хариу албадмал. Эцэст нь цагаан илүү чулуу авна.",
+  "Урт комбинаци: эхний нүүдэл тулгуур, дараагийн бүх хариу албадмал. Эцэст нь цагаан илүү хүү авна.",
   "A long combination: the first move is the setup, every reply after it is forced, and White ends up ahead.",
 ];
 
@@ -109,37 +109,37 @@ export const EXTRA_LEVEL_1: SeedLesson[] = [
   },
   {
     seedKey: "L1.capture-practice-1",
-    title: ["Цохилтын дадлага 1", "Capture practice 1"],
+    title: ["Идэлтийн дадлага 1", "Capture practice 1"],
     xp: 15,
     exercises: [gen(CAPTURE_PROMPT, CAPTURE_EXPLAIN, 12, { type: "move", minCaptures: 1, maxCaptures: 1, pieces: { whites: 2, blacks: 3 } })],
   },
   {
     seedKey: "L1.capture-practice-2",
-    title: ["Цохилтын дадлага 2", "Capture practice 2"],
+    title: ["Идэлтийн дадлага 2", "Capture practice 2"],
     xp: 15,
     exercises: [gen(CAPTURE_PROMPT, CAPTURE_EXPLAIN, 12, { type: "move", minCaptures: 1, maxCaptures: 1, pieces: { whites: 3, blacks: 4 } })],
   },
   {
     seedKey: "L1.backward",
-    title: ["Хойш цохих", "Capturing backwards"],
+    title: ["Хойш идэх", "Capturing backwards"],
     xp: 15,
     exercises: [gen(BACK_PROMPT, BACK_EXPLAIN, 12, { type: "move", backward: true, maxCaptures: 1, pieces: { whites: 3, blacks: 3 } })],
   },
   {
     seedKey: "L1.promotion-practice",
-    title: ["Дамка болох дадлага", "Promotion practice"],
+    title: ["Даам болох дадлага", "Promotion practice"],
     xp: 15,
     exercises: [gen(PROMOTE_PROMPT, PROMOTE_EXPLAIN, 12, { type: "move", mustPromote: true, quietOnly: true, pieces: { whites: 2, blacks: 3 } })],
   },
   {
     seedKey: "L1.double-capture",
-    title: ["Дараалсан цохилтын дадлага", "Multiple capture practice"],
+    title: ["Дараалсан идэлтийн дадлага", "Multiple capture practice"],
     xp: 20,
     exercises: [gen(TWO_PROMPT, CHAIN_EXPLAIN, 12, { type: "move", minCaptures: 2, maxCaptures: 2, pieces: { whites: 3, blacks: 5 } })],
   },
   {
     seedKey: "L1.king-capture",
-    title: ["Дамканы цохилтын дадлага", "King capture practice"],
+    title: ["Даамын идэлтийн дадлага", "King capture practice"],
     xp: 15,
     exercises: [gen(KING_PROMPT, KING_EXPLAIN, 12, { type: "move", byKing: true, minCaptures: 1, pieces: { whites: 1, blacks: 3, whiteKings: 1 } })],
   },
@@ -159,19 +159,19 @@ export const EXTRA_LEVEL_1: SeedLesson[] = [
 export const EXTRA_LEVEL_2: SeedLesson[] = [
   {
     seedKey: "L2.majority",
-    title: ["Хамгийн олон чулуу", "Most pieces wins"],
+    title: ["Хамгийн олон хүү", "Most pieces wins"],
     xp: 20,
     exercises: [gen(MAJORITY_PROMPT, MAJORITY_EXPLAIN, 12, { type: "move", majority: true, pieces: { whites: 4, blacks: 5 } })],
   },
   {
     seedKey: "L2.backward-practice",
-    title: ["Хойш цохилтын дадлага", "Backward capture practice"],
+    title: ["Хойш идэлтийн дадлага", "Backward capture practice"],
     xp: 20,
     exercises: [gen(BACK_PROMPT, BACK_EXPLAIN, 12, { type: "move", backward: true, pieces: { whites: 3, blacks: 5 } })],
   },
   {
     seedKey: "L2.two-at-once",
-    title: ["Хоёр чулуу нэг дор", "Two pieces at once"],
+    title: ["Хоёр хүү нэг дор", "Two pieces at once"],
     xp: 20,
     exercises: [gen(TWO_PROMPT, CHAIN_EXPLAIN, 12, { type: "move", minCaptures: 2, maxCaptures: 2, pieces: { whites: 4, blacks: 5 } })],
   },
@@ -202,7 +202,7 @@ export const EXTRA_LEVEL_2: SeedLesson[] = [
 export const EXTRA_LEVEL_3: SeedLesson[] = [
   {
     seedKey: "L3.drawing-practice",
-    title: ["Чулуу татах дадлага", "Drawing practice"],
+    title: ["Хүү татах дадлага", "Drawing practice"],
     xp: 20,
     exercises: [gen(COMBO_PROMPT, COMBO_EXPLAIN, 12, { type: "combo", pieces: { whites: 4, blacks: 5 } })],
   },
@@ -214,7 +214,7 @@ export const EXTRA_LEVEL_3: SeedLesson[] = [
   },
   {
     seedKey: "L3.breakthrough",
-    title: ["Цоолж дамка гарах", "Break through to promote"],
+    title: ["Цоолж даам гарах", "Break through to promote"],
     xp: 20,
     exercises: [gen(PROMOTE_PROMPT, PROMOTE_EXPLAIN, 12, { type: "move", mustPromote: true, pieces: { whites: 3, blacks: 5 } })],
   },
@@ -256,13 +256,13 @@ export const EXTRA_LEVEL_4: SeedLesson[] = [
   },
   {
     seedKey: "L4.three-chain",
-    title: ["Гурван чулууны цуваа", "Three-piece sequences"],
+    title: ["Гурван хүүгийн цуваа", "Three-piece sequences"],
     xp: 25,
     exercises: [gen(CHAIN3_PROMPT, CHAIN_EXPLAIN, 12, { type: "move", minCaptures: 3, maxCaptures: 3, pieces: { whites: 3, blacks: 6 } })],
   },
   {
     seedKey: "L4.four-chain",
-    title: ["Дөрвөн чулууны цуваа", "Four-piece sequences"],
+    title: ["Дөрвөн хүүгийн цуваа", "Four-piece sequences"],
     xp: 30,
     exercises: [gen(CHAIN4_PROMPT, CHAIN_EXPLAIN, 12, { type: "move", minCaptures: 4, pieces: { whites: 3, blacks: 8 } })],
   },
@@ -274,7 +274,7 @@ export const EXTRA_LEVEL_4: SeedLesson[] = [
   },
   {
     seedKey: "L4.capture-promote",
-    title: ["Цохиод дамка болох", "Capture into promotion"],
+    title: ["Идээд даам болох", "Capture into promotion"],
     xp: 30,
     exercises: [gen(CAPTURE_PROMOTE_PROMPT, CAPTURE_PROMOTE_EXPLAIN, 12, { type: "move", minCaptures: 1, mustPromote: true, pieces: { whites: 3, blacks: 5 } })],
   },
@@ -293,7 +293,7 @@ export const EXTRA_LEVEL_4: SeedLesson[] = [
 export const EXTRA_LEVEL_5: SeedLesson[] = [
   {
     seedKey: "L5.quick-2",
-    title: ["Хурдан цохилт 2", "Quick strikes 2"],
+    title: ["Хурдан идэлт 2", "Quick strikes 2"],
     xp: 25,
     exercises: [gen(CAPTURE_PROMPT, CAPTURE_EXPLAIN, 12, { type: "move", minCaptures: 1, pieces: { whites: 5, blacks: 6 } })],
   },
@@ -311,7 +311,7 @@ export const EXTRA_LEVEL_5: SeedLesson[] = [
   },
   {
     seedKey: "L5.king-2",
-    title: ["Дамканы тактик 2", "King tactics 2"],
+    title: ["Даамын тактик 2", "King tactics 2"],
     xp: 30,
     exercises: [gen(KING_PROMPT, KING_EXPLAIN, 12, { type: "move", byKing: true, minCaptures: 2, pieces: { whites: 2, blacks: 5, whiteKings: 1 } })],
   },
@@ -382,104 +382,14 @@ export const EXTRA_LEVEL_6: SeedLesson[] = [
   },
   {
     seedKey: "L6.king-endgame",
-    title: ["Дамканы төгсгөл", "King endgames"],
+    title: ["Даамын төгсгөл", "King endgames"],
     xp: 30,
     exercises: [gen(KING_PROMPT, ENDGAME_KING_EXPLAIN, 12, { type: "move", byKing: true, minCaptures: 1, pieces: { whites: 1, blacks: 4, whiteKings: 1 } })],
   },
   {
     seedKey: "L6.endgame-promotion",
-    title: ["Төгсгөлд дамка гаргах", "Promoting in the endgame"],
+    title: ["Төгсгөлд даам гаргах", "Promoting in the endgame"],
     xp: 30,
     exercises: [gen(PROMOTE_PROMPT, PROMOTE_EXPLAIN, 12, { type: "move", mustPromote: true, pieces: { whites: 2, blacks: 4 } })],
-  },
-];
-
-export const EXTRA_LEVEL_9: SeedLesson[] = [
-  {
-    seedKey: "L9.scan",
-    title: ["Scan — дадлага", "Scan — practice"],
-    xp: 30,
-    exercises: [gen(CAPTURE_PROMPT, CAPTURE_EXPLAIN, 12, { type: "move", minCaptures: 1, pieces: { whites: 5, blacks: 6 } })],
-  },
-  {
-    seedKey: "L9.calculate",
-    title: ["Calculate — дадлага", "Calculate — practice"],
-    xp: 30,
-    exercises: [gen(COMBO_PROMPT, COMBO_EXPLAIN, 12, { type: "combo", minGain: 2, pieces: { whites: 5, blacks: 5 } })],
-  },
-  {
-    seedKey: "L9.evaluate",
-    title: ["Evaluate — дадлага", "Evaluate — practice"],
-    xp: 30,
-    exercises: [gen(MAJORITY_PROMPT, MAJORITY_EXPLAIN, 12, { type: "move", majority: true, pieces: { whites: 5, blacks: 6 } })],
-  },
-  {
-    seedKey: "L9.move",
-    title: ["Move — дадлага", "Move — practice"],
-    xp: 30,
-    exercises: [gen(CHAIN2_PROMPT, CHAIN_EXPLAIN, 12, { type: "move", minCaptures: 2, pieces: { whites: 4, blacks: 6 } })],
-  },
-  {
-    seedKey: "L9.full-cycle",
-    title: ["Бүтэн дугуй: Scan → Move", "Full cycle: Scan → Move"],
-    xp: 35,
-    exercises: [
-      gen(CAPTURE_PROMPT, CAPTURE_EXPLAIN, 4, { type: "move", minCaptures: 1, pieces: { whites: 5, blacks: 6 } }),
-      gen(EXCHANGE_PROMPT, EXCHANGE_EXPLAIN, 4, { type: "combo", exchange: true, pieces: { whites: 5, blacks: 5 } }),
-      gen(COMBO_PROMPT, COMBO_EXPLAIN, 4, { type: "combo", pieces: { whites: 5, blacks: 6 } }),
-    ],
-  },
-];
-
-export const EXTRA_LEVEL_10: SeedLesson[] = [
-  {
-    seedKey: "L10.master-chains",
-    title: ["Мастерын цуваа", "Master sequences"],
-    xp: 35,
-    exercises: [gen(CHAIN3_PROMPT, CHAIN_EXPLAIN, 12, { type: "move", minCaptures: 3, pieces: { whites: 5, blacks: 8 } })],
-  },
-  {
-    seedKey: "L10.master-combos",
-    title: ["Мастерын комбинаци", "Master combinations"],
-    xp: 35,
-    exercises: [gen(COMBO_PROMPT, COMBO_EXPLAIN, 12, { type: "combo", minGain: 3, pieces: { whites: 5, blacks: 6 } })],
-  },
-  {
-    seedKey: "L10.master-long-combos",
-    title: ["Мастерын урт комбинаци", "Master long combinations"],
-    xp: 40,
-    exercises: [gen(LONG_COMBO_PROMPT, LONG_COMBO_EXPLAIN, 8, { type: "combo3", pieces: { whites: 6, blacks: 6 } })],
-  },
-  {
-    seedKey: "L10.master-king",
-    title: ["Дамканы мастер цохилт", "Master king strikes"],
-    xp: 35,
-    exercises: [gen(KING_PROMPT, KING_EXPLAIN, 12, { type: "move", byKing: true, minCaptures: 2, pieces: { whites: 2, blacks: 6, whiteKings: 1 } })],
-  },
-  {
-    seedKey: "L10.timed-2",
-    title: ["Хугацаатай сорил 2", "Timed challenge 2"],
-    xp: 40,
-    exercises: [gen(CAPTURE_PROMPT, CAPTURE_EXPLAIN, 15, { type: "move", minCaptures: 1, pieces: { whites: 5, blacks: 6 } })],
-  },
-  {
-    seedKey: "L10.master-test-1",
-    title: ["Мастерын сорил 1", "Master test 1"],
-    xp: 45,
-    exercises: [
-      gen(MAJORITY_PROMPT, MAJORITY_EXPLAIN, 5, { type: "move", majority: true, pieces: { whites: 5, blacks: 7 } }),
-      gen(LONG_COMBO_PROMPT, LONG_COMBO_EXPLAIN, 5, { type: "combo3", pieces: { whites: 5, blacks: 5 } }),
-      gen(CHAIN3_PROMPT, CHAIN_EXPLAIN, 5, { type: "move", minCaptures: 3, pieces: { whites: 5, blacks: 8 } }),
-    ],
-  },
-  {
-    seedKey: "L10.master-test-2",
-    title: ["Мастерын сорил 2", "Master test 2"],
-    xp: 45,
-    exercises: [
-      gen(EXCHANGE_PROMPT, EXCHANGE_EXPLAIN, 5, { type: "combo", exchange: true, pieces: { whites: 5, blacks: 6 } }),
-      gen(COMBO_PROMPT, COMBO_EXPLAIN, 5, { type: "combo", minGain: 2, pieces: { whites: 6, blacks: 6 } }),
-      gen(KING_PROMPT, KING_EXPLAIN, 5, { type: "move", byKing: true, minCaptures: 2, pieces: { whites: 2, blacks: 5, whiteKings: 1 } }),
-    ],
   },
 ];

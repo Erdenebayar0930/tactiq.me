@@ -3,7 +3,7 @@
  *
  * ⚠ `src/`-ийн `generate.ts`-ийг ӨӨРЧЛӨХГҮЙ: хуучин хичээлүүд түүгээр
  * үүссэн бөгөөд санд байгаа агуулга дахин ажиллуулахад яг хэвээр гарах
- * ёстой. Шинэ шүүлтүүрүүд (хойш цохих, хамгийн их идэлт, солилцоо, 3
+ * ёстой. Шинэ шүүлтүүрүүд (хойш идэх, хамгийн их идэлт, солилцоо, 3
  * нүүдлийн комбинаци) ЭНД.
  *
  * ШАЛГАЛТЫН ЗАРЧИМ (сурагч буруу нүүдэл хийвэл ЯГ ТЭР АЛХАМ дээр үлдэж,
@@ -62,20 +62,20 @@ export function positionProblem(fen: string): string | null {
 
   const whites = pieceCount(board, "w");
   const blacks = pieceCount(board, "b");
-  if (whites < 1 || blacks < 1 || whites > 20 || blacks > 20) return "чулууны тоо буруу";
+  if (whites < 1 || blacks < 1 || whites > 20 || blacks > 20) return "хүүгийн тоо буруу";
 
   for (let col = 0; col < SIZE; col += 1) {
     const top = board[0][col];
     const bottom = board[SIZE - 1][col];
-    if (top && top.color === "w" && !top.king) return "цагаан бэр сүүлийн эгнээнд";
-    if (bottom && bottom.color === "b" && !bottom.king) return "хар бэр сүүлийн эгнээнд";
+    if (top && top.color === "w" && !top.king) return "цагаан хүү сүүлийн эгнээнд";
+    if (bottom && bottom.color === "b" && !bottom.king) return "хар хүү сүүлийн эгнээнд";
   }
   return null;
 }
 
 // --- Туслах ---------------------------------------------------------------
 
-/** Цагааны цохилт ЭХЭЛЖ болох (нүд, чиглэл) хосын тоо — «хамгийн их идэлт» дасгалд. */
+/** Цагааны идэлт ЭХЭЛЖ болох (нүд, чиглэл) хосын тоо — «хамгийн их идэлт» дасгалд. */
 function jumpStartCount(board: Board): number {
   let count = 0;
   for (let row = 0; row < SIZE; row += 1) {
@@ -133,7 +133,7 @@ function moveMatches(spec: MoveSpec, board: Board, move: DraughtsMove): boolean 
  * ээлж) — энэ хувилбар ч «шийдэл» болж чадах уу?
  *
  *   (а) 2 хагас нүүдлийн minimax: харын АЛЬ Ч хариуны дараа цагаан шууд
- *       цохиод цэвэр ашиг ≥ 1 авна;
+ *       идээд цэвэр ашиг ≥ 1 авна;
  *   (б) хоёр талын нүүдэл албадмал хэвээр үргэлжлэх шугам (4 хүртэл
  *       хагас нүүдэл нэмэгдэнэ) цэвэр ашиг ≥ 1 өгнө;
  *   (в) `threshold === 0` (солилцооны даалгавар) үед хар заавал идэх ба
@@ -200,7 +200,7 @@ export function moveProblem(fen: string, from: string, to: string): string | nul
   if (moveToken(legal[0]) !== `${from}-${to}`) return `хадгалсан хариулт ${from}-${to} хууль бус`;
 
   const captures = legal[0].captures.length;
-  if (captures > 0 && pieceCount(setup.board, "b") - captures < 1) return "хар чулуу үлдэхгүй";
+  if (captures > 0 && pieceCount(setup.board, "b") - captures < 1) return "хар хүү үлдэхгүй";
   return null;
 }
 
@@ -216,7 +216,7 @@ export function puzzleProblem(fen: string, solution: string, strict = true): str
   if (!parsed) return "шийдлийн шугам задрахгүй (өрсөлдөгчийн хариу албадмал биш?)";
 
   const last = parsed.moves[parsed.moves.length - 1];
-  if (!last.isPlayer || last.captures === 0) return "сүүлийн нүүдэл цохилт биш";
+  if (!last.isPlayer || last.captures === 0) return "сүүлийн нүүдэл идэлт биш";
 
   const net = parsed.playerCaptures - parsed.opponentCaptures;
   if (net < 0) return "цагаан материал алдана";
@@ -224,6 +224,44 @@ export function puzzleProblem(fen: string, solution: string, strict = true): str
   if (parsed.opponentCaptures === 0) return "тулгуургүй";
 
   const setup = deserializePosition(fen)!;
+
+  /*
+   * ⚠ ТУЛГУУРЫН НҮҮДЭЛ ДААМ БОЛЖ БОЛОХГҮЙ.
+   *
+   * Даалгавар нь «тулгуураа өгөөд цохи» — дүрсээ ЗОРИУД өгөх санаа.
+   * Гэтэл золиосын нүүдэл нь сүүлийн эгнээнд бууж ДААМ болчихвол хоёр
+   * зүйл эвдэрнэ:
+   *   1. Тэр нүүдэл дүрсээ өгөхийн оронд дүрс ОЛЖ авна — «золиос» гэдэг
+   *      үг худал болно.
+   *   2. Дараа нь өрсөлдөгч тэр шинэхэн даамыг иддэг тул сурагч «яагаад
+   *      даамаа өгөв?» гэж эргэлзэнэ.
+   *
+   * Урьд нь энэ шалгуур байгаагүйгээс 367 бодлогын 198 нь ийм болсон.
+   */
+  const probeSetup = new Draughts(setup);
+  const firstIntended = probeSetup
+    .legalMoves()
+    .find((m) => moveToken(m) === `${parsed.moves[0].from}-${parsed.moves[0].to}`);
+  if (firstIntended?.promoted) return "тулгуурын нүүдэл даам болж байна — золиос болохгүй";
+
+  /*
+   * ⚠ ӨРСӨЛДӨГЧ ДААМ БОЛОХ ЁСГҮЙ.
+   *
+   * Тулгуур нь харыг ИДЭХЭД хүргэдэг бөгөөд тэр идэлт нь сүүлийн
+   * эгнээнд буувал хар тал ДААМ олж авна. Цагаан хэдэн дүрс хожсон ч
+   * даам нь тэр ашгийг дийлэнхдээ давна — сурагчид «энэ бол сайн
+   * цохилт» гэж заах нь буруу.
+   */
+  const promoProbe = new Draughts(setup);
+  for (const step of parsed.moves) {
+    const played = promoProbe
+      .legalMoves()
+      .find((m) => moveToken(m) === `${step.from}-${step.to}`);
+    if (!played) break;
+    if (!step.isPlayer && played.promoted) return "өрсөлдөгч даам болж байна";
+    promoProbe.applyMove(played);
+  }
+
   const threshold: 0 | 1 = net > 0 ? 1 : 0;
 
   const probe = new Draughts(setup);
@@ -244,8 +282,68 @@ export function puzzleProblem(fen: string, solution: string, strict = true): str
     }
     game.move(squareFromNumber(move.from), squareFromNumber(move.to));
   }
-  if (pieceCount(game.board(), "b") < 1) return "хар чулуу үлдэхгүй";
+  if (pieceCount(game.board(), "b") < 1) return "хар хүү үлдэхгүй";
+
+  /*
+   * ⚠ ЦОХИЛТЫН ДАРАА ЦАГААН ИЛҮҮД ГАРСАН БАЙХ.
+   *
+   * Урьд нь зөвхөн комбинацийн ЦЭВЭР АШГИЙГ (`net`) шалгадаг байв —
+   * «нэг өгөөд хоёр авлаа» гэх мэт. Гэтэл эхлэлийн байрлал өөрөө
+   * хоцорсон байж болно: цагаан 4, хар 6 дүрстэй үед +1 авсан ч 5:5
+   * буюу дээд тал нь тэнцүү хэвээр үлдэнэ. Сурагч «зөв цохилт хийсэн
+   * атлаа яагаад хожихгүй байна?» гэж эргэлзэнэ.
+   *
+   * ⚠ СОЛИЛЦООНЫ дасгалд (net === 0) ялалт шаардахгүй — тэнд зорилго нь
+   * тэнцүү солилцоо хийх. Гэхдээ тэндээ ч цагаан ХОЦОРЧ болохгүй.
+   */
+  /*
+   * ⚠ ХҮҮ ЦУВААНЫ ДУНДУУР ДААМЫН ЭГНЭЭГЭЭР ДАЙРЧ ӨНГӨРӨХ ЁСГҮЙ.
+   *
+   * Эзний дүрэм: «Хүү идэлт хийж яваад сүүлчийн мөрөнд хүрч даам болсон
+   * бол тухайн үргэлжилсэн идэлтийн үеэр шууд даамын эрхээр буцаж
+   * идэхгүй — даамын эрх ДАРААГИЙН нүүдлээс хэрэгжинэ.»
+   *
+   * Тэр мөчид «энэ дүрс одоо даам уу, хүү юу?» гэсэн эргэлзээ үүсдэг
+   * бөгөөд хөдөлгүүр (олон улсын дүрмээр) түүнийг даам болгодоггүй.
+   * Хичээлийн байрлалд ийм маргаантай тохиолдол ОГТ гаргахгүй нь зөв —
+   * дүрмийг тусад нь, тайван байрлал дээр заана.
+   */
+  const crossProbe = new Draughts(setup);
+  for (const step of parsed.moves) {
+    const played = crossProbe
+      .legalMoves()
+      .find((m) => moveToken(m) === `${step.from}-${step.to}`);
+    if (!played) break;
+    const piece = crossProbe.board()[played.from.row][played.from.col]!;
+    const kingRow = piece.color === "w" ? 0 : 9;
+    if (!piece.king && played.landings.slice(0, -1).some((l) => l.row === kingRow)) {
+      return "цуваа нь даамын эгнээгээр дайран өнгөрдөг — дүрмийн хувьд эргэлзээтэй";
+    }
+    crossProbe.applyMove(played);
+  }
+
+  const finalBalance = netMaterial(game.board(), "w");
+  const required = net > 0 ? 1 : 0;
+  if (finalBalance < required) {
+    return `цохилтын дараа цагаан ${finalBalance} үлдэнэ — ${required}-ээс багагүй байх ёстой`;
+  }
+
   return null;
+}
+
+/** ЦЭВЭР материалын зөрүү тухайн талын харцаар (хүү = 1, даам = 3). */
+function netMaterial(board: Board, color: "w" | "b"): number {
+  let mine = 0;
+  let theirs = 0;
+  for (const row of board) {
+    for (const cell of row) {
+      if (!cell) continue;
+      const value = cell.king ? 3 : 1;
+      if (cell.color === color) mine += value;
+      else theirs += value;
+    }
+  }
+  return mine - theirs;
 }
 
 export const taskProblem = (task: BoardTask): string | null =>

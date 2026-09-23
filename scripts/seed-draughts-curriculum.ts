@@ -32,16 +32,15 @@ import { generateCombos, generateMoveTasks, makeRng, seedFromString } from "../s
 import { deserializePosition, serializePosition } from "../src/lib/draughts/notation";
 import { LEVEL_1, LEVEL_2 } from "./curriculum/draughtsLevels1to2";
 import { LEVEL_3, LEVEL_4, LEVEL_5 } from "./curriculum/draughtsLevels3to5";
-import { LEVEL_10, LEVEL_6, LEVEL_9 } from "./curriculum/draughtsLevels6to10";
+import { LEVEL_6 } from "./curriculum/draughtsLevels6to10";
+import { PRACTICE_UNIT } from "./curriculum/draughtsPractice";
 import {
   EXTRA_LEVEL_1,
-  EXTRA_LEVEL_10,
   EXTRA_LEVEL_2,
   EXTRA_LEVEL_3,
   EXTRA_LEVEL_4,
   EXTRA_LEVEL_5,
   EXTRA_LEVEL_6,
-  EXTRA_LEVEL_9,
 } from "./curriculum/draughtsExtraLessons";
 import {
   generateTask,
@@ -78,8 +77,11 @@ const CURRICULUM: SeedUnit[] = [
   withExtras(LEVEL_4, EXTRA_LEVEL_4),
   withExtras(LEVEL_5, EXTRA_LEVEL_5),
   withExtras(LEVEL_6, EXTRA_LEVEL_6),
-  withExtras(LEVEL_9, EXTRA_LEVEL_9),
-  withExtras(LEVEL_10, EXTRA_LEVEL_10),
+  /*
+   * ⚠ ХАМГИЙН АРД: «Дадлага» нь ШИНЭ санаа заадаггүй, бүх түвшний
+   * идэлт, цохилтыг ДАВТАНа. Тиймээс сурагч бүх сэдвийг үзсний ДАРАА.
+   */
+  PRACTICE_UNIT,
 ];
 
 const OPTION_IDS = ["a", "b", "c", "d"];

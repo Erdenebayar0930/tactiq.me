@@ -96,6 +96,17 @@ export function DraughtsBoard({
    */
   const [animDone, setAnimDone] = useState(false);
 
+  /**
+   * НҮҮХ БОЛОМЖГҮЙ дүрс дээр дарсныг заах богино дохио.
+   *
+   * ⚠ Урьд нь ДУРЫН дүрсийг, тэр дундаа ӨРСӨЛДӨГЧИЙНХИЙГ ч сонгуулдаг
+   * байв: дүрс шар тойрогт орно, гэтэл очих нүд байхгүй тул юу ч
+   * болохгүй. Хүүхэд «хөлөг эвдэрсэн» гэж ойлгоно. Сонголтыг эхнээс нь
+   * ЗӨВШӨӨРӨХГҮЙ, оронд нь тэр дүрсийг богинохон улаан цохиулна —
+   * «энэ дүрсээр нүүхгүй» гэдгийг үггүйгээр хэлнэ.
+   */
+  const [refused, setRefused] = useState<Square | null>(null);
+
   const rowsOrder = orientation === "white" ? range() : range().reverse();
   const colsOrder = orientation === "white" ? range() : range().reverse();
 
@@ -124,6 +135,13 @@ export function DraughtsBoard({
     setDragPos(null);
   };
 
+  /* Дохиог өөрөө унтраана — дараагийн даралтад дахин асна. */
+  useEffect(() => {
+    if (!refused) return;
+    const timer = setTimeout(() => setRefused(null), 500);
+    return () => clearTimeout(timer);
+  }, [refused]);
+
   const squareFromPoint = (x: number, y: number): Square | null => {
     const el = document.elementFromPoint(x, y)?.closest<HTMLElement>("[data-square]");
     if (!el) return null;
@@ -149,8 +167,21 @@ export function DraughtsBoard({
       return;
     }
 
+    /*
+     * ⚠ ОЧИХ НҮД БАЙХГҮЙ бол СОНГОХГҮЙ. Энэ нь гурван тохиолдлыг нэг
+     * дор барина: өрсөлдөгчийн дүрс, хаагдсан дүрс, мөн идэлт заавал
+     * үед идэж чадахгүй өөрийн дүрс. Гурвуулаа «сонгогдчихоод хөдлөхгүй»
+     * гэсэн ижил ГАЦАА үүсгэдэг байв.
+     */
+    const targets = getLegalTargets(square);
+    if (targets.length === 0) {
+      reset();
+      setRefused(square);
+      return;
+    }
+
     setSelected(square);
-    setLegalTargets(getLegalTargets(square));
+    setLegalTargets(targets);
     setDragPos({ x: event.clientX, y: event.clientY });
     const rect = boardRef.current?.getBoundingClientRect();
     if (rect) setSquareSize(rect.width / SIZE);
@@ -181,7 +212,7 @@ export function DraughtsBoard({
    * Гулсах дүрс ба түүний ОДООГИЙН байрлал.
    *
    * ⚠ Дүрсийг ОЧИХ нүднээс уншина: нүүдэл аль хэдийн хийгдсэн тул
-   * эхлэлийн нүд ХООСОН. Хаан болсон бол ч энэ нь зөв дүрсийг өгнө.
+   * эхлэлийн нүд ХООСОН. Даам болсон бол ч энэ нь зөв дүрсийг өгнө.
    */
   const animatedPiece = animate ? board[animate.to.row][animate.to.col] : null;
   const animSquare = animate ? (animDone ? animate.to : animate.from) : null;
@@ -219,6 +250,14 @@ export function DraughtsBoard({
         ref={boardRef}
         onPointerMove={onBoardMove}
         onPointerUp={onBoardUp}
+        /*
+          ⚠ `pointercancel` ба `lostpointercapture` — шатрын хөлөгтэй
+          ИЖИЛ шалтгаанаар (`components/chess/ChessBoard.tsx`): хөтөч
+          чирэлтийг тасалбал `pointerup` ирэхгүй, дүрс хуруунд
+          наалдаж, тэр нүд дүрсээ зурахаа болино — хөлөг гацна.
+        */
+        onPointerCancel={reset}
+        onLostPointerCapture={() => setDragPos(null)}
         className="relative size-full touch-none overflow-hidden rounded-md shadow-[inset_0_0_0_1px_rgba(90,65,35,0.35)]"
       >
         <div className="grid size-full grid-cols-10 grid-rows-10">
@@ -264,6 +303,9 @@ export function DraughtsBoard({
                     >
                       {isSelected && (
                         <div className="pointer-events-none absolute -inset-1 rounded-full ring-[3px] ring-amber-400" />
+                      )}
+                      {refused && sameSquare(refused, square) && (
+                        <div className="board-refuse pointer-events-none absolute -inset-1 rounded-full ring-[3px] ring-rose-500" />
                       )}
                       {piece.king && (
                         <Crown

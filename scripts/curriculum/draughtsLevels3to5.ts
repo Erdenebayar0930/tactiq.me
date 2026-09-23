@@ -1,8 +1,8 @@
 /**
  * LEVEL 3–5 — тактик ба комбинаци (10–12 нас, Advanced Junior).
  *
- * Энэ түвшнээс сурагч «цохилт хай» гэсэн даалгавраас «ЯАГААД тэр цохилт
- * гарсан» гэсэн ойлголт руу шилжинэ: чулуу татах, зам чөлөөлөх, золиос
+ * Энэ түвшнээс сурагч «идэлт хай» гэсэн даалгавраас «ЯАГААД тэр идэлт
+ * гарсан» гэсэн ойлголт руу шилжинэ: хүү татах, зам чөлөөлөх, золиос
  * зэрэг АРГУУД нь бүгд нэг зорилготой — өрсөлдөгчийг албадах.
  */
 import {
@@ -22,19 +22,19 @@ export const LEVEL_3: SeedUnit = {
   color: "violet",
   lessons: [
     {
-      title: ["Чулуу татах", "Drawing a piece"],
+      title: ["Хүү татах", "Drawing a piece"],
       xp: 20,
       exercises: [
         q(
-          ["«Чулуу татах» гэдэг нь юу вэ?", "What does it mean to draw a piece?"],
+          ["«Хүү татах» гэдэг нь юу вэ?", "What does it mean to draw a piece?"],
           [
-            ["Өрсөлдөгчийн чулууг хүссэн нүдэнд ирэхийг албадах", "Forcing an enemy piece onto the square you need"],
-            ["Чулуугаа хойш татах", "Pulling your own piece back"],
-            ["Дамка гаргах", "Making a king"],
+            ["Өрсөлдөгчийн хүүг хүссэн нүдэнд ирэхийг албадах", "Forcing an enemy piece onto the square you need"],
+            ["Хүүгээ хойш татах", "Pulling your own piece back"],
+            ["Даам гаргах", "Making a king"],
           ],
           0,
           [
-            "Идэлт заавал тул чулуу өгөх нь өрсөлдөгчийн чулууг ТОДОРХОЙ нүдэнд «татах» хамгийн хүчтэй арга.",
+            "Идэлт заавал тул хүү өгөх нь өрсөлдөгчийн хүүг ТОДОРХОЙ нүдэнд «татах» хамгийн хүчтэй арга.",
             "Because capture is compulsory, offering a piece is the strongest way to pull an enemy piece onto a chosen square.",
           ]
         ),
@@ -47,7 +47,7 @@ export const LEVEL_3: SeedUnit = {
       exercises: [combo(COMBO_PROMPT, COMBO_EXPLAIN, 6, { whites: 4, blacks: 5 }, 2)],
     },
     {
-      title: ["Завсраар өгөх", "Offering in between"],
+      title: ["Завсраар өгөх цохилт", "In-between sacrifice strike"],
       xp: 20,
       exercises: [
         q(
@@ -55,11 +55,11 @@ export const LEVEL_3: SeedUnit = {
           [
             ["Цуваа урт болох нүдийг чөлөөлөх/дүүргэх", "To free or fill the square that makes the sequence longer"],
             ["Цаг хожихын төлөө", "To gain time on the clock"],
-            ["Чулуу хасахын төлөө", "Just to reduce material"],
+            ["Хүү хасахын төлөө", "Just to reduce material"],
           ],
           0,
           [
-            "Нэг чулуу өгөөд цуваа нь хоёр, гурав дахин урт болвол золиос нь хамаагүй хямд.",
+            "Нэг хүү өгөөд цуваа нь хоёр, гурав дахин урт болвол золиос нь хамаагүй хямд.",
             "Giving one piece is cheap if it makes your own sequence two or three times longer.",
           ]
         ),
@@ -71,49 +71,48 @@ export const LEVEL_3: SeedUnit = {
       xp: 20,
       exercises: [
         q(
-          ["Өөрийн чулуу цохилтод саад болвол юу хийх вэ?", "What if your own piece blocks the strike?"],
+          ["Өөрийн хүү цохилтод саад болвол юу хийх вэ?", "What if your own piece blocks the strike?"],
           [
             ["Түүнийг зайлуулах (золиослох, нүүлгэх) нүүдлийг эхлээд хийх", "Play a move that removes it first — move it away or sacrifice it"],
             ["Цохилтоо болих", "Give up on the strike"],
-            ["Дайсны чулууг хүлээх", "Wait for the opponent"],
+            ["Дайсны хүүг хүлээх", "Wait for the opponent"],
           ],
           0,
           [
-            "Цохилтын зам дээрх ӨӨРИЙН чулуу нь хамгийн их анзаарагддаггүй саад. Түүнийг зайлуулбал цуваа нээгдэнэ.",
+            "Цохилтын зам дээрх ӨӨРИЙН хүү нь хамгийн их анзаарагддаггүй саад. Түүнийг зайлуулбал цуваа нээгдэнэ.",
             "Your own piece in the landing path is the most easily missed obstacle. Remove it and the sequence opens.",
           ]
         ),
         combo(COMBO_PROMPT, COMBO_EXPLAIN, 5, { whites: 5, blacks: 4 }),
       ],
     },
+    /*
+     * ⚠ «ЗАМ ХААХ» ХИЧЭЭЛИЙГ ХАССАН (эзний шийдвэр). Гарчиг нь «өрсөлдөгчийн
+     * замыг хаах» гэсэн БАЙРЛАЛЫН санааг амладаг атал дасгал нь ерөнхий
+     * «идэлтээ ол» байв. Тэр санааг шалгаж болохуйц хэлбэрээр дасгал
+     * болгох нь тодорхойгүй тул хичээлийг үлдээхийн оронд хассан.
+     */
     {
-      title: ["Зам хаах", "Blocking the path"],
-      xp: 20,
-      exercises: [
-        move(CAPTURE_PROMPT, CAPTURE_EXPLAIN, 6, { minCaptures: 2 }, { whites: 4, blacks: 5 }),
-      ],
-    },
-    {
-      title: ["Цоолох", "Breaking through"],
+      title: ["Цоолох цохилт", "Breakthrough strike"],
       xp: 20,
       exercises: [
         q(
           ["«Цоолох» гэж юу вэ?", "What is a breakthrough?"],
           [
-            ["Золиосоор дайсны эгнээг нээж, дамка руу гарах", "Sacrificing to open a lane and reach promotion"],
-            ["Бүх чулуугаа идүүлэх", "Letting all your pieces be taken"],
+            ["Золиосоор дайсны эгнээг нээж, даам руу гарах", "Sacrificing to open a lane and reach promotion"],
+            ["Бүх хүүгээ идүүлэх", "Letting all your pieces be taken"],
             ["Хамгаалалтад суух", "Sitting back on defence"],
           ],
           0,
           [
-            "Цоолох нь материалын бус ЗАМЫН тооцоо: хоёр чулуу өгөөд дамка гарвал хожил ойртоно.",
+            "Цоолох нь материалын бус ЗАМЫН тооцоо: хоёр хүү өгөөд даам гарвал хожил ойртоно.",
             "A breakthrough is about the lane, not material: give two pieces to make a king and the win comes closer.",
           ]
         ),
         move(
-          ["Цагаанаар тоглож байна. Дамка руу гарах нүүдлийг ол.", "White to play. Find the move that promotes."],
+          ["Цагаанаар тоглож байна. Даам руу гарах нүүдлийг ол.", "White to play. Find the move that promotes."],
           [
-            "Дамка нь ердийн бэрээс хүчтэй тул түүнд хүрэх зам нь материалаас илүү үнэтэй байж болно.",
+            "Даам нь ердийн хүүгээс хүчтэй тул түүнд хүрэх зам нь материалаас илүү үнэтэй байж болно.",
             "A king is far stronger than a man, so the road to promotion can be worth more than material.",
           ],
           5,
@@ -127,26 +126,13 @@ export const LEVEL_3: SeedUnit = {
       xp: 20,
       exercises: [combo(COMBO_PROMPT, COMBO_EXPLAIN, 6, { whites: 5, blacks: 5 }, 2)],
     },
-    {
-      title: ["Сул нүд ашиглах", "Using a weak square"],
-      xp: 20,
-      exercises: [
-        q(
-          ["Сул нүд гэж юу вэ?", "What is a weak square?"],
-          [
-            ["Хамгаалагдаагүй, дайсан чөлөөтэй хэрэглэж болох нүд", "An unprotected square the opponent can use freely"],
-            ["Самбарын захын нүд", "Any square on the edge"],
-            ["Хоосон нүд бүр", "Every empty square"],
-          ],
-          0,
-          [
-            "Сул нүд нь ихэвчлэн чулуу хөдөлсний дараа үүсдэг — тиймээс нүүдэл бүр ЯМАР нүдийг сулруулж байгааг хар.",
-            "Weak squares usually appear after a piece moves — so ask what each move leaves unguarded.",
-          ]
-        ),
-        move(CAPTURE_PROMPT, CAPTURE_EXPLAIN, 5, { minCaptures: 1 }, { whites: 4, blacks: 5 }),
-      ],
-    },
+    /*
+     * ⚠ «СУЛ НҮД АШИГЛАХ» ХИЧЭЭЛИЙГ ХАССАН (эзний шийдвэр). Гарчиг нь
+     * БАЙРЛАЛЫН нарийн ойлголт амладаг атал дадлага нь ерөнхий «идэлтээ
+     * ол» байв. «Зам хаах»-тай ижил шалтгаан: тэр санааг шалгаж
+     * болохуйц дасгал болгох нь тодорхойгүй тул хичээлийг үлдээхийн
+     * оронд хассан.
+     */
     {
       title: ["Золиос", "Sacrifice"],
       xp: 25,
@@ -211,8 +197,8 @@ export const LEVEL_4: SeedUnit = {
           ["Давхар боломж гэж юу вэ?", "What is a double threat?"],
           [
             ["Нэг нүүдлээр ХОЁР сүрдүүлэл зэрэг үүсгэх", "Creating TWO threats with one move"],
-            ["Хоёр чулуугаар нүүх", "Moving two pieces"],
-            ["Хоёр дамка гаргах", "Making two kings"],
+            ["Хоёр хүүгээр нүүх", "Moving two pieces"],
+            ["Хоёр даам гаргах", "Making two kings"],
           ],
           0,
           [
@@ -229,13 +215,13 @@ export const LEVEL_4: SeedUnit = {
       exercises: [combo(COMBO_PROMPT, COMBO_EXPLAIN, 6, { whites: 4, blacks: 5 })],
     },
     {
-      title: ["Дамка руу комбинаци", "Combination to promotion"],
+      title: ["Даам руу комбинаци", "Combination to promotion"],
       xp: 30,
       exercises: [
         move(
-          ["Цагаанаар тоглож байна. Цохиод дамка бол.", "White to play. Capture and promote."],
+          ["Цагаанаар тоглож байна. Идээд даам бол.", "White to play. Capture and promote."],
           [
-            "Хамгийн хүчтэй цохилт нь материал ба дамка хоёуланг зэрэг өгдөг нь.",
+            "Хамгийн хүчтэй идэлт нь материал ба даам хоёуланг зэрэг өгдөг нь.",
             "The strongest strike wins material and a king at the same time.",
           ],
           5,
@@ -253,7 +239,7 @@ export const LEVEL_5: SeedUnit = {
   color: "orange",
   lessons: [
     {
-      title: ["Хурдан цохилт — 1 нүүдэл", "Quick strikes — one move"],
+      title: ["Хурдан идэлт — 1 нүүдэл", "Quick strikes — one move"],
       xp: 25,
       exercises: [
         move(CAPTURE_PROMPT, CAPTURE_EXPLAIN, 10, { minCaptures: 1 }, { whites: 4, blacks: 5 }),
@@ -272,13 +258,13 @@ export const LEVEL_5: SeedUnit = {
       exercises: [combo(COMBO_PROMPT, COMBO_EXPLAIN, 8, { whites: 5, blacks: 5 })],
     },
     {
-      title: ["Дамканы тактик", "King tactics"],
+      title: ["Даамын тактик", "King tactics"],
       xp: 30,
       exercises: [
         move(
-          ["Цагаанаар тоглож байна. Дамкаараа цохи.", "White to play. Strike with the king."],
+          ["Цагаанаар тоглож байна. Даамаараа ид.", "White to play. Strike with the king."],
           [
-            "Дамка нь урт ташуу шугамаар цохидог тул цуваа нь ихэвчлэн хамгийн урт болдог.",
+            "Даам нь урт ташуу шугамаар иддэг тул цуваа нь ихэвчлэн хамгийн урт болдог.",
             "A king strikes along long diagonals, so its sequence is often the longest one available.",
           ],
           8,
