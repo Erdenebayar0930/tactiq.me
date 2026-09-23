@@ -1,7 +1,9 @@
 import { eq, sql } from "drizzle-orm";
 import { NextResponse } from "next/server";
 
-import { badRequest, requireActiveUser, serverError } from "@/lib/api/auth";
+import { badRequest, forbidden, requireActiveUser, serverError } from "@/lib/api/auth";
+import { canPracticeWithBot } from "@/lib/tactiq/botAccess";
+import { isPremiumUser } from "@/lib/tactiq/xp";
 import { toPublicUser } from "@/lib/api/publicUser";
 import { applyBotGame } from "@/lib/api/rating";
 import { db } from "@/lib/db";
@@ -22,6 +24,19 @@ export async function POST(request: NextRequest) {
   if ("error" in result) return result.error;
 
   const { caller } = result;
+
+  /*
+   * ⚠ БОТЫН ДАДЛАГА — PREMIUM (`lib/tactiq/botAccess.ts`). UI түгжээтэй ч
+   * энэ route-ыг шууд дуудаж чансаа, XP авахаас сэргийлнэ.
+   */
+  if (
+    !canPracticeWithBot({
+      isPremium: isPremiumUser(caller.user?.premiumUntil),
+      role: caller.user?.role,
+    })
+  ) {
+    return forbidden("Ботоор дадлагажих нь Premium эрхтэй хэрэглэгчид нээлттэй.", "premium-required");
+  }
 
   try {
     const body = await request.json().catch(() => ({}));

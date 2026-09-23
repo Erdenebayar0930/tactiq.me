@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { Bot, Check, CircleDot, Copy, Share2, UserPlus } from "lucide-react";
+import { Bot, Check, CircleDot, Copy, Lock, Share2, UserPlus } from "lucide-react";
 
 import { useCurrentUser } from "@/context/UserContext";
 import { courseHasOnline } from "@/lib/tactiq/courseNav";
@@ -16,6 +16,8 @@ import { playGameLabel, roomPath } from "@/lib/tactiq/playGame";
 import type { PlayGame } from "@/lib/tactiq/playGame";
 import { DIFFICULTY_LABELS } from "@/lib/tactiq/theme";
 import { GameRobot } from "@/components/tactiq/GameRobot";
+import { BotLockNotice } from "@/components/tactiq/BotPremiumLock";
+import { canPracticeWithBot } from "@/lib/tactiq/botAccess";
 import { TournamentSection } from "@/components/tactiq/TournamentSection";
 import { ErrorNote } from "@/components/tactiq/ui";
 import { t } from "@/lib/i18n/t";
@@ -60,6 +62,7 @@ const INVITE_POLL_INTERVAL_MS = 2500;
 export default function PlayPage() {
   const router = useRouter();
   const user = useCurrentUser();
+  const botLocked = !canPracticeWithBot(user);
   /**
    * Энэ дэлгэц СОНГОСОН КУРСЭД тохирно.
    *
@@ -304,6 +307,7 @@ export default function PlayPage() {
               levels={BOT_DIFFICULTIES}
               hrefFor={(level) => `/play/bot?difficulty=${level}`}
               Icon={Bot}
+              locked={botLocked}
             />
           )}
 
@@ -320,8 +324,15 @@ export default function PlayPage() {
               levels={DRAUGHTS_BOT_DIFFICULTIES}
               hrefFor={(level) => `/play/draughts?difficulty=${level}`}
               Icon={CircleDot}
+              locked={botLocked}
             />
           )}
+
+          {/*
+            ⚠ БОТЫН ДАДЛАГА — PREMIUM. Найзтай, санамсаргүй тоглогчтой
+            тоглох нь үнэгүй хэвээр (`lib/tactiq/botAccess.ts`).
+          */}
+          {botLocked && (showChess || showDraughts) && <BotLockNotice />}
         </>
       )}
 
@@ -524,11 +535,14 @@ function BotRow({
   levels,
   hrefFor,
   Icon,
+  locked = false,
 }: {
   label: string;
   levels: readonly string[];
   hrefFor: (level: string) => string;
   Icon: React.ComponentType<{ className?: string }>;
+  /** Premium эрхгүй — товч идэвхгүй, цоожтой (`BotLockNotice` доор нь). */
+  locked?: boolean;
 }) {
   return (
     <>
@@ -539,7 +553,19 @@ function BotRow({
       </div>
 
       <div className="grid w-full grid-cols-3 gap-2">
-        {levels.map((level) => (
+        {levels.map((level) =>
+          locked ? (
+            <span
+              key={level}
+              aria-disabled
+              title={t("Төлбөр төлсний дараа идэвхжинэ")}
+              className="relative flex cursor-not-allowed flex-col items-center gap-1.5 rounded-xl border border-dashed border-gray-300 px-3 py-3 text-sm font-semibold text-gray-400 dark:border-white/15 dark:text-gray-500"
+            >
+              <Lock className="absolute right-2 top-2 size-3.5" aria-hidden />
+              <Icon className="size-5" aria-hidden />
+              {t(DIFFICULTY_LABELS[level])}
+            </span>
+          ) : (
           <Link
             key={level}
             href={hrefFor(level)}
@@ -548,7 +574,8 @@ function BotRow({
             <Icon className="size-5" aria-hidden />
             {t(DIFFICULTY_LABELS[level])}
           </Link>
-        ))}
+          )
+        )}
       </div>
     </>
   );

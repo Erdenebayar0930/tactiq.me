@@ -354,6 +354,12 @@ export const EN: Record<string, string> = {
   Курсууд: "Courses",
   Лиг: "League",
   "Лиг хараахан байхгүй": "No league yet",
+  // --- Ботын дадлагын Premium түгжээ (`components/tactiq/BotPremiumLock.tsx`) ---
+  "Ботоор дадлагажих нь Premium эрхтэй хэрэглэгчид нээлттэй. Төлбөр төлсний дараа идэвхжинэ. Найзтайгаа тоглох үнэгүй.":
+    "Bot practice is for Premium members. It unlocks once you pay. Playing with friends is free.",
+  "Premium авах": "Get Premium",
+  "Ботоор дадлагажих": "Practise with a bot",
+  "Төлбөр төлсний дараа идэвхжинэ": "Unlocks after payment",
   "Миний тэжээвэр": "My pets",
   "Миний тэжээвэр →": "My pets →",
   "Монгол бичвэр": "Mongolian script",

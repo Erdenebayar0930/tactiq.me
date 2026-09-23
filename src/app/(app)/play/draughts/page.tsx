@@ -23,6 +23,7 @@ import { EncourageGif } from "@/components/tactiq/LoopGif";
 import { Mascot } from "@/components/tactiq/Mascot";
 import { DIFFICULTY_LABELS } from "@/lib/tactiq/theme";
 import { useUser } from "@/context/UserContext";
+import { BotPremiumGate } from "@/components/tactiq/BotPremiumLock";
 import { useCoachTip } from "@/hooks/useCoachTip";
 import { draughtsTips } from "@/lib/tactiq/coachTips";
 
@@ -67,7 +68,16 @@ const CLOCK = { baseMin: 10, incrementSec: 5 };
  * баганаар шатар, даам хоёуланд үйлчилдэг (`lib/tactiq/playGame.ts`).
  * Дээрх «Буцах» холбоос нь тэр лобби руу хөтөлнө.
  */
+/** Ботын дадлага Premium — эрхгүй бол сануулга (`BotPremiumGate`). */
 export default function DraughtsBotPage() {
+  return (
+    <BotPremiumGate>
+      <DraughtsBotPageInner />
+    </BotPremiumGate>
+  );
+}
+
+function DraughtsBotPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { apply, user } = useUser();

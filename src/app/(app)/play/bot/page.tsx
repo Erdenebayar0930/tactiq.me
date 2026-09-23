@@ -21,6 +21,7 @@ import { EncourageGif } from "@/components/tactiq/LoopGif";
 import { Mascot } from "@/components/tactiq/Mascot";
 import { DIFFICULTY_LABELS } from "@/lib/tactiq/theme";
 import { useUser } from "@/context/UserContext";
+import { BotPremiumGate } from "@/components/tactiq/BotPremiumLock";
 import { useCoachTip } from "@/hooks/useCoachTip";
 import { chessTips } from "@/lib/tactiq/coachTips";
 
@@ -59,7 +60,16 @@ type EndInfo = {
 const CLOCK = { baseMin: 10, incrementSec: 5 };
 
 /** Ботоор дадлагажих — сервер, WebRTC огт шаардлагагүй, бүхэлдээ клиент дээр. */
+/** Ботын дадлага Premium — эрхгүй бол сануулга (`BotPremiumGate`). */
 export default function BotPage() {
+  return (
+    <BotPremiumGate>
+      <BotPageInner />
+    </BotPremiumGate>
+  );
+}
+
+function BotPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { apply, user } = useUser();
