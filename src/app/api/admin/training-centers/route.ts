@@ -47,6 +47,35 @@ const text = (value: unknown, max: number): string =>
 
 const flag = (value: unknown): boolean => value === true;
 
+/**
+ * ХОЛБООС ЗААВАЛ https БАЙХ.
+ *
+ * ⚠ ЯАГААД: `mapUrl`, `link` хоёр нь лавлахын карт дээр
+ * `<a href={...}>` болж рендерлэгдэнэ. React нь `href`-ийг
+ * ЦЭВЭРЛЭДЭГГҮЙ — `javascript:` схем тавивал тэр холбоосыг
+ * дарсан ХЭРЭГЛЭГЧИЙН хөтөч дээр код ажиллана.
+ *
+ * ⚠ Энэ нь АДМИН → СУПЕР ӐРХ ҮСЭХ зам: админ бол бүрэн
+ * итгэлтэй түвшин БИШ (`requireSuper` тусдаа байдаг нь яг түүнд).
+ *
+ * ⚠ АХАН ДҮҮ ХИЙСЭН ДҮРЭМ: `api/admin/apps` ба `api/coaches/me` хоёулаа
+ * яг ийм шалгалттай. Энэ файл дутуу байсан.
+ *
+ * @returns цэвэрлэгдсэн хаяг, хоосон ч болох; `null` бол ХОРИГЛОХ.
+ */
+function safeUrl(value: unknown, max: number): string | null {
+  const raw = text(value, max);
+  if (!raw) return "";
+  try {
+    const url = new URL(raw);
+    return url.protocol === "https:" ? url.toString().slice(0, max) : null;
+  } catch {
+    return null;
+  }
+}
+
+const URL_FIELDS = ["photoUrl", "logoUrl", "mapUrl", "link"] as const;
+
 /** Админы бүрэн жагсаалт — нуусан төвүүд ч орно. */
 export async function GET(request: NextRequest) {
   const result = await requireAdmin(request);
@@ -71,20 +100,27 @@ export async function POST(request: NextRequest) {
   const name = text(body.name, LIMITS.name);
   if (name.length < 2) return badRequest("Нэр дор хаяж 2 тэмдэгт байх ёстой.");
 
+  const urls: Record<string, string> = {};
+  for (const field of URL_FIELDS) {
+    const value = safeUrl(body[field], LIMITS[field]);
+    if (value === null) return badRequest("Холбоос https:// -ээр эхлэх ёстой.");
+    urls[field] = value;
+  }
+
   try {
     const [row] = await db
       .insert(trainingCenters)
       .values({
         name,
         description: text(body.description, 2000),
-        photoUrl: text(body.photoUrl, LIMITS.photoUrl),
-        logoUrl: text(body.logoUrl, LIMITS.logoUrl),
+        photoUrl: urls.photoUrl,
+        logoUrl: urls.logoUrl,
         city: text(body.city, LIMITS.city),
         address: text(body.address, LIMITS.address),
-        mapUrl: text(body.mapUrl, LIMITS.mapUrl),
+        mapUrl: urls.mapUrl,
         phone: text(body.phone, LIMITS.phone),
         email: text(body.email, LIMITS.email),
-        link: text(body.link, LIMITS.link),
+        link: urls.link,
         teachesChess: flag(body.teachesChess),
         teachesDraughts: flag(body.teachesDraughts),
         /*
@@ -121,14 +157,16 @@ export async function PATCH(request: NextRequest) {
     patch.name = name;
   }
   if ("description" in body) patch.description = text(body.description, 2000);
-  if ("photoUrl" in body) patch.photoUrl = text(body.photoUrl, LIMITS.photoUrl);
-  if ("logoUrl" in body) patch.logoUrl = text(body.logoUrl, LIMITS.logoUrl);
+  for (const field of URL_FIELDS) {
+    if (!(field in body)) continue;
+    const value = safeUrl(body[field], LIMITS[field]);
+    if (value === null) return badRequest("Холбоос https:// -ээр эхлэх ёстой.");
+    patch[field] = value;
+  }
   if ("city" in body) patch.city = text(body.city, LIMITS.city);
   if ("address" in body) patch.address = text(body.address, LIMITS.address);
-  if ("mapUrl" in body) patch.mapUrl = text(body.mapUrl, LIMITS.mapUrl);
   if ("phone" in body) patch.phone = text(body.phone, LIMITS.phone);
   if ("email" in body) patch.email = text(body.email, LIMITS.email);
-  if ("link" in body) patch.link = text(body.link, LIMITS.link);
   if ("teachesChess" in body) patch.teachesChess = flag(body.teachesChess);
   if ("teachesDraughts" in body) patch.teachesDraughts = flag(body.teachesDraughts);
   if ("visible" in body) patch.visible = flag(body.visible);

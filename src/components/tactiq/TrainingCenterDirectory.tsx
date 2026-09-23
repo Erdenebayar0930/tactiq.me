@@ -41,8 +41,29 @@ type Center = {
  * дурын домэйноос ирнэ — `remotePatterns` бүрийг урьдчилан мэдэх
  * боломжгүй. Оновчлол байхгүй тул `next/image` нэмэх зүйлгүй.
  */
+/**
+ * ХОЛБООС АЮУЛГҮЙ ЭСЭХИЙГ РЕНДЕРЛЭХЭЭС ӨМНӨ ШАЛГАНА.
+ *
+ * ⚠ СЕРВЕР АЛЬ ХЭДИЙН ШАЛГАДАГ (`api/admin/training-centers`-ийн
+ * `safeUrl`). Энэ нь ХОЕР ДАХЬ ДАВХАРГА: тэр шалгалт нэмэгдэхээс
+ * ӨМНӨ бичигдсэн мөрүүд санд үлдсэн байж болно — тэднийг
+ * сан дээр цэвэрлэх хүртэл энд барина.
+ *
+ * ⚠ React нь `href`-ийг ЦЭВЭРЛЭДЭГГҮЙ: `javascript:` схем тавьсан
+ * холбоосыг дарвал хэрэглэгчийн хөтөч дээр код ажиллана.
+ */
+function httpsOnly(url: string): string | null {
+  if (!url) return null;
+  try {
+    return new URL(url).protocol === "https:" ? url : null;
+  } catch {
+    return null;
+  }
+}
+
 function CenterPhoto({ center }: { center: Center }) {
-  if (!center.photoUrl) {
+  const photo = httpsOnly(center.photoUrl);
+  if (!photo) {
     /*
      * ⚠ ЗУРАГГҮЙ ТӨВИЙГ ЖАГСААЛТААС ХАСАХГҮЙ — орлогч дүрсээр үзүүлнэ.
      * Зураг нь заавал биш; хаяг, утас нь илүү чухал.
@@ -57,7 +78,7 @@ function CenterPhoto({ center }: { center: Center }) {
   return (
     // eslint-disable-next-line @next/next/no-img-element
     <img
-      src={center.photoUrl}
+      src={photo}
       alt={center.name}
       loading="lazy"
       className="h-40 w-full rounded-xl object-cover"
@@ -122,7 +143,7 @@ export function TrainingCenterDirectory() {
             ⚠ `object-contain` — `cover` биш: логоны ирмэгийг таслахгүй.
           */}
           <div className="flex items-start gap-3">
-            {center.logoUrl && (
+            {httpsOnly(center.logoUrl) && (
               // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={center.logoUrl}
@@ -152,7 +173,7 @@ export function TrainingCenterDirectory() {
           {(center.city || center.address) && (
             <p className="flex items-start gap-2 text-sm text-gray-600 dark:text-gray-300">
               <MapPin className="mt-0.5 size-4 shrink-0 text-gray-400" aria-hidden />
-              {center.mapUrl ? (
+              {httpsOnly(center.mapUrl) ? (
                 <a
                   href={center.mapUrl}
                   target="_blank"
@@ -186,7 +207,7 @@ export function TrainingCenterDirectory() {
                 {center.email}
               </a>
             )}
-            {center.link && (
+            {httpsOnly(center.link) && (
               <a
                 href={center.link}
                 target="_blank"
