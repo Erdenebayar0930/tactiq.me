@@ -7,6 +7,7 @@ import {
   listPromoCodes,
   recordPayout,
   setPromoActive,
+  updatePromoCode,
 } from "@/lib/api/promo";
 import { db } from "@/lib/db";
 import { users } from "@/lib/db/schema";
@@ -121,14 +122,16 @@ export async function POST(request: NextRequest) {
        * Шалгалт нь `createPromoCode` дотор (`lib/api/promo.ts`).
        */
       tiers: Array.isArray(body.tiers) ? (body.tiers as PromoTier[]) : null,
+      maxUses: body.maxUses as number | null | undefined,
       note: typeof body.note === "string" ? body.note.slice(0, 200) : "",
       createdBy: result.caller.uid,
     });
 
     if (!created) {
       return badRequest(
-        "Код үүсгэж чадсангүй: код нь 4-24 тэмдэгт (үсэг, тоо, зураас), хувь нь 1-50 " +
-          "байх ёстой бөгөөд ижил код аль хэдийн бүртгэгдсэн байж болзошгүй."
+        "Код үүсгэж чадсангүй: код нь 4-24 тэмдэгт (үсэг, тоо, зураас), хямдрал 1-90%, " +
+          "шимтгэл 0-50%, хязгаар 1-100000 байх ёстой бөгөөд ижил код аль хэдийн " +
+          "бүртгэгдсэн байж болзошгүй."
       );
     }
 
@@ -138,7 +141,12 @@ export async function POST(request: NextRequest) {
   }
 }
 
-/** Кодыг идэвхжүүлэх / идэвхгүй болгох. */
+/**
+ * Кодыг идэвхжүүлэх / идэвхгүй болгох, эсвэл хувь, нийт хязгаарыг засах.
+ *
+ * `active` ирвэл төлөв солино; `discountPercent` ирвэл хувь + хязгаарыг
+ * (`maxUses`, хоосон бол хязгааргүй) засна.
+ */
 export async function PATCH(request: NextRequest) {
   const result = await requireAdmin(request);
   if ("error" in result) return result.error;
@@ -147,7 +155,23 @@ export async function PATCH(request: NextRequest) {
     const body = (await request.json().catch(() => ({}))) as {
       code?: unknown;
       active?: unknown;
+      discountPercent?: unknown;
+      commissionPercent?: unknown;
+      maxUses?: unknown;
     };
+
+    if (typeof body.code === "string" && body.discountPercent !== undefined) {
+      const updated = await updatePromoCode(body.code, {
+        discountPercent: Number(body.discountPercent),
+        commissionPercent: Number(body.commissionPercent),
+        maxUses: body.maxUses,
+      });
+      if (updated === "invalid") {
+        return badRequest("Хямдрал 1-90%, шимтгэл 0-50%, хязгаар 1-100000 (эсвэл хоосон) байна.");
+      }
+      if (!updated) return notFound("Код олдсонгүй.");
+      return NextResponse.json({ ok: true });
+    }
 
     if (typeof body.code !== "string" || typeof body.active !== "boolean") {
       return badRequest("Код ба төлөвийг зөв илгээнэ үү.");

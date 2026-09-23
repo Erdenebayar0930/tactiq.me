@@ -19,6 +19,10 @@ type PromoCode = {
    * ⚠ `limit` нь ТУХАЙН ШАТНЫ хэмжээ, нийлбэр БИШ.
    */
   tiers: PromoTier[] | null;
+  /** Нийт хэдэн худалдан авагч — `null` бол хязгааргүй. */
+  maxUses: number | null;
+  /** Төлбөрөө баталгаажуулсан өөр өөр худалдан авагч. */
+  usedCount: number;
   active: boolean;
   note: string;
 };
@@ -58,6 +62,20 @@ export default function AdminPromoPage() {
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
   const [note, setNote] = useState("");
+  /*
+   * ҮНДСЭН ХУВЬ ба НИЙТ ХЯЗГААР. Хоосон хувь = анхдагч (`data.defaults`),
+   * хоосон хязгаар = хязгааргүй.
+   */
+  const [discount, setDiscount] = useState("");
+  const [commission, setCommission] = useState("");
+  const [maxUses, setMaxUses] = useState("");
+  /** Засварлаж буй кодын утгууд — нэг удаад нэг л код. */
+  const [editing, setEditing] = useState<{
+    code: string;
+    discount: string;
+    commission: string;
+    maxUses: string;
+  } | null>(null);
   /**
    * ШАТУУД — хоосон бол үндсэн хувь ямагт хэрэгжинэ.
    *
@@ -74,11 +92,22 @@ export default function AdminPromoPage() {
     try {
       await apiFetch("/api/admin/promo", {
         method: "POST",
-        body: { email, code, note, tiers: tiers.length > 0 ? tiers : null },
+        body: {
+          email,
+          code,
+          note,
+          tiers: tiers.length > 0 ? tiers : null,
+          discountPercent: Number(discount || data?.defaults.discountPercent),
+          commissionPercent: Number(commission || data?.defaults.commissionPercent),
+          maxUses: maxUses ? Number(maxUses) : null,
+        },
       });
       setEmail("");
       setCode("");
       setNote("");
+      setDiscount("");
+      setCommission("");
+      setMaxUses("");
       setTiers([]);
       reload();
     } catch (cause) {
@@ -94,6 +123,26 @@ export default function AdminPromoPage() {
         method: "PATCH",
         body: { code: row.code, active: !row.active },
       });
+      reload();
+    } catch (cause) {
+      setFormError(cause instanceof ApiError ? cause.message : "Алдаа гарлаа.");
+    }
+  };
+
+  const saveEdit = async () => {
+    if (!editing) return;
+    setFormError(null);
+    try {
+      await apiFetch("/api/admin/promo", {
+        method: "PATCH",
+        body: {
+          code: editing.code,
+          discountPercent: Number(editing.discount),
+          commissionPercent: Number(editing.commission),
+          maxUses: editing.maxUses ? Number(editing.maxUses) : null,
+        },
+      });
+      setEditing(null);
       reload();
     } catch (cause) {
       setFormError(cause instanceof ApiError ? cause.message : "Алдаа гарлаа.");
@@ -151,6 +200,39 @@ export default function AdminPromoPage() {
               placeholder="Тайлбар (суваг, гэрээ…)"
               maxLength={200}
               className="rounded-xl border border-gray-300 px-3 py-2 text-sm dark:border-white/15 dark:bg-white/5 dark:text-white"
+            />
+          </div>
+
+          {/*
+            ҮНДСЭН ХУВЬ ба НИЙТ ХЯЗГААР.
+
+            ⚠ Хувь нь шат дүүрсний ДАРАА (эсвэл шатгүй бол ямагт)
+            хэрэгжинэ. Хязгаар дүүрвэл код ОГТ ажиллахгүй болно —
+            шатны хязгаараас ялгаатай.
+          */}
+          <div className="grid gap-2 sm:grid-cols-3">
+            <NumberField
+              label="Хямдрал %"
+              value={discount}
+              onChange={setDiscount}
+              placeholder={String(data?.defaults.discountPercent ?? 10)}
+              min={1}
+              max={90}
+            />
+            <NumberField
+              label="Шимтгэл %"
+              value={commission}
+              onChange={setCommission}
+              placeholder={String(data?.defaults.commissionPercent ?? 10)}
+              min={0}
+              max={50}
+            />
+            <NumberField
+              label="Хязгаар (хүн)"
+              value={maxUses}
+              onChange={setMaxUses}
+              placeholder="Хязгааргүй"
+              min={1}
             />
           </div>
 
@@ -321,7 +403,58 @@ export default function AdminPromoPage() {
                             Идэвхгүй
                           </span>
                         )}
+                        <span
+                          className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${
+                            row.maxUses != null && row.usedCount >= row.maxUses
+                              ? "bg-rose-100 text-rose-700 dark:bg-rose-500/20 dark:text-rose-200"
+                              : "bg-sky-100 text-sky-800 dark:bg-sky-500/20 dark:text-sky-200"
+                          }`}
+                        >
+                          {row.maxUses != null
+                            ? `${row.usedCount} / ${row.maxUses} хүн${row.usedCount >= row.maxUses ? " · дүүрсэн" : ""}`
+                            : `${row.usedCount} хүн · хязгааргүй`}
+                        </span>
                       </div>
+
+                      {editing?.code === row.code && (
+                        <div className="grid items-end gap-2 rounded-xl bg-gray-50 p-3 sm:grid-cols-[1fr_1fr_1fr_auto_auto] dark:bg-white/5">
+                          <NumberField
+                            label="Хямдрал %"
+                            value={editing.discount}
+                            onChange={(value) => setEditing({ ...editing, discount: value })}
+                            min={1}
+                            max={90}
+                          />
+                          <NumberField
+                            label="Шимтгэл %"
+                            value={editing.commission}
+                            onChange={(value) => setEditing({ ...editing, commission: value })}
+                            min={0}
+                            max={50}
+                          />
+                          <NumberField
+                            label="Хязгаар (хүн)"
+                            value={editing.maxUses}
+                            onChange={(value) => setEditing({ ...editing, maxUses: value })}
+                            placeholder="Хязгааргүй"
+                            min={1}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => void saveEdit()}
+                            className="btn-primary px-4 py-2 text-xs"
+                          >
+                            Хадгалах
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setEditing(null)}
+                            className="rounded-lg px-3 py-2 text-xs font-semibold text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-white/10"
+                          >
+                            Болих
+                          </button>
+                        </div>
+                      )}
 
                       {stats && (
                         <p className="text-sm text-gray-600 dark:text-gray-300">
@@ -344,6 +477,21 @@ export default function AdminPromoPage() {
                           {row.active ? "Идэвхгүй болгох" : "Идэвхжүүлэх"}
                         </button>
 
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setEditing({
+                              code: row.code,
+                              discount: String(row.discountPercent),
+                              commission: String(row.commissionPercent),
+                              maxUses: row.maxUses != null ? String(row.maxUses) : "",
+                            })
+                          }
+                          className="rounded-lg border border-gray-300 px-3 py-1.5 text-xs font-semibold text-gray-600 hover:bg-gray-100 dark:border-white/15 dark:text-gray-300 dark:hover:bg-white/5"
+                        >
+                          Хувь, хязгаар засах
+                        </button>
+
                         {stats && stats.balanceMnt > 0 && (
                           <button
                             type="button"
@@ -363,5 +511,37 @@ export default function AdminPromoPage() {
         )}
       </div>
     </AdminShell>
+  );
+}
+
+function NumberField({
+  label,
+  value,
+  onChange,
+  placeholder,
+  min,
+  max,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+  min?: number;
+  max?: number;
+}) {
+  return (
+    <label className="flex flex-col gap-1">
+      <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">{label}</span>
+      <input
+        type="number"
+        inputMode="numeric"
+        value={value}
+        min={min}
+        max={max}
+        placeholder={placeholder}
+        onChange={(event) => onChange(event.target.value)}
+        className="w-full rounded-xl border border-gray-300 px-3 py-2 text-sm dark:border-white/15 dark:bg-white/5 dark:text-white"
+      />
+    </label>
   );
 }

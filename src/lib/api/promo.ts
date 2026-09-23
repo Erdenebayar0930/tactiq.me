@@ -133,9 +133,15 @@ export async function resolvePromo(
    * бөгөөд тэр нь борлуулалтыг дараалалд оруулна. 50 хүний нөхцөлд
    * 51 дэх хүн орох нь хүлээн зөвшөөрөгдөх, дараалал үүсэхээс дээр.
    */
-  const used = Array.isArray(row.tiers) && row.tiers.length > 0
-    ? await countPromoBuyers(row.code)
-    : 0;
+  const hasTiers = Array.isArray(row.tiers) && row.tiers.length > 0;
+  const used = hasTiers || row.maxUses != null ? await countPromoBuyers(row.code) : 0;
+
+  /*
+   * НИЙТ ХЯЗГААР дүүрсэн — код хүчингүй. Шатны хязгаартай адил зэрэг
+   * төлөхөд нэг-хоёр хүн хэтэрч болно (дээрх тайлбар).
+   */
+  if (row.maxUses != null && used >= row.maxUses) return null;
+
   const tier = pickPromoTier(row.tiers, used);
   const tierIndex = tier ? row.tiers!.indexOf(tier) + 1 : null;
 
@@ -337,21 +343,18 @@ export async function createPromoCode(input: {
   commissionPercent: number;
   /** ШАТАЛСАН хувь — хоосон бол үндсэн хувь ямагт хэрэгжинэ. */
   tiers?: PromoTier[] | null;
+  /** Нийт хэдэн худалдан авагч — `null` бол хязгааргүй. */
+  maxUses?: number | null;
   note: string;
   createdBy: string;
 }): Promise<PromoCodeRow | null> {
   const code = normalizePromoCode(input.code);
   if (!PROMO_CODE_RE.test(code)) return null;
 
-  // Хувь хэмжээний хүрээ: 0 нь утгагүй, 50-аас дээш нь ашгийг иднэ.
-  if (
-    input.discountPercent < 1 ||
-    input.discountPercent > 50 ||
-    input.commissionPercent < 1 ||
-    input.commissionPercent > 50
-  ) {
-    return null;
-  }
+  if (!isValidRates(input.discountPercent, input.commissionPercent)) return null;
+
+  const maxUses = normalizeMaxUses(input.maxUses);
+  if (maxUses === "invalid") return null;
 
   /*
    * ⚠ ШАТУУДЫГ ШАЛГАНА: хязгаар нь 1-ээс дээш бүхэл, хувь нь үндсэн
@@ -366,13 +369,68 @@ export async function createPromoCode(input: {
 
   const [row] = await db
     .insert(promoCodes)
-    .values({ ...input, code, tiers })
+    .values({ ...input, code, tiers, maxUses })
     // Код нь анхдагч түлхүүр — давхардвал ЧИМЭЭГҮЙ бүтэлгүйтэхийн оронд
     // `null` буцааж, админд "энэ код аль хэдийн байна" гэж хэлнэ.
     .onConflictDoNothing()
     .returning();
 
   return row ?? null;
+}
+
+/**
+ * Үндсэн хувийн хүрээ — шатныхтай ИЖИЛ: хямдрал 1-90, шимтгэл 0-50.
+ *
+ * ⚠ Урьд нь үндсэн хувь 1-50 байсан тул «эхний 50 хүүхэд 50%»-ийг
+ * зөвхөн шатаар л хийж болдог байв. Админ одоо үндсэн хувийг шууд
+ * тохируулна; 90%-аас дээш нь үнэгүй олголт болох тул хаана.
+ */
+function isValidRates(discountPercent: number, commissionPercent: number): boolean {
+  return (
+    Number.isInteger(discountPercent) &&
+    discountPercent >= 1 &&
+    discountPercent <= 90 &&
+    Number.isInteger(commissionPercent) &&
+    commissionPercent >= 0 &&
+    commissionPercent <= 50
+  );
+}
+
+/** Нийт хязгаар: `null` (хязгааргүй) эсвэл 1-100 000 бүхэл тоо. */
+function normalizeMaxUses(value: unknown): number | null | "invalid" {
+  if (value == null || value === "") return null;
+  const n = Number(value);
+  return Number.isInteger(n) && n >= 1 && n <= 100_000 ? n : "invalid";
+}
+
+/**
+ * Одоо байгаа кодын үндсэн хувь, нийт хязгаарыг засна.
+ *
+ * ⚠ Аль хэдийн төлөгдсөн төлбөрийн дүн, шимтгэлийг ХӨНДӨХГҮЙ: тэдгээр нь
+ * төлбөрийн мөрөнд тэр мөчид хөлдөж бичигддэг.
+ *
+ * @returns `"invalid"` — утга хүрээнээс гарсан, `false` — код олдсонгүй.
+ */
+export async function updatePromoCode(
+  code: string,
+  input: { discountPercent: number; commissionPercent: number; maxUses: unknown }
+): Promise<boolean | "invalid"> {
+  if (!isValidRates(input.discountPercent, input.commissionPercent)) return "invalid";
+  const maxUses = normalizeMaxUses(input.maxUses);
+  if (maxUses === "invalid") return "invalid";
+
+  const updated = await db
+    .update(promoCodes)
+    .set({
+      discountPercent: input.discountPercent,
+      commissionPercent: input.commissionPercent,
+      maxUses,
+      updatedAt: new Date(),
+    })
+    .where(eq(promoCodes.code, normalizePromoCode(code)))
+    .returning({ code: promoCodes.code });
+
+  return updated.length > 0;
 }
 
 /** Админаас ирсэн шатуудыг шалгана. `"invalid"` = татгалзана. */
@@ -435,7 +493,7 @@ export async function setPromoActive(code: string, active: boolean): Promise<boo
 
 /** Бүх код + эзний имэйл — админы жагсаалт. */
 export async function listPromoCodes(): Promise<
-  (PromoCodeRow & { ownerEmail: string | null })[]
+  (PromoCodeRow & { ownerEmail: string | null; usedCount: number })[]
 > {
   const rows = await db
     .select({
@@ -445,6 +503,9 @@ export async function listPromoCodes(): Promise<
       commissionPercent: promoCodes.commissionPercent,
       /* ШАТАЛСАН ХУВЬ — админы жагсаалтад харагдана. */
       tiers: promoCodes.tiers,
+      maxUses: promoCodes.maxUses,
+      /* Төлбөрөө баталгаажуулсан ӨӨР ӨӨР худалдан авагч — `countPromoBuyers`-тэй ижил. */
+      usedCount: sql<number>`(select count(distinct p.uid) from ${payments} p where p.promo_code = ${promoCodes.code} and p.status = 'paid')::int`,
       active: promoCodes.active,
       note: promoCodes.note,
       createdBy: promoCodes.createdBy,
