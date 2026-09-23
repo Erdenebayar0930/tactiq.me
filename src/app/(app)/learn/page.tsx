@@ -75,6 +75,7 @@ function NoCourseYet() {
  *   болсон тул `courseSlug === null` нь «зочин» гэсэн утгагүй болсон.
  */
 function CoursePath({ courseSlug, guest }: { courseSlug: string | null; guest: boolean }) {
+  const me = useCurrentUser();
   const {
     data: courseData,
     loading: courseLoading,
@@ -85,7 +86,14 @@ function CoursePath({ courseSlug, guest }: { courseSlug: string | null; guest: b
       ? courseSlug
         ? `/api/trial?course=${encodeURIComponent(courseSlug)}`
         : "/api/trial"
-      : `/api/courses/${encodeURIComponent(courseSlug ?? "")}`
+      : `/api/courses/${encodeURIComponent(courseSlug ?? "")}`,
+    /*
+     * ⚠ `authOptional`: `apiFetch` нь токен байхгүй бол хүсэлтийг
+     * СЕРВЭР РҮҮ ЯВУУЛАХГҮЙ, клиент дээрээ «Нэвтэрсэн байх
+     * шаардлагатай» гэж шиднэ. Зочны зам нь `/api/trial` — нээлттэй
+     * хаяг ч энэ туггүйгээр хэзээ ч дуудагдахгүй байв.
+     */
+    { authOptional: true }
   );
   /*
    * ⚠ ЗОЧИНД ЯВЦ БАЙХГҮЙ тул ЭХЛЭЛДЭЭ Л хоосон олонлогоор эхэлнэ —
@@ -207,6 +215,14 @@ function CoursePath({ courseSlug, guest }: { courseSlug: string | null; guest: b
     ? new Set(courseData.trialLessonIds)
     : null;
 
+  /*
+   * ТЕСТЕР — бүх хичээл нээлттэй (админ олгодог туг).
+   *
+   * ⚠ ЗОЧИНД ХАМААРАХГҮЙ: `trialLessonIds` байвал тэр дүрэм давамгайлна
+   * (доорх `unlocked`). Зочны мөр санд байхгүй тул туг ч байхгүй.
+   */
+  const tester = me.tester === true;
+
   return (
     <div className="space-y-6">
       <div className={`surface flex items-center gap-4 p-5 ${styles.softBg}`}>
@@ -246,6 +262,8 @@ function CoursePath({ courseSlug, guest }: { courseSlug: string | null; guest: b
             .reduce((sum, previous) => sum + previous.lessons.length, 0)}
           courseSlug={course.slug}
           trialLessonIds={trialLessonIds}
+          /* ⚠ ТЕСТЕР тугийг доош дамжуулна — түгжээг тэр л шийднэ. */
+          tester={tester}
           completed={completed}
           claimed={claimed}
           onClaimed={(key) => setClaimed((current) => new Set(current).add(key))}
@@ -275,6 +293,7 @@ function UnitPath({
   lessonOffset,
   courseSlug,
   trialLessonIds,
+  tester,
   completed,
   claimed,
   onClaimed,
@@ -288,6 +307,8 @@ function UnitPath({
   courseSlug: string;
   /** Зочинд нээлттэй хичээлүүд, эсвэл `null` — энгийн дүрэм. */
   trialLessonIds: Set<string> | null;
+  /** ТЕСТЕР эрхтэй эсэх — бүх хичээл нээлттэй (админ олгоно). */
+  tester: boolean;
   completed: Set<string>;
   claimed: Set<string>;
   onClaimed: (key: string) => void;
@@ -325,10 +346,18 @@ function UnitPath({
    * ⚠ Зочны үед жагсаалтаар шийднэ: явц байхгүй тул «өмнөхөө дуусга»
    * гэсэн дүрэм нь эхний хичээлээс цааш хэзээ ч нээгдэхгүй болно.
    */
+  /*
+   * ⚠ ТЕСТЕР — БҮХ хичээл нээлттэй. Туршилт, багшийн үзүүлбэрийн үед
+   * дарааллаар 30 хичээл дуусгах шаардлагагүй байх ёстой.
+   *
+   * ⚠ Зочны шалгалтаас ДООГУУР: зочин нь тестер байж БОЛОХГҮЙ (туг нь
+   * зөвхөн бүртгэлтэй хэрэглэгчийн мөрөнд байдаг), мөн зочны түгжээ нь
+   * төлбөртэй агуулгыг хамгаалдаг тул түүнийг тойрч болохгүй.
+   */
   const unlocked = (lessonId: string) =>
     trialLessonIds
       ? trialLessonIds.has(lessonId)
-      : isLessonUnlocked(lessonId, unitLessonIds, completed);
+      : tester || isLessonUnlocked(lessonId, unitLessonIds, completed);
 
   const activeLessonId =
     unit.lessons.find((lesson) => !completed.has(lesson.id) && unlocked(lesson.id))?.id ?? null;

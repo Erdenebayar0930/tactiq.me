@@ -4,6 +4,7 @@ import {
   index,
   integer,
   jsonb,
+  numeric,
   pgTable,
   text,
   timestamp,
@@ -229,6 +230,18 @@ export const users = pgTable(
     secondaryRole: varchar("secondary_role", { length: 32 }),
     /** active | pending | blocked */
     status: varchar("status", { length: 32 }).notNull().default("active"),
+    /**
+     * ТЕСТЕР — бүх хичээл нээлттэй сурагч.
+     *
+     * ⚠ `role`-д шинэ утга нэмэхийн ОРОНД туг: тестер нь ЯМАГТ сурагч
+     * хэвээр (оноо, лиг, чансаа бүгд адилхан) бөгөөд эрхийн шатлалыг
+     * (`lib/permissions.ts`) хөндөхгүй.
+     *
+     * ⚠ ЗӨВХӨН АДМИН олгоно (`api/users/[uid]`). Өөрөө тохируулж
+     * чадвал төлбөртэй агуулга бүхэлдээ нээлттэй болно
+     * (`drizzle/0052_user_tester.sql`).
+     */
+    tester: boolean("tester").notNull().default(false),
 
     /**
      * Сурагчийн хувийн урилгын код — ХОЁР зорилготой: (1) эцэг эх ЭНЭ
@@ -930,6 +943,17 @@ export type FamilySeatRow = typeof familySeats.$inferSelect;
  * эхэлнэ). Ирээдүйд онцгой түншид өөр хувь тохирох боломж нээлттэй
  * үлдэх бөгөөд хуучин кодуудын нөхцөл чимээгүй өөрчлөгдөхгүй.
  */
+/**
+ * Урамшууллын кодын НЭГ шат.
+ *
+ * ⚠ `limit` нь ТУХАЙН ШАТАД багтах худалдан авагчийн тоо.
+ */
+export type PromoTier = {
+  limit: number;
+  discountPercent: number;
+  commissionPercent: number;
+};
+
 export const promoCodes = pgTable(
   "promo_codes",
   {
@@ -941,6 +965,17 @@ export const promoCodes = pgTable(
     discountPercent: integer("discount_percent").notNull(),
     /** Эзэнд ногдох шимтгэл (%). */
     commissionPercent: integer("commission_percent").notNull(),
+    /**
+     * ШАТАЛСАН ХУВЬ — «эхний 50 хүүхэд 50%, дараагийн 75 нь 25%».
+     *
+     * ⚠ `limit` нь ТУХАЙН ШАТНЫ хэмжээ (нийлбэр БИШ). Шат бүгд дүүрвэл
+     * дээрх ҮНДСЭН хувь хэрэгжинэ — тиймээс шатгүй код урьдын адил
+     * ажиллана (`drizzle/0053_promo_tiers.sql`).
+     *
+     * ⚠ Тоололт нь ТӨЛӨГДСӨН төлбөрийн ӨӨР ӨӨР худалдан авагчаар
+     * тооцогддог, хадгалагдсан тоолуур БИШ (`lib/api/promo.ts`).
+     */
+    tiers: jsonb("tiers").$type<PromoTier[]>(),
     /**
      * Идэвхтэй эсэх.
      *
@@ -1344,6 +1379,22 @@ export const lessonProgress = pgTable(
     /** Дуусгахад олгосон оноо — `Lesson.xpReward`-ийн тухайн үеийн хуулбар */
     xpEarned: integer("xp_earned").notNull().default(0),
     completedAt: timestamp("completed_at").notNull().defaultNow(),
+    /**
+     * ХИЧЭЭЛИЙГ ДАХИН ҮЗСЭН ТОО (анхныхыг оролцуулахгүй).
+     *
+     * ⚠ ЗӨВХӨН СТАТИСТИК: шагнал үүнээс ХАМААРАХГҮЙ — давталтын
+     * оноо нь өдрөөр хязгаарлагдана (доорх).
+     */
+    repeatCount: integer("repeat_count").notNull().default(0),
+    /**
+     * ДАВТАЛТЫН ОНОО СҮҮЛД ОЛГОСОН ӨДӨР (`YYYY-MM-DD`, `lib/tactiq/day.ts`).
+     *
+     * ⚠ ЭНЭ БАГАНА НЬ «ТАРИАЛАН»-ЫГ ЗОГСООНО: хичээл тус бүрд
+     * өдөрт ГАНЦ удаа давталтын оноо олгоно. Эс бөгөөс хамгийн амархан
+     * хичээлээ дахин дахин дарах нь лигийн тэргүүнд гарах хамгийн хялбар
+     * зам болно — суралцахгүйгээр оноо цуглуулна.
+     */
+    lastRepeatDay: varchar("last_repeat_day", { length: 10 }),
   },
   (table) => [
     // Нэг хэрэглэгч нэг хичээлийг ЗӨВХӨН НЭГ удаа дуусгасанд тооцогдоно —
@@ -1608,3 +1659,253 @@ export const pushTokens = pgTable(
     index("push_tokens_uid_idx").on(table.uid),
   ]
 );
+
+/**
+ * ЧАНСАА (rating) — ТОГЛООМ ТУС БҮРД.
+ *
+ * Зохиомж: `docs/rating-system.md`.
+ *
+ * ⚠ `users.rating` -аас ЯЛГААТАЙ: тэр нь НЭГ багана бөгөөд шатар,
+ * даамын тоглолтын ХОЛЬЦООС бүрддэг. Шатарт хүчтэй хүн даамд шинэхэн
+ * байж мэднэ — тэр үед нэг тоо нь аль алинд зөв биш. `users.rating` нь
+ * кодыг шилжүүлэх хугацаанд үлдэж, дараа нь хасагдана.
+ *
+ * ⚠ `provisional` БАГАНА БАЙХГҮЙ: `gamesPlayed < 10` гэдгээс гарна
+ * (`isProvisional`). Хоёр эх сурвалж байвал тэд зөрөх бөгөөд аль нь
+ * зөв гэдгийг хэн ч мэдэхгүй болно.
+ */
+export const playerRatings = pgTable(
+  "player_ratings",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uidCol("user_id").notNull(),
+    /** "chess" | "checkers" */
+    gameType: varchar("game_type", { length: 16 }).notNull(),
+    /**
+     * ОДОО зөвхөн `"all"`.
+     *
+     * ⚠ ХУРДААР САЛГААГҮЙ: 2 тоглоом × 4 хурд = 8 rating болговол сурагч
+     * бүр 8 хэсэгт хуваагдаж, тус бүр нь ҮҮРД provisional байна
+     * (`docs/rating-system.md` §0.4).
+     */
+    ratingType: varchar("rating_type", { length: 16 }).notNull().default("all"),
+
+    rating: integer("rating").notNull().default(1500),
+    peakRating: integer("peak_rating").notNull().default(1500),
+    gamesPlayed: integer("games_played").notNull().default(0),
+    wins: integer("wins").notNull().default(0),
+    draws: integer("draws").notNull().default(0),
+    losses: integer("losses").notNull().default(0),
+    /** Хууль бус байдал шалгах хугацаанд бичилт зогсоно. */
+    frozen: boolean("frozen").notNull().default(false),
+    lastGameAt: timestamp("last_game_at", { withTimezone: true }),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("player_ratings_uq").on(table.userId, table.gameType, table.ratingType),
+    index("player_ratings_user_idx").on(table.userId),
+  ]
+);
+
+/**
+ * ЧАНСААНЫ ТҮҮХ — тоглолт тус бүрийн бичилт.
+ *
+ * ⚠ `expectedScore`, `kFactor`, `weight` -ийг ХАДГАЛНА: «яагаад би 12
+ * оноо авав?» гэсэн асуултад тооцоог ДАХИН хийхгүйгээр хариулах ёстой.
+ * K-ийн дүрэм хожим өөрчлөгдвөл хуучин бичилт нь тухайн үеийн дүрмээр
+ * тайлбарлагдсан хэвээр байна.
+ *
+ * ⚠ `(game_id, user_id)` дээр UNIQUE индекс: тоглолт хоёр удаа мэдэгдэж
+ * болно (хоёр тал зэрэг илгээх, сүлжээ тасарч дахин оролдох). Индекс
+ * байхгүй бол rating ХОЁР ДАХИН хөдөлнө.
+ */
+export const ratingHistory = pgTable(
+  "rating_history",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uidCol("user_id").notNull(),
+    gameType: varchar("game_type", { length: 16 }).notNull(),
+    ratingType: varchar("rating_type", { length: 16 }).notNull().default("all"),
+
+    /** Өрөөний id, эсвэл тэмцээний тоглолтын id. */
+    gameId: varchar("game_id", { length: 64 }),
+    tournamentId: varchar("tournament_id", { length: 64 }),
+
+    opponentUid: uidCol("opponent_uid"),
+    opponentRating: integer("opponent_rating"),
+    /** 1 | 0.5 | 0 — `numeric` тул Drizzle нь МӨР болгож буцаана. */
+    result: numeric("result", { precision: 2, scale: 1 }),
+    expectedScore: numeric("expected_score", { precision: 6, scale: 5 }).notNull(),
+    kFactor: integer("k_factor").notNull(),
+    weight: numeric("weight", { precision: 3, scale: 2 }).notNull().default("1.0"),
+
+    oldRating: integer("old_rating").notNull(),
+    ratingChange: integer("rating_change").notNull(),
+    newRating: integer("new_rating").notNull(),
+
+    /** "game" | "tournament" | "decay" | "admin" */
+    reason: varchar("reason", { length: 16 }).notNull().default("game"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index("rating_history_user_created_idx").on(table.userId, table.createdAt),
+    index("rating_history_tournament_idx").on(table.tournamentId),
+  ]
+);
+
+export type PlayerRatingRow = typeof playerRatings.$inferSelect;
+export type RatingHistoryRow = typeof ratingHistory.$inferSelect;
+
+/**
+ * ДАСГАЛЖУУЛАГЧИЙН (БАГШИЙН) АНКЕТ — `/tournament` хуудасны
+ * «Дасгалжуулагч» таб дээр НИЙТЭД харагдана.
+ *
+ * ⚠ `users`-аас ТУСДАА: холбоо барих мэдээлэл нь зөвхөн багшид
+ * хэрэгтэй бөгөөд НИЙТЭД гардаг. Нэвтрэлтийн мөртэй хольбол сурагчийн
+ * хувийн өгөгдөл санамсаргүй нээгдэх зам үүснэ
+ * (`drizzle/0050_coach_profiles.sql`).
+ *
+ * ⚠ `visible` анхдагчаар `false`: багш өөрөө зөвшөөрөх хүртэл утасны
+ * дугаар нь хаана ч харагдахгүй.
+ */
+export const coachProfiles = pgTable(
+  "coach_profiles",
+  {
+    /** Эзэн нь uid — нэг хүнд НЭГ анкет. */
+    userId: uidCol("user_id").primaryKey(),
+
+    title: varchar("title", { length: 80 }),
+    bio: text("bio"),
+
+    phone: varchar("phone", { length: 32 }),
+    email: varchar("email", { length: 190 }),
+    link: varchar("link", { length: 300 }),
+    address: varchar("address", { length: 200 }),
+
+    teachesChess: boolean("teaches_chess").notNull().default(false),
+    teachesDraughts: boolean("teaches_draughts").notNull().default(false),
+    /** ₮/цаг. `null` = «тохиролцоно». */
+    priceMnt: integer("price_mnt"),
+
+    visible: boolean("visible").notNull().default(false),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index("coach_profiles_visible_idx").on(table.visible, table.updatedAt)]
+);
+
+export type CoachProfileRow = typeof coachProfiles.$inferSelect;
+
+/**
+ * СУРГАЛТЫН ТӨВҮҮД — нийтэд нээлттэй ЛАВЛАХ.
+ *
+ * ⚠ АДМИН УДИРДАНА, багш өөрөө ҮҮСГЭХГҮЙ. Шалтгаан: энэ жагсаалт
+ * нь ХҮҮХЭД болон эцэг эхийг бодит хаяг руу чиглүүлнэ. Хэн дуртай
+ * нь «сургалтын төв» гэж бүртгүүлээд хаягаа тавьдаг бол хяналтгүй
+ * зар болно. Тиймээс үүсгэх, засах нь `requireAdmin`-ий ард.
+ *
+ * ⚠ `visible` АНХДАГЧААР `false`: админ мэдээллийг бүрэн бөглөж,
+ * шалгасны дараа л нийтэд гаргана. Дутуу бөглөсөн төв жагсаалтад
+ * гарах нь харсан хүнд «ажилладаггүй сайт» гэсэн сэтгэгдэл үлдээнэ.
+ */
+export const trainingCenters = pgTable(
+  "training_centers",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+
+    name: varchar("name", { length: 120 }).notNull(),
+    /** Товч танилцуулга — юу заадаг, хэнд зориулсан. */
+    description: text("description").notNull().default(""),
+
+    /**
+     * ЗУРАГ. Гадных URL (Firebase Storage эсвэл төвийн өөрийн сайт).
+     *
+     * ⚠ ХООСОН БАЙЖ БОЛНО: зураггүй төвийг жагсаалтаас хасах биш,
+     * орлогч дүрсээр үзүүлнэ.
+     */
+    photoUrl: varchar("photo_url", { length: 500 }).notNull().default(""),
+
+    /**
+     * ЛОГО — төвийн таних тэмдэг.
+     *
+     * ⚠ `photoUrl`-ААС ӨӨР ЗОРИЛГОТОЙ: зураг нь байр, анги танхимыг
+     * үзүүлдэг ӨРГӨН зураг; лого нь байгууллагын ЖИЖИГ тэмдэг
+     * бөгөөд нэрийн хажууд гарна. Нэгтгэвэл хоёулан муу харагдана:
+     * лого сунаж, эсвэл гэрэл зураг таних аргагүй болно.
+     *
+     * ⚠ Firebase Storage-ийн `training_centers/<id>/...` замд байршина
+     * (`storage.rules` — бичих эрх зөвхөн админд).
+     */
+    logoUrl: varchar("logo_url", { length: 500 }).notNull().default(""),
+
+    /** БАЙРШИЛ. `city` нь шүүлтүүрт, `address` нь бүрэн хаяг. */
+    city: varchar("city", { length: 60 }).notNull().default(""),
+    address: varchar("address", { length: 200 }).notNull().default(""),
+    /** Газрын зургийн холбоос — дарахад шууд зам заана. */
+    mapUrl: varchar("map_url", { length: 500 }).notNull().default(""),
+
+    phone: varchar("phone", { length: 32 }).notNull().default(""),
+    email: varchar("email", { length: 190 }).notNull().default(""),
+    link: varchar("link", { length: 300 }).notNull().default(""),
+
+    teachesChess: boolean("teaches_chess").notNull().default(false),
+    teachesDraughts: boolean("teaches_draughts").notNull().default(false),
+
+    visible: boolean("visible").notNull().default(false),
+    /** Жагсаалтын дараалал — бага тоо дээшээ. */
+    sortOrder: integer("sort_order").notNull().default(0),
+
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index("training_centers_visible_idx").on(table.visible, table.sortOrder)]
+);
+
+export type TrainingCenterRow = typeof trainingCenters.$inferSelect;
+
+
+/**
+ * АППУУДЫН ХӨӨРГҮҮР — «Апп» цэсэнд харагдах жагсаалт.
+ *
+ * ⚠ АДМИН БҮРТГЭНЭ, КОДОД ТОГТМОЛ БИШ. Эзний сонголт: шинэ апп
+ * нэмэх бүрд код засаж, дахин deploy хийх шаардлагагүй байх.
+ *
+ * ⚠ `kind` НЬ НЭВТРЭЛТИЙГ ШИЙДНЭ — энэ нь гооё биш, АЮУЛГҮЙ
+ * БАЙДЛЫН асуудал:
+ *   • `link` — энгийн холбоос. Апп өөрөө нэвтрүүлнэ.
+ *   • `tournament` — ТАСАЛБАРТАЙ дамжуулалт
+ *     (`/api/tournament/session`). Энэ нь ХОЕР ТАЛЫН НУУЦ ТҮЛХҮҮР
+ *     ба тэр апп дээр `exchange` эцсийн цэг байхыг шаардана.
+ *     Тиймээс дурын аппд сонгож БОЛОХГҮЙ — одоогоор зөвхөн
+ *     даамалын тэмцээний сервер тэр дүрмийг хэрэгжүүлсэн.
+ *
+ * ⚠ `visible` АНХДАГЧААР false — `training_centers`-тэй ижил шалтгаан:
+ * дутуу бөглөсөн апп хүүхдийн нүдэнд тусах ёсгүй.
+ */
+export const apps = pgTable(
+  "apps",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+
+    name: varchar("name", { length: 80 }).notNull(),
+    description: varchar("description", { length: 300 }).notNull().default(""),
+    /** Лого — хоосон бол өнгөт үсэгтэй орлогч дүрс гарна. */
+    logoUrl: varchar("logo_url", { length: 500 }).notNull().default(""),
+    /** Аппын хаяг. `kind = "tournament"` үед хэрэглэгдэхгүй. */
+    url: varchar("url", { length: 500 }).notNull().default(""),
+
+    /** "link" | "tournament" — дээрх тайлбарыг үзнэ үү. */
+    kind: varchar("kind", { length: 16 }).notNull().default("link"),
+    /** `lib/tactiq/theme.ts`-ийн `ColorKey`. */
+    color: varchar("color", { length: 16 }).notNull().default("violet"),
+
+    visible: boolean("visible").notNull().default(false),
+    sortOrder: integer("sort_order").notNull().default(0),
+
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index("apps_visible_idx").on(table.visible, table.sortOrder)]
+);
+
+export type AppRow = typeof apps.$inferSelect;

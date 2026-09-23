@@ -20,6 +20,16 @@ if [[ ! -f .env.local ]]; then
   exit 1
 fi
 
+# ⚠ НУУЦ ФАЙЛ БУСАДАД НЭЭЛТТЭЙ БАЙХ ЁСГҮЙ. Deploy бүрд шалгаж
+# засна: `git pull`, гарын засвар, нөөцөөс сэргээх зэрэг нь зөвшөөрлийг
+# чимээгүй сулруулж мэднэ. Нэг удаа тавьж орхих нь хангалтгүй.
+PERMS="$(stat -c '%a' .env.local)"
+if [[ "${PERMS}" != "600" ]]; then
+  echo "⚠ .env.local зөвшөөрөл ${PERMS} байна — 600 болгов."
+  chown root:root .env.local
+  chmod 600 .env.local
+fi
+
 echo "▶ 1/4  Код татах (${BRANCH})"
 git fetch --prune origin
 git checkout "${BRANCH}"

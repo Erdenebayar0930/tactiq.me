@@ -17,6 +17,7 @@
 | `deploy.sh` | Шинэ хувилбар гаргах — pull, install, build, PM2 reload |
 | `ecosystem.config.js` | PM2-ийн процессын тохиргоо (cluster mode) |
 | `nginx/tactiq.conf` | Урвуу прокси, статик файлын кэш |
+| `backup.sh` | Нөөцлөлт — сан + эх код, хугацаатай цэвэрлэгээтэй |
 
 ## Эхний удаа
 
@@ -35,8 +36,22 @@ sudo bash deploy/setup-server.sh
 
 ```bash
 cp .env.example .env.local
-nano .env.local        # DATABASE_URL, FIREBASE_*, NEXT_PUBLIC_*
+nano .env.local        # DATABASE_URL, FIREBASE_*, NEXT_PUBLIC_*, QPAY_*
+
+# ⚠ Нууц файлыг хамгаална — зөвхөн root уншина.
+chown root:root .env.local && chmod 600 .env.local
 ```
+
+> **⛔ Үйлдвэрлэлийн нууц утга ЗӨВХӨН ЭНД байна.** QPay-ийн мерчантын нууц,
+> сангийн нууц үг, Firebase Admin-ий түлхүүрийг хөгжүүлэгчийн компьютер
+> дээр буулгаж хадгалахгүй — дискэн дээрх файл нь нөөцлөгдөж, синк хийгдэж,
+> хавтас хуваалцахад дагалддаг. Нэг ч удаа ил гарвал нууц үгээ СОЛИХООС
+> өөр сэргээх арга байхгүй.
+>
+> Локал `.env.local` дотор зөвхөн **sandbox** QPay, локал Postgres байна —
+> ингэснээр `npm run dev` жинхэнэ нэхэмжлэл үүсгэх боломжгүй.
+>
+> `deploy.sh` нь deploy бүрд зөвшөөрлийг шалгаж, 600 биш бол засна.
 
 Схемийг үүсгээд агуулга цутгана:
 
@@ -144,3 +159,58 @@ curl https://<домэйн>/api/health
 ```bash
 npm run grant:role -- email@example.com super
 ```
+
+---
+
+## НӨӨЦЛӨЛТ
+
+```bash
+bash deploy/backup.sh
+```
+
+Гаргах зүйл: `../backups/daamal-<огноо-цаг>/` дотор
+`db-tactiq.sql` (бүх схем), `code-*.tar.gz`, `README.md`.
+
+### Тохиргоо
+
+| Хувьсагч | Анхдагч | Юу вэ |
+| --- | --- | --- |
+| `BACKUP_KEEP_DAYS` | `14` | Үүнээс хуучин нөөцлөлт **устана** |
+| `BACKUP_DIR` | `../backups` | Хаана хадгалах вэ (⚠ репогийн ГАДНА) |
+| `BACKUP_CODE` | `1` | `0` бол зөвхөн сан — серверт код нь git-д байдаг |
+| `PG_DUMP` | `pg_dump` | Windows дээр бүтэн замыг өгнө |
+
+⚠ **Хуучин нөөцлөлтийг зөвхөн ШИНЭЭ АМЖИЛТТАЙ болсны дараа
+цэвэрлэнэ.** Эсрэгээр бол сан унтарсан өдөр шинэ нөөцлөлт
+бүтэлгүйтээд, хуучин нь цэвэрлэгдэж гартаа юу ч үлдэхгүй болно.
+
+⚠ **Нууц утга ОРОХГҮЙ** (`.env*.local`). ⚠ Dump дотор
+хэрэглэгчдийн **хувийн мэдээлэл** байна.
+
+### Хуваарь — сервер (cron)
+
+Өдөр бүр шөнө 03:30-д, 30 хоног хадгална:
+
+```bash
+sudo crontab -e
+```
+
+```cron
+30 3 * * * BACKUP_KEEP_DAYS=30 BACKUP_CODE=0 bash /var/www/tactiq/deploy/backup.sh >> /var/log/tactiq/backup.log 2>&1
+```
+
+⚠ `BACKUP_CODE=0` — серверт код нь GitHub дээр байдаг тул дахин
+архивлах шаардлагагүй. Сан нь орлох боломжгүй хэсэг.
+
+⚠ **НӨӨЦЛӨЛТ НЭГ МАШИНД БАЙХ НЬ НӨӨЦЛӨЛТ БИШ.** Диск унавал
+хоёулан зэрэг алга болно. Үүлэн сан руу хуулах алхамыг нэмнэ.
+
+### Хуваарь — Windows (локал)
+
+```powershell
+$cmd = 'C:\Program Files\Git\bin\bash.exe'
+$args = '-lc "PG_DUMP=/c/Program\ Files/PostgreSQL/18/bin/pg_dump.exe BACKUP_KEEP_DAYS=14 bash /d/Coderoot/tactiq.me/deploy/backup.sh"'
+schtasks /Create /TN "Daamal backup" /TR "`"$cmd`" $args" /SC DAILY /ST 03:30
+```
+
+Устгах: `schtasks /Delete /TN "Daamal backup" /F`

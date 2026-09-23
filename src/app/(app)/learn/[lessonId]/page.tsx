@@ -18,6 +18,8 @@ import { ProgressBar, Skeleton } from "@/components/tactiq/ui";
 import { Confetti } from "@/components/tactiq/Confetti";
 import { Mascot } from "@/components/tactiq/Mascot";
 import { CelebrationVideo } from "@/components/tactiq/CelebrationVideo";
+import { WelcomeRobotGif } from "@/components/tactiq/LoopGif";
+import { GUEST_EXERCISE_LIMIT } from "@/lib/tactiq/trial";
 
 import type { Exercise, Lesson } from "@/lib/tactiq/courses";
 import type { PublicUser } from "@/lib/api/publicUser";
@@ -141,7 +143,13 @@ export default function LessonPlayerPage() {
   const { data, loading, error } = useApiData<{ lesson: Lesson }>(
     isGuest
       ? `/api/trial/lessons/${encodeURIComponent(params.lessonId)}`
-      : `/api/lessons/${encodeURIComponent(params.lessonId)}`
+      : `/api/lessons/${encodeURIComponent(params.lessonId)}`,
+    /*
+     * ⚠ `authOptional`: `apiFetch` нь токен байхгүй бол хүсэлтийг
+     * сервер рүү ЯВУУЛАХГҮЙ, клиент дээрээ «Нэвтэрсэн байх
+     * шаардлагатай» гэж шиднэ — зочин хичээл огт нээж чадахгүй байв.
+     */
+    { authOptional: true }
   );
 
   if (loading) {
@@ -204,6 +212,8 @@ function NotFoundNotice() {
 type LessonResult = {
   xpEarned: number;
   alreadyCompleted: boolean;
+  /** Өнөөдрийн давталтын оноог аль хэдийн авчихсан эсэх. */
+  repeatLimited: boolean;
   /** Энэ хичээлээр найзтайгаа хамтын даалгавраа дуусгав уу. */
   questCompleted: boolean;
 };
@@ -289,6 +299,20 @@ function Player({ lesson, apply }: { lesson: Lesson; apply: Apply }) {
     // ⚠ Зөвхөн ЗӨВ хариулсны дараа урагшилна — буруу бол `retry`.
     if (feedback !== "correct") return;
 
+    /*
+     * ⚠ ЗОЧНЫ ХЯЗГААР — 3 дасгал (`GUEST_EXERCISE_LIMIT`). Хичээлийг
+     * бүтнээр хийлгэвэл «бүртгүүлэх шаардлага юу?» гэсэн асуулт төрнө,
+     * мөн оноо хадгалагдахгүй гэдгийг дуусахад л мэдэх нь бүр ч дор.
+     *
+     * ⚠ ХИЧЭЭЛ ДУУСАХААС ӨМНӨ шалгана: хязгаар нь хичээлийн уртаас
+     * хамаарахгүй байх ёстой.
+     */
+    if (isGuest && index + 1 >= GUEST_EXERCISE_LIMIT) {
+      sfx.complete();
+      setGuestDone(true);
+      return;
+    }
+
     if (index + 1 < lesson.exercises.length) {
       setIndex((value) => value + 1);
       setAttempt(0);
@@ -325,6 +349,7 @@ function Player({ lesson, apply }: { lesson: Lesson; apply: Apply }) {
         user: PublicUser;
         xpEarned: number;
         alreadyCompleted: boolean;
+        repeatLimited?: boolean;
         questCompleted: boolean;
       }>(`/api/learn/lessons/${encodeURIComponent(lesson.id)}/complete`, {
         method: "POST",
@@ -337,6 +362,7 @@ function Player({ lesson, apply }: { lesson: Lesson; apply: Apply }) {
       setResult({
         xpEarned: data.xpEarned,
         alreadyCompleted: data.alreadyCompleted,
+        repeatLimited: data.repeatLimited ?? false,
         questCompleted: data.questCompleted,
       });
     } catch (cause) {
@@ -659,15 +685,23 @@ function CelebrationShell({
   title,
   subtitle,
   children,
+  /**
+   * ЗОЧНЫ хувилбар — салют, баярын видеоны оронд мэндчилж буй робот.
+   *
+   * ⚠ ЗОЧИН ХИЧЭЭЛЭЭ ДУУСГААГҮЙ (3 дасгал хийсэн) тул баярын видео,
+   * салют нь ХУДАЛ дохио болно: «дууслаа» гэж бодоод гарч явна.
+   */
+  guest = false,
 }: {
   title: string;
   subtitle: string;
   children: React.ReactNode;
+  guest?: boolean;
 }) {
   return (
     <div className="relative mx-auto max-w-md px-4 py-6">
       {/* Салют — хичээл дуусгасан мөчийг тэмдэглэнэ (`Confetti.tsx`) */}
-      <Confetti />
+      {!guest && <Confetti />}
 
       <div className="surface overflow-hidden text-center">
         {/*
@@ -683,7 +717,11 @@ function CelebrationShell({
             видеоны гол агуулга тул уншигдах ёстой.
           */}
           <div className="mx-auto size-40 overflow-hidden rounded-full ring-4 ring-white/70 sm:size-44 dark:ring-white/25">
-            <CelebrationVideo className="size-full object-cover" />
+            {guest ? (
+              <WelcomeRobotGif className="size-full object-cover" />
+            ) : (
+              <CelebrationVideo className="size-full object-cover" />
+            )}
           </div>
 
           <h1 className="mt-4 text-2xl font-extrabold text-white">{title}</h1>
@@ -698,10 +736,16 @@ function CelebrationShell({
 
 function GuestCompletionScreen({ lesson }: { lesson: Lesson }) {
   return (
-    <CelebrationShell title={t("Хичээл дууслаа!")} subtitle={lesson.title}>
+    <CelebrationShell title={t("Сайн байна!")} subtitle={lesson.title} guest>
+      {/*
+        ⚠ ЯАГААД ЗОГССОНЫГ ХЭЛНЭ: зочин `GUEST_EXERCISE_LIMIT` дасгал
+        хийсний дараа энэ дэлгэц гарна. Шалтгааныг хэлэхгүй бол
+        «хичээл эвдэрсэн юм уу» гэж бодно.
+      */}
       <p className="rounded-xl bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-800 dark:bg-amber-500/15 dark:text-amber-200">
-        Оноогоо хадгалахын тулд бүртгүүлээрэй. Бүртгүүлбэл ахиц, дараалал,
-        бэлгийн хайрцаг, гэрчилгээ бүгд нээгдэнэ.
+        {`Нэвтрээгүй үед ${GUEST_EXERCISE_LIMIT} дасгал үнэгүй. `}
+        Бүртгүүлбэл хичээл бүтнээрээ нээгдэж, оноо, дараалал, бэлгийн
+        хайрцаг, гэрчилгээ хуримтлагдана.
       </p>
 
       <Link
@@ -748,9 +792,24 @@ function CompletionScreen({
         <span className="text-sm font-bold text-amber-700 dark:text-amber-200">{t("оноо")}</span>
       </p>
 
-      {result.alreadyCompleted && (
+      {/*
+        ⚠ ДАВТАЛТ ГУРВАН ТӨЛӨВТЭЙ, гурвуулан дээр ӨӨР ЗУЙЛ хэлнэ:
+          • шинээр дуусгасан — энэ мөр огт гарахгүй;
+          • давтаж оноо авсан — «бага оноо» гэдгийг ТАЙЛБАРЛАНА,
+            эс бөгөөс «яагаад цөөн вэ?» гэсэн алдаа мэт бодогдоно;
+          • өнөөдрийн хязгаарт хүрсэн — ХЭЗЭЭ дахин авахыг хэлнэ.
+      */}
+      {result.alreadyCompleted && result.xpEarned > 0 && (
         <p className="text-xs text-gray-400">
-          {t("Энэ хичээлийг өмнө нь дуусгасан тул оноо дахин олгогдоогүй.")}
+          {t("Давтаж хийсэн тул бага оноо нэмэгдлээ. Шинэ хичээл бүрэн оноотой.")}
+        </p>
+      )}
+
+      {result.alreadyCompleted && result.xpEarned === 0 && (
+        <p className="text-xs text-gray-400">
+          {result.repeatLimited
+            ? t("Энэ хичээлийн давталтын оноог өнөөдөр авсан байна. Маргааш дахин нэмэгднэ.")
+            : t("Энэ хичээлийг өмнө нь дуусгасан байна.")}
         </p>
       )}
 

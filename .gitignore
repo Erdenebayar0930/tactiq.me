@@ -65,3 +65,6 @@ next-env.d.ts
 # Claude Code-ийн хувийн тохиргоо
 .claude/settings.local.json
 scratch-*.mts
+
+# Түр зуурын сангийн шалгалтын скрипт — commit хийхгүй.
+dump.mjs
