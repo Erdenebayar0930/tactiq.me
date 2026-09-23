@@ -119,7 +119,7 @@ export default function RootLayout({
         */}
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{var l=localStorage.getItem("locale");if(l==="en")document.documentElement.lang="en";}catch(e){}try{var p=localStorage.getItem("theme");var d=p==="dark"||((!p||p==="system")&&window.matchMedia("(prefers-color-scheme: dark)").matches);document.documentElement.classList.toggle("dark",d);document.documentElement.style.colorScheme=d?"dark":"light";}catch(e){}})();`,
+            __html: `(function(){try{var l=localStorage.getItem("locale");if(l==="en")document.documentElement.lang="en";}catch(e){}try{var p=localStorage.getItem("theme");var d=p==="dark"||(p==="system"&&window.matchMedia("(prefers-color-scheme: dark)").matches);document.documentElement.classList.toggle("dark",d);document.documentElement.style.colorScheme=d?"dark":"light";}catch(e){}})();`,
           }}
         />
 

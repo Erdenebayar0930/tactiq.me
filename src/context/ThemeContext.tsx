@@ -31,8 +31,8 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 // ---------------------------------------------------------------------------
 // Сонголт нь localStorage дотор, өөрөөр хэлбэл React-ийн ГАДНА байдаг төлөв.
-// Тиймээс useState биш useSyncExternalStore-оор уншина: SSR үед "system"
-// гэсэн серверийн snapshot ашиглагдаж, hydration-ы зөрчилгүйгээр клиент дээр
+// Тиймээс useState биш useSyncExternalStore-оор уншина: SSR үед анхдагч
+// ("light") серверийн snapshot ашиглагдаж, hydration-ы зөрчилгүйгээр клиент дээр
 // бодит утга руу шилжинэ.
 // ---------------------------------------------------------------------------
 
@@ -53,14 +53,22 @@ const subscribePreference = (onChange: () => void) => {
   };
 };
 
+/**
+ * ⚠ АНХДАГЧ НЬ "light" — "system" БИШ: шинээр нээсэн хүн утасныхаа
+ * харанхуй горимоос үл хамааран гэрэлтэй дэлгэц харна. Системийг дагах
+ * нь тохиргооноос сонгох боломжтой хэвээр. `app/layout.tsx`-ийн inline
+ * скрипт ИЖИЛ анхдагчтай байх ёстой — эс бөгөөс анивчина.
+ */
+const DEFAULT_PREFERENCE: ThemePreference = "light";
+
 function readPreference(): ThemePreference {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     return raw === "light" || raw === "dark" || raw === "system"
       ? raw
-      : "system";
+      : DEFAULT_PREFERENCE;
   } catch {
-    return "system";
+    return DEFAULT_PREFERENCE;
   }
 }
 
@@ -76,7 +84,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const preference = useSyncExternalStore(
     subscribePreference,
     readPreference,
-    () => "system" as ThemePreference
+    () => DEFAULT_PREFERENCE
   );
 
   const systemDark = useSyncExternalStore(
