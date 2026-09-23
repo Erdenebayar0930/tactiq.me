@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   BOARD_COORD,
   BOARD_DARK,
@@ -100,6 +100,14 @@ export function ChessBoard({
   const [dragPos, setDragPos] = useState<{ x: number; y: number } | null>(null);
   /** Чирэлт эхлэх мөчид хэмжинэ (event handler дотор — refs render үед уншиж болохгүй). */
   const [squareSize, setSquareSize] = useState(56);
+  /**
+   * НҮҮХ БОЛОМЖГҮЙ дүрс дээр дарсны дохио — `DraughtsBoard`-той ижил.
+   *
+   * ⚠ Урьд нь ӨРСӨЛДӨГЧИЙН дүрс ч сонгогдож, шар тойрогт ороод хөдлөхгүй
+   * байв. Хүүхэд хөлгийг эвдэрсэн гэж ойлгоно. Сонголтыг зөвшөөрөхгүй,
+   * оронд нь богинохон улаанаар цохиулна.
+   */
+  const [refused, setRefused] = useState<Square | null>(null);
   const boardRef = useRef<HTMLDivElement>(null);
 
   const rows = orientation === "white" ? [0, 1, 2, 3, 4, 5, 6, 7] : [7, 6, 5, 4, 3, 2, 1, 0];
@@ -112,6 +120,13 @@ export function ChessBoard({
     setLegalTargets([]);
     setDragPos(null);
   };
+
+  /* Дохиог өөрөө унтраана — дараагийн даралтад дахин асна. */
+  useEffect(() => {
+    if (!refused) return;
+    const timer = setTimeout(() => setRefused(null), 500);
+    return () => clearTimeout(timer);
+  }, [refused]);
 
   const squareFromPoint = (x: number, y: number): Square | null => {
     const el = document.elementFromPoint(x, y)?.closest<HTMLElement>("[data-square]");
@@ -138,8 +153,21 @@ export function ChessBoard({
       return;
     }
 
+    /*
+     * ⚠ ОЧИХ НҮД БАЙХГҮЙ бол СОНГОХГҮЙ: өрсөлдөгчийн дүрс, хөлддөг
+     * (боож байгаа) дүрс, шад доор хаанаа хамгаалахаас өөр аргагүй үеийн
+     * бусад дүрс — бүгд «сонгогдчихоод хөдлөхгүй» гэсэн ижил гацаа
+     * үүсгэдэг байв.
+     */
+    const targets = getLegalTargets(square);
+    if (targets.length === 0) {
+      reset();
+      setRefused(square);
+      return;
+    }
+
     setSelected(square);
-    setLegalTargets(getLegalTargets(square));
+    setLegalTargets(targets);
     setDragPos({ x: event.clientX, y: event.clientY });
     const rect = boardRef.current?.getBoundingClientRect();
     if (rect) setSquareSize(rect.width / 8);
@@ -218,6 +246,20 @@ export function ChessBoard({
         onPointerMove={onBoardMove}
         onPointerUp={onBoardUp}
         /*
+          ⚠ `pointercancel` ба `lostpointercapture` ЗААВАЛ: хөтөч
+          чирэлтийг ГАНЦААРАА тасалж болно — хуруу дэлгэцийн захаар
+          хальтрах, хуудас гүйлгэх дохио танигдах, дуудлага ирэх,
+          систем зураг дарах. Тэр үед `pointerup` ХЭЗЭЭ Ч ИРЭХГҮЙ.
+
+          Зохицуулаагүй байхад: `dragPos` тогтож үлдэж, хөвөгч дүрс
+          хуруунд наалдана. Түүнчлэн тэр нүд нь `isDraggingThis` тул
+          дүрсээ ЗУРАХАА БОЛЬДОГ — дарах зорилтот хэсэг үгүй болж,
+          хөлөг «гацсан» болно. Гарах цорын ганц зам нь хуудсыг дахин
+          ачаалах байв.
+        */
+        onPointerCancel={reset}
+        onLostPointerCapture={() => setDragPos(null)}
+        /*
           ⚠ Дотоод хүрээ нь НИМГЭН, ЗӨӨЛӨН: хар 2px хүрээ нь цайвар
           хөлгийн зах дээр хар шугам болж, нүд татдаг байв.
         */
@@ -264,6 +306,9 @@ export function ChessBoard({
                     >
                       <div className="absolute bottom-[8%] h-[14%] w-[55%] rounded-full bg-black/20 blur-[2px]" />
                       {/* Сонгосон дүрс — цэнхэр дэвсгэрийн оронд алт өнгийн цагираг дүрсний эргэн тойронд */}
+                      {refused === square && (
+                        <div className="board-refuse pointer-events-none absolute inset-[6%] rounded-full ring-[3px] ring-rose-500" />
+                      )}
                       {isSelected && (
                         <div className="pointer-events-none absolute inset-[6%] rounded-full ring-[3px] ring-amber-400 ring-offset-1 ring-offset-transparent" />
                       )}

@@ -19,6 +19,7 @@ import {
   distinctMoves,
   fileOf,
   loadPosition,
+  movePresentsPiece,
   onBoard,
   pick,
   randInt,
@@ -281,6 +282,29 @@ function attackedEmpty(chess: Chess, color: "w" | "b"): string[] {
   return squares;
 }
 
+/**
+ * ЗӨВХӨН ТАСЛАГДСАН ДҮРСНИЙ дайралтад байгаа хоосон нүд.
+ *
+ * ⚠ `attackedEmpty(probe, "w")` нь ЦАГААНЫ БҮХ дүрсийн — НОЁНЫ Ч
+ * — дайралтыг авдаг. Тиймээс байг ноёны хажууд тавьж, «Морь,
+ * хүүгээр идэх» гэсэн дасгал дээр ноён иддэг болгож байв.
+ */
+function attackedEmptyBy(chess: Chess, attackers: PieceSymbol[]): string[] {
+  const squares: string[] = [];
+  for (let f = 0; f < 8; f++) {
+    for (let r = 0; r < 8; r++) {
+      const s = sq(f, r);
+      if (chess.get(s)) continue;
+      const hit = chess.attackers(s as Square, "w").some((from) => {
+        const piece = chess.get(from);
+        return !!piece && attackers.includes(piece.type);
+      });
+      if (hit) squares.push(s);
+    }
+  }
+  return squares;
+}
+
 /** «Хар X-ийг ид» — тэр төрлийн ганц идэлт. */
 export function captureTypeTask(attackers: PieceSymbol[], target: PieceSymbol, extraBlacks = 1): Generator {
   return (rng) => {
@@ -290,7 +314,10 @@ export function captureTypeTask(attackers: PieceSymbol[], target: PieceSymbol, e
 
     const probe = loadPosition(toFen(placement));
     if (!probe) return null;
-    const targets = attackedEmpty(probe, "w").filter((s) => target !== "p" || pawnOk(fileOf(s), rankOf(s)));
+    /* ⚠ ТАСЛАГДСАН ДҮРСНИЙ дайралтад л байг тавьна — ноёныхад биш. */
+    const targets = attackedEmptyBy(probe, attackers).filter(
+      (s) => target !== "p" || pawnOk(fileOf(s), rankOf(s))
+    );
     if (targets.length === 0) return null;
     placement.set(pick(rng, targets), target);
     for (let i = 0; i < extraBlacks; i++) {
@@ -299,14 +326,21 @@ export function captureTypeTask(attackers: PieceSymbol[], target: PieceSymbol, e
 
     const chess = loadPosition(toFen(placement));
     if (!chess) return null;
-    const move = distinctMoves(chess).find((m) => m.captured === target);
+    /*
+     * ⚠ ИДЭЛТИЙГ ХИЙХ ДҮРС ЗААВАЛ ХИЧЭЭЛИЙН ӨӨРИЙНХ НЬ байх.
+     * Ноён түүнийг идэж болох байрлалыг БҮРНээ ХАЯНА: сурагч «морьоор
+     * иднэ» гэсэн сэдвийг ноёноор бодвол дасгал үрээ өгөөгүй.
+     */
+    const captures = distinctMoves(chess).filter((m) => m.captured === target);
+    const move = captures.find((m) => attackers.includes(m.piece));
     if (!move) return null;
+    if (captures.some((m) => !attackers.includes(m.piece))) return null;
     return {
       type: "board-move",
       fen: chess.fen(),
       from: move.from,
       to: move.to,
-      goal: { kind: "captureType", piece: target },
+      goal: { kind: "captureType", piece: target, by: attackers },
       prompt: fill(["{t} ид.", "Capture {te}."], {
         t: BLACK_ACC[target][0][0].toUpperCase() + BLACK_ACC[target][0].slice(1),
         te: BLACK_ACC[target][1],
@@ -373,6 +407,24 @@ export function safeCaptureTask(whites: number, blacks: number, minCaptures = 2)
 
 // --- Level 4: шаг -----------------------------------------------------------
 
+/**
+ * ШАГ ГЭХ ҮҮ ДУГ ГЭХ ҮҮ.
+ *
+ * ⚠ МОНГОЛ НЭР ТОМЬЁ: ТЭМЭЭГЭЭР ноёныг шалахыг «шаг» гэхгүй,
+ * «ДУГ» гэж нэрлэдэг (эзний заавар). Бусад дүрсийн хувьд «шаг».
+ * Англидаа ижил — бүгд «check».
+ *
+ * ⚠ ДААЛГАВАР БҮР АЛЬ ДҮРС ШАЛЖ БАЙГААГААР нэрийг сонгоно —
+ * хичээлийн тохиргоогоор биш. `giveCheckTask(["r", "n"])` шиг холимог
+ * дасгалд бид уг шагийг аль дүрс өгснийг зөвхөн үүссний ДАРАА мэднэ.
+ */
+export const checkWord = (piece: PieceSymbol): string => (piece === "b" ? "дуг" : "шаг");
+
+const Check = (piece: PieceSymbol): string => {
+  const word = checkWord(piece);
+  return word[0].toUpperCase() + word.slice(1);
+};
+
 export function giveCheckTask(pieces: PieceSymbol[], blackExtras = 1): Generator {
   return (rng) => {
     const placement: Placement = new Map();
@@ -382,31 +434,54 @@ export function giveCheckTask(pieces: PieceSymbol[], blackExtras = 1): Generator
 
     const chess = loadPosition(toFen(placement));
     if (!chess || chess.inCheck()) return null;
+    /*
+     * ⚠ ДҮРСЭЭ ҮНЭГҮЙ ИДУУЛДГ ШАГ НЬ АЛДАА НҮҮДЭЛ. Сурагчдад
+     * «шаг бол сайн» гэсэн буруу зуршил үлдэхгүйн тул тэрэг, бэрсээ
+     * идүүлэх байрлалд тавьдаг байрлалыг ХАЯНА (`movePresentsPiece`).
+     * Нэг шаг алдаатай бол байрлалыг бүхлээр буцаана: үлдсэнийг л
+     * авбал «ганц шаг» гэсэн амлалт зөрнө.
+     */
     const checks = distinctMoves(chess).filter((m) => m.san.includes("+"));
     if (checks.length !== 1) return null;
+    if (movePresentsPiece(chess, checks[0])) return null;
     return {
       type: "board-move",
       fen: chess.fen(),
       from: checks[0].from,
       to: checks[0].to,
       goal: { kind: "check" },
-      prompt: ["Хар ноёнд ШАТ өг. Ганц л ийм нүүдэл бий!", "Give CHECK to the black king. There is only one way!"],
+      prompt: [
+        `Хар ноёнд ${checkWord(checks[0].piece).toUpperCase()} өг. Ганц л ийм нүүдэл бий!`,
+        "Give CHECK to the black king. There is only one way!",
+      ],
       explain: [
-        "Шаг гэдэг нь ноёныг дайрах. Аль дүрс ямар нүднээс ноёныг «харж» чадахыг бод.",
+        `${Check(checks[0].piece)} гэдэг нь ноёныг дайрах. Аль дүрс ямар нүднээс ноёныг «харж» чадахыг бод.`,
         "Check means attacking the king. Think about which piece could 'see' the king from which square.",
       ],
     };
   };
 }
 
-/** Хар дүрс цагаан ноёнд шаг өгч буй байрлал бэлдэнэ. */
+/** Цагаан ноёны нүд — шалагчийг тогтооход. */
+function whiteKingSquare(chess: Chess): Square {
+  for (const row of chess.board())
+    for (const cell of row) if (cell?.type === "k" && cell.color === "w") return cell.square;
+  throw new Error("цагаан ноён алга");
+}
+
+/**
+ * Хар дүрс цагаан ноёнд шаг өгч буй байрлал бэлдэнэ.
+ *
+ * ⚠ ШАЛЖ БАЙГАА ДҮРСИЙГ Ч буцаана: даалгаврын бичвэр тэрнээс
+ * шалтгаална — тэмээ бол «дуг», өөр дүрс бол «шаг».
+ */
 function checkedPosition(
   rng: Rng,
   whitePieces: string[],
   checker: PieceSymbol,
   blackExtras: number,
   kingFilter?: SquareFilter
-): Chess | null {
+): { chess: Chess; checker: PieceSymbol } | null {
   const placement: Placement = new Map();
   if (!putKings(rng, placement, kingFilter)) return null;
   for (const piece of whitePieces) put(rng, placement, piece);
@@ -414,19 +489,32 @@ function checkedPosition(
   for (let i = 0; i < blackExtras; i++) put(rng, placement, pick(rng, ["r", "b", "n", "p"]));
   const chess = loadPosition(toFen(placement));
   if (!chess || !chess.inCheck()) return null;
-  return chess;
+
+  /*
+   * ⚠ ШАЛАГЧИЙГ БАЙРЛАЛААС УНШИНА, ХҮССЭН ДҮРСНЭЭС БИШ.
+   * `checker` нь зөвхөн «энэ дүрсийг тавь» гэсэн заавар; шаг нь
+   * санамсаргүй нэмэгдсэн ӨӨР хар дүрснээс ирсэн байж мэднэ. Бодитоор
+   * тэр зөрүүнээс болж тэмээгийн шагийг «шаг» гэж нэрлэсэн дасгалууд үлдсэн.
+   */
+  const attackers = chess.attackers(whiteKingSquare(chess), "b");
+  if (attackers.length !== 1) return null;
+  const real = chess.get(attackers[0])?.type;
+  if (!real) return null;
+
+  return { chess, checker: real };
 }
 
 export function kingEscapeTask(): Generator {
   return (rng) => {
-    const chess = checkedPosition(
+    const position = checkedPosition(
       rng,
       rng() < 0.5 ? [] : ["P"],
       pick(rng, ["r", "q", "b", "n"]),
       randInt(rng, 0, 2),
       (f, r) => f === 0 || f === 7 || r === 0 || r === 7 || rng() < 0.3
     );
-    if (!chess) return null;
+    if (!position) return null;
+    const { chess, checker } = position;
     const escapes = distinctMoves(chess).filter((m) => m.piece === "k");
     if (escapes.length !== 1) return null;
     return {
@@ -436,7 +524,7 @@ export function kingEscapeTask(): Generator {
       to: escapes[0].to,
       goal: { kind: "kingEscape" },
       prompt: [
-        "Цагаан ноён шагт байна! НОЁНОО аюулгүй нүд рүү нүү.",
+        `Цагаан ноён ${checkWord(checker)}т байна! НОЁНОО аюулгүй нүд рүү нүү.`,
         "The white king is in check! Move YOUR KING to a safe square.",
       ],
       explain: [
@@ -449,13 +537,21 @@ export function kingEscapeTask(): Generator {
 
 export function blockTask(): Generator {
   return (rng) => {
-    const chess = checkedPosition(rng, [pick(rng, ["R", "B", "N", "Q"]), pick(rng, ["P", "N", "B"])], pick(rng, ["r", "q", "b"]), randInt(rng, 0, 1));
-    if (!chess) return null;
+    const position = checkedPosition(rng, [pick(rng, ["R", "B", "N", "Q"]), pick(rng, ["P", "N", "B"])], pick(rng, ["r", "q", "b"]), randInt(rng, 0, 1));
+    if (!position) return null;
+    const { chess, checker } = position;
     const moves = distinctMoves(chess);
     const checkers = chess.attackers(findKing(chess), "b");
     if (checkers.length !== 1) return null;
     if (moves.some((m) => m.to === checkers[0])) return null; // идэж болохгүй — ХААХ хичээл
-    const blocks = moves.filter((m) => m.piece !== "k" && !m.captured);
+    /*
+     * ⚠ ХААСАН ДҮРСИЙГ ҮНЭГҮЙ ИДУУЛЖ БОЛОХГҮЙ: тэгвэл «хаалт» биш,
+     * зүгээр дүрсээ өгсөн болно. Дүрмийг `movePresentsPiece` нэг газар
+     * барина (`chessShared.ts`) — шалгуур ч ижлийг шаардана.
+     */
+    const blocks = moves.filter(
+      (m) => m.piece !== "k" && !m.captured && !movePresentsPiece(chess, m)
+    );
     if (blocks.length !== 1) return null;
     return {
       type: "board-move",
@@ -464,7 +560,7 @@ export function blockTask(): Generator {
       to: blocks[0].to,
       goal: { kind: "block" },
       prompt: [
-        "Шаг! Ноёноо биш, ДҮРСЭЭ хаалт болгон тавьж шагийг хаа.",
+        `${Check(checker)}! Ноёноо биш, ДҮРСЭЭ хаалт болгон тавьж ${checkWord(checker)}ийг хаа.`,
         "Check! Don't move the king — BLOCK the check with a piece.",
       ],
       explain: [
@@ -482,28 +578,38 @@ function findKing(chess: Chess): Square {
 
 export function captureCheckerTask(): Generator {
   return (rng) => {
-    const chess = checkedPosition(rng, [pick(rng, ["R", "B", "N", "Q", "P"]), pick(rng, ["P", "N", "B", "R"])], pick(rng, ["r", "q", "b", "n"]), randInt(rng, 0, 1));
-    if (!chess) return null;
+    const position = checkedPosition(rng, [pick(rng, ["R", "B", "N", "Q", "P"]), pick(rng, ["P", "N", "B", "R"])], pick(rng, ["r", "q", "b", "n"]), randInt(rng, 0, 1));
+    if (!position) return null;
+    const { chess, checker } = position;
     const checkers = chess.attackers(findKing(chess), "b");
     if (checkers.length !== 1) return null;
     const takes = distinctMoves(chess).filter((m) => m.to === checkers[0]);
     if (takes.length !== 1) return null;
+    /*
+     * ⚠ ИДЭЭД ДҮРСЭЭ АЛДАЖ БОЛОХГҮЙ: бэрсээр тэрэг идээд буцаад
+     * идэгдвэл «идвэл хамгийн сайн» гэсэн тайлбар худал болно. Тэнцүү
+     * солилцоо зөвшөөрөгдөнө — зөвхөн АЛДАГДАЛТАЙ нь болохгүй.
+     */
+    if (movePresentsPiece(chess, takes[0])) return null;
     return {
       type: "board-move",
       fen: chess.fen(),
       from: takes[0].from,
       to: takes[0].to,
       goal: { kind: "captureChecker" },
-      prompt: ["Шаг! Шаг өгч буй хар дүрсийг ИД.", "Check! CAPTURE the piece that is giving check."],
+      prompt: [
+        `${Check(checker)}! ${Check(checker)} өгч буй хар дүрсийг ИД.`,
+        "Check! CAPTURE the piece that is giving check.",
+      ],
       explain: [
-        "Шагаас гарах гурван арга: ноёноо нүүлгэх, шагийг хаах, эсвэл шаг өгсөн дүрсийг идэх. Идэж чадвал ихэвчлэн хамгийн сайн.",
+        `${Check(checker)}аас гарах гурван арга: ноёноо нүүлгэх, ${checkWord(checker)}ийг хаах, эсвэл ${checkWord(checker)} өгсөн дүрсийг идэх. Идэж чадвал ихэвчлэн хамгийн сайн.`,
         "Three ways out of check: move the king, block, or capture the checking piece. Capturing is often the best.",
       ],
     };
   };
 }
 
-// --- Level 5: рокировка -----------------------------------------------------
+// --- Level 5: сэлгээ -----------------------------------------------------
 
 export function castleTask(mode: "one" | "choose"): Generator {
   return (rng) => {
@@ -515,7 +621,7 @@ export function castleTask(mode: "one" | "choose"): Generator {
     for (const s of ["f2", "g2", "h2", "a2", "b2", "c2"]) if (rng() < 0.6) placement.set(s, "P");
     if (!put(rng, placement, "k", (_, r) => r >= 5)) return null;
 
-    // Хар довтлогч — рокировкыг хааж магадгүй.
+    // Хар довтлогч — сэлгээг хааж магадгүй.
     const attackers = mode === "choose" ? 1 : randInt(rng, 0, 1);
     for (let i = 0; i < attackers; i++) put(rng, placement, pick(rng, ["b", "r", "n", "q"]), (_, r) => r >= 2);
     // Заримдаа замд цагаан дүрс.
@@ -537,18 +643,18 @@ export function castleTask(mode: "one" | "choose"): Generator {
       goal: { kind: "castle" },
       prompt:
         mode === "one"
-          ? ["Рокировка хий: ноёноо тэрэг тийш ХОЁР нүд нүү.", "Castle: move your king TWO squares towards the rook."]
+          ? ["Сэлгээ хий: ноёноо тэрэг тийш ХОЁР нүд нүү.", "Castle: move your king TWO squares towards the rook."]
           : [
-              "Рокировка хий — гэхдээ зөвхөн НЭГ талд боломжтой. Аль нь вэ?",
+              "Сэлгээ хий — гэхдээ зөвхөн НЭГ талд боломжтой. Аль нь вэ?",
               "Castle — but it is allowed on only ONE side. Which one?",
             ],
       explain: kingside
         ? [
-            "Богино рокировка: ноён e1→g1, тэрэг h1→f1. Ноён шагт байж, дайрагдсан нүдийг дамжиж, замд дүрс байж болохгүй.",
+            "Богино сэлгээ: ноён e1→g1, тэрэг h1→f1. Ноён шагт байж, дайрагдсан нүдийг дамжиж, замд дүрс байж болохгүй.",
             "Short castling: king e1→g1, rook h1→f1. Not allowed out of, through or into check, or with pieces in the way.",
           ]
         : [
-            "Урт рокировка: ноён e1→c1, тэрэг a1→d1. Ноён шагт байж, дайрагдсан нүдийг дамжиж, замд дүрс байж болохгүй.",
+            "Урт сэлгээ: ноён e1→c1, тэрэг a1→d1. Ноён шагт байж, дайрагдсан нүдийг дамжиж, замд дүрс байж болохгүй.",
             "Long castling: king e1→c1, rook a1→d1. Not allowed out of, through or into check, or with pieces in the way.",
           ],
     };
@@ -560,7 +666,7 @@ export function castleTask(mode: "one" | "choose"): Generator {
 const edge: SquareFilter = (f, r) => f === 0 || f === 7 || r === 0 || r === 7;
 const topEdge: SquareFilter = (_, r) => r === 7;
 
-type MateSpec = {
+export type MateSpec = {
   whites: string[];
   blacks?: string[];
   blackKing?: SquareFilter;
@@ -653,18 +759,106 @@ export const MATE_SPECS = {
 
 // --- Level 7: тактик (материал хожих) --------------------------------------
 
+/**
+ * ШИЙДЭЛ НЭГ ДҮРСНИЙ ЦУВАА МӨН ҮҮ: тайван бэлтгэл → идэлт.
+ *
+ * ⚠ ХҮЛЭЭС (ба РЕНТГЕН) ГЭДЭГ НЬ ЯГ ЭНЭ: нэг дүрс дайсны дүрсийг
+ * ноёнд нь хадаж хөдлөхгүй болгоод, ДАРАА НЬ ӨӨРӨӨ иднэ. Бодитоор санд
+ * `Qxf1+ Kc2 Kxd6` гэсэн «хүлээс» байсан — эхний нүүдэл нь зүгээр
+ * идэлт, сүүлчийнийг нь НОЁН хийж байв. Хүлээс огт алга.
+ *
+ * ⚠ ГУРВАН ШАЛГУУР:
+ *   1. эхний нүүдэл ИДЭЛТГҮЙ (хүлээс ТАВЬНА, идэхгүй),
+ *   2. гурав дахь нүүдлийг ЯГ ТЭР ДҮРС хийнэ (эхний нүүдлийн буусан нүднээс),
+ *   3. тэр нүүдэл ИДНЭ.
+ */
+function lineIsChain(fen: string, solution: string): boolean {
+  const chess = loadPosition(fen);
+  if (!chess) return false;
+
+  const plies = solution.split(" ");
+  let origin: string | null = null;
+
+  for (let index = 0; index < plies.length; index += 1) {
+    const uci = plies[index];
+    const move = (chess.moves({ verbose: true }) as Move[]).find(
+      (m) => m.from === uci.slice(0, 2) && m.to === uci.slice(2, 4)
+    );
+    if (!move) return false;
+
+    if (index === 0) {
+      if (move.captured) return false;
+      origin = move.to;
+    } else if (index % 2 === 0) {
+      if (move.from !== origin) return false;
+      if (index === plies.length - 1 && !move.captured) return false;
+      origin = move.to;
+    }
+    chess.move(move);
+  }
+  return true;
+}
+
+/**
+ * ШИЙДЭЛ ТУСГАЙ ДҮРСЭЭР ХИЙГДЭЖ БАЙНА УУ (1 ба 3 дахь нүүдэл).
+ *
+ * ⚠ ШУГАМЫГ ДАХИН ТОГЛУУЛЖ шалгана — `buildWinLine`-ы дотоод
+ * төлөвтөй завсардахгүйн тулд. Шугам нь UCI бичиглэлээр (жишээ
+ * `f7g7 h8f8 g7h7`), сондойгоор тусгаарлагдсан.
+ */
+function lineIsBy(fen: string, solution: string, piece: PieceSymbol): boolean {
+  const chess = loadPosition(fen);
+  if (!chess) return false;
+
+  const plies = solution.split(" ");
+  for (let index = 0; index < plies.length; index += 1) {
+    const uci = plies[index];
+    const move = (chess.moves({ verbose: true }) as Move[]).find(
+      (m) => m.from === uci.slice(0, 2) && m.to === uci.slice(2, 4)
+    );
+    if (!move) return false;
+    // ⚠ Цагааны нүүдлүүд (0, 2) л биднийх — харынх байх ёстойгүй.
+    if (index % 2 === 0 && move.piece !== piece) return false;
+    chess.move(move);
+  }
+  return true;
+}
+
+/**
+ * Материал хожих шугамтай бодлого.
+ *
+ * ⚠ `by` НЬ ДААЛГАВРЫН АМЛАЛТЫГ БАРИНА. «Бэрсээрээ СЭРЭЭ хий»
+ * гэсэн бодлогын шийдэл нь `f7g7 h8f8 g7h7` — өөрөөр хэлбэл НОЁН
+ * хоёулан нүүдлийг хийж, бэрс огт хөдлөхгүй байсан (бодитоор санд байсан).
+ * `buildWinLine` нь хамгийн сайн хожилыг ХЭН хийхийг үл хайхран хайдаг.
+ *
+ * ⚠ СЭРЭЭ ГЭДЭГ НЬ НЭГ ДҮРС хоёр байг зэрэг дайраад, дараа нь
+ * нэгийг нь идэх явдал. Тиймээс ЭХНИЙ ба ГУРВАН ДАХЬ нүүдлийг
+ * хоёуланг тэр ДҮРС хийх ёстой.
+ */
 function winTask(
   build: (rng: Rng) => string | null,
   min: number,
   prompt: Bi,
-  explain: Bi
+  explain: Bi,
+  by?: PieceSymbol,
+  chain?: boolean
 ): Generator {
   return (rng) => {
     const fen = build(rng);
     if (!fen) return null;
     const solution = buildWinLine(fen, min);
     if (!solution) return null;
-    return { type: "chess-puzzle", fen, solution, goal: { kind: "win", min }, prompt, explain };
+    if (by && !lineIsBy(fen, solution, by)) return null;
+    if (chain && !lineIsChain(fen, solution)) return null;
+    return {
+      type: "chess-puzzle",
+      fen,
+      solution,
+      goal: { kind: "win", min, by, chain },
+      prompt,
+      explain,
+    };
   };
 }
 
@@ -703,7 +897,8 @@ export function knightForkTask(target: "r" | "q"): Generator {
     [
       "Сэрээ — нэг дүрс хоёр зүйлийг зэрэг дайрна. Ноён шагаас гарах ёстой тул нөгөө дүрс хамгаалалтгүй үлдэнэ.",
       "A fork attacks two things at once. The king must get out of check, so the other piece is left undefended.",
-    ]
+    ],
+    "n"
   );
 }
 
@@ -727,7 +922,8 @@ export function queenForkTask(): Generator {
     [
       "Бэрс найман чиглэлд дайрдаг тул сэрээнд маш сайн. Хамгаалалтгүй дүрс + ноён = олз.",
       "The queen attacks in eight directions, which makes her a great forker. Undefended piece + king = prize.",
-    ]
+    ],
+    "q"
   );
 }
 
@@ -753,7 +949,8 @@ export function pawnForkTask(): Generator {
     [
       "Хамгийн хямд дүрс хоёр үнэтэй дүрсийг зэрэг дайрвал нэгийг нь заавал алдана.",
       "When the cheapest piece attacks two valuable ones, one of them must fall.",
-    ]
+    ],
+    "p"
   );
 }
 
@@ -819,7 +1016,9 @@ export function skewerTask(): Generator {
     [
       "Рентген бол «эсрэг хүлээс»: үнэтэй дүрс (ноён) урдаа, хямд дүрс ард нь. Ноён зайлах ёстой тул ард нь байгаа дүрс унана.",
       "A skewer is a reverse pin: the valuable piece (the king) is in front and must move, exposing the piece behind.",
-    ]
+    ],
+    undefined,
+    true
   );
 }
 
@@ -834,7 +1033,9 @@ export function pinTask(): Generator {
     [
       "Хүлээстэй дүрс ард нь ноён байгаа тул хөдөлж чадахгүй — түүнийг дахин дайрвал хамгаалагдахгүй.",
       "A pinned piece cannot move because its king is behind it — attack it again and it is lost.",
-    ]
+    ],
+    undefined,
+    true
   );
 }
 
@@ -1018,7 +1219,7 @@ const DEVELOP_TARGETS: Record<string, [PieceSymbol, string]> = {
   d4: ["p", "d4"],
 };
 
-/** Нээлтийн байрлал: төвийн хүү, хөнгөн дүрсээ гаргах, рокировка. */
+/** Нээлтийн байрлал: төвийн хүү, хөнгөн дүрсээ гаргах, сэлгээ. */
 export function openingTask(kind: "center" | "develop" | "castle"): Generator {
   return (rng) => {
     const line = pick(rng, OPENING_LINES).split(" ");
@@ -1039,7 +1240,7 @@ export function openingTask(kind: "center" | "develop" | "castle"): Generator {
         goal: { kind: "castle" },
         prompt: ["Ноёноо аюулгүй болго — РОКИРОВКА хий.", "Make your king safe — CASTLE."],
         explain: [
-          "Нээлтийн гурван дүрэм: төвийг эзэл, хөнгөн дүрсээ гарга, рокировка хий. Төвд үлдсэн ноён довтолгоонд өртөмтгий.",
+          "Нээлтийн гурван дүрэм: төвийг эзэл, хөнгөн дүрсээ гарга, сэлгээ хий. Төвд үлдсэн ноён довтолгоонд өртөмтгий.",
           "Three opening rules: take the centre, develop your pieces, castle. A king left in the centre is easy to attack.",
         ],
       };

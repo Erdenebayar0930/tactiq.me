@@ -26,7 +26,8 @@ import { randomUUID } from "node:crypto";
 
 import { LEVEL_1, LEVEL_2, LEVEL_3 } from "./curriculum/chessLevels1to3";
 import { LEVEL_4, LEVEL_5, LEVEL_6 } from "./curriculum/chessLevels4to6";
-import { LEVEL_10, LEVEL_7, LEVEL_8, LEVEL_9 } from "./curriculum/chessLevels7to10";
+import { LEVEL_7, LEVEL_8 } from "./curriculum/chessLevels7to10";
+import { REVIEW_UNIT } from "./curriculum/chessReview";
 import {
   makeRng,
   promotionOf,
@@ -63,8 +64,11 @@ const CURRICULUM: SeedUnit[] = [
   LEVEL_6,
   LEVEL_7,
   LEVEL_8,
-  LEVEL_9,
-  LEVEL_10,
+  /*
+   * ⚠ ХАМГИЙН АРД: «Давтлага» нь ШИНЭ санаа заадаггүй — өмнөх
+   * бүлгүүдийн сэдвийг сэдвээр нь багцлан давтана.
+   */
+  REVIEW_UNIT,
 ];
 
 /**

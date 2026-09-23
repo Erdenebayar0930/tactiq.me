@@ -4,10 +4,11 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Chess } from "chess.js";
 
 import { ChessBoard } from "@/components/chess/ChessBoard";
+import { PromotionPicker } from "@/components/chess/PromotionPicker";
 import { parsePuzzle, puzzleGoalLabel, puzzleOrientation } from "@/lib/chess/puzzle";
 import { findKingSquare, resolveMove } from "@/lib/chess/utils";
 
-import type { Move, Square } from "chess.js";
+import type { Color, Move, PieceSymbol, Square } from "chess.js";
 import type { Exercise } from "@/lib/tactiq/courses";
 
 /** Өрсөлдөгчийн хариу нүүдэл хэдэн мс-ийн дараа гарах вэ. */
@@ -69,6 +70,11 @@ export default function ChessPuzzleExercise({
   const [mistake, setMistake] = useState(false);
   /** Буруу нүүдлийг буцааж байх хооронд хөлгийг түгжинэ. */
   const [reverting, setReverting] = useState(false);
+  /**
+   * ХУВИРГАЛТЫН СОНГОЛТ ХҮЛЭЭГДЭЖ БАЙНА (`BoardMoveExercise`-тэй ижил).
+   * Нүүдлийг сонголт хийгдэх хүртэл хөлөг дээр буулгахгүй.
+   */
+  const [pending, setPending] = useState<{ from: Square; to: Square; color: Color } | null>(null);
 
   const replyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
@@ -137,8 +143,22 @@ export default function ChessPuzzleExercise({
   };
 
   const handleMove = (from: Square, to: Square) => {
-    if (feedback || waiting || reverting) return;
+    if (feedback || waiting || reverting || pending) return;
 
+    const match = resolveMove(chess, from, to);
+    if (!match) return;
+
+    /* ⚠ Хувиргалт бол дүрсийг нь СОНГОУЛНА (`PromotionPicker`). */
+    if (match.promotion) {
+      setPending({ from, to, color: match.color });
+      return;
+    }
+
+    play(from, to, undefined);
+  };
+
+  /** Нүүдлийг буулгаж, шугамтай таарч байгаа эсэхийг шалгана. */
+  const play = (from: Square, to: Square, promotion: PieceSymbol | undefined) => {
     const match = resolveMove(chess, from, to);
     if (!match) return;
 
@@ -148,12 +168,12 @@ export default function ChessPuzzleExercise({
     const correct =
       from === expected.from &&
       to === expected.to &&
-      (expected.promotion ? match.promotion === expected.promotion : true);
+      (expected.promotion ? (promotion ?? match.promotion) === expected.promotion : true);
 
     // Буруу нүүдлийг ч хөлөг дээр ҮЗҮҮЛНЭ — сурагч юу хийснээ хараад
     // яагаад болохгүйг өөрөө олж мэдэх боломжтой болно.
     const previousMove = lastMove;
-    const applied = chess.move({ from, to, promotion: match.promotion });
+    const applied = chess.move({ from, to, promotion: promotion ?? match.promotion });
     if (!applied) return;
 
     setLastMove({ from, to });
@@ -206,10 +226,12 @@ export default function ChessPuzzleExercise({
         </p>
       </div>
 
+      {/* ⚠ `relative` — сонголтын цонх хөлгийн ДЭЭР бүрхэнэ. */}
+      <div className="relative">
       <ChessBoard
         board={board}
         orientation={orientation}
-        interactive={!feedback && !waiting && !reverting}
+        interactive={!feedback && !waiting && !reverting && !pending}
         getLegalTargets={(square) =>
           (chess.moves({ square, verbose: true }) as Move[]).map((move) => move.to as Square)
         }
@@ -217,6 +239,19 @@ export default function ChessPuzzleExercise({
         lastMove={lastMove}
         checkedSquare={kingSquare}
       />
+
+      {pending && (
+        <PromotionPicker
+          color={pending.color}
+          onPick={(piece) => {
+            const { from, to } = pending;
+            setPending(null);
+            play(from, to, piece);
+          }}
+          onCancel={() => setPending(null)}
+        />
+      )}
+      </div>
 
       {waiting && (
         <p className="text-sm font-medium text-gray-500 dark:text-gray-400">

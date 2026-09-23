@@ -5,8 +5,9 @@ import { Chess } from "chess.js";
 
 import { resolveMove } from "@/lib/chess/utils";
 import { ChessBoard } from "@/components/chess/ChessBoard";
+import { PromotionPicker } from "@/components/chess/PromotionPicker";
 
-import type { Move, Square } from "chess.js";
+import type { Color, Move, PieceSymbol, Square } from "chess.js";
 import type { Exercise } from "@/lib/tactiq/courses";
 
 /** Буруу нүүдлийг хөлөг дээр хэдэн мс харуулаад буцаах вэ. */
@@ -44,6 +45,14 @@ export default function BoardMoveExercise({
   const [mistake, setMistake] = useState(false);
   /** Буруу нүүдлийг буцааж байх хооронд хөлгийг түгжинэ. */
   const [reverting, setReverting] = useState(false);
+  /**
+   * ХУВИРГАЛТЫН СОНГОЛТ ХҮЛЭЭГДЭЖ БАЙНА.
+   *
+   * ⚠ Нүүдлийг ЭНД ХИЙХГҮЙ, зөвхөн хадгална: сурагч дүрсээ сонгосны
+   * дараа л хөлөг дээр буулгана. Эс бөгөөс бэрс болгоод дараа нь
+   * солих гэсэн хоёр алхамт эвгүй урсгал үүснэ.
+   */
+  const [pending, setPending] = useState<{ from: Square; to: Square; color: Color } | null>(null);
 
   const undoTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
@@ -61,13 +70,29 @@ export default function BoardMoveExercise({
   );
 
   const handleMove = (from: Square, to: Square) => {
-    if (feedback || reverting) return;
+    if (feedback || reverting || pending) return;
 
     const chess = gameRef.current;
     const match = resolveMove(chess, from, to);
     if (!match) return;
 
-    const applied = chess.move({ from, to, promotion: match.promotion });
+    /*
+     * ⚠ ХУВИРГАЛТ БОЛ СОНГОЛТ АСУУНА. `resolveMove` нь ямагт бэрсийг
+     * буцаадаг — түүнийг шууд хийвэл сурагч тэрэг, тэмээ, морь сонгох
+     * шатрын ДҮРМИЙГ хөлөг дээр хэрэгжүүлж чадахгүй.
+     */
+    if (match.promotion) {
+      setPending({ from, to, color: match.color });
+      return;
+    }
+
+    play(from, to, undefined);
+  };
+
+  /** Нүүдлийг хөлөг дээр буулгаж, зөв эсэхийг шалгана. */
+  const play = (from: Square, to: Square, promotion: PieceSymbol | undefined) => {
+    const chess = gameRef.current;
+    const applied = chess.move({ from, to, promotion });
     if (!applied) return;
 
     setLastMove({ from, to });
@@ -100,10 +125,15 @@ export default function BoardMoveExercise({
     <div className="surface space-y-4 p-5">
       <p className="text-lg font-bold text-gray-900 dark:text-white">{exercise.prompt}</p>
 
+      {/*
+        ⚠ `relative` — сонголтын цонх хөлгийн ДЭЭР бүрхэж гарна
+        (`PromotionPicker` нь `absolute inset-0`).
+      */}
+      <div className="relative">
       <ChessBoard
         board={board}
         orientation="white"
-        interactive={feedback === null && !reverting}
+        interactive={feedback === null && !reverting && !pending}
         getLegalTargets={(square) =>
           (gameRef.current.moves({ square, verbose: true }) as Move[]).map(
             (move) => move.to as Square
@@ -112,6 +142,19 @@ export default function BoardMoveExercise({
         onMove={handleMove}
         lastMove={lastMove}
       />
+
+      {pending && (
+        <PromotionPicker
+          color={pending.color}
+          onPick={(piece) => {
+            const { from, to } = pending;
+            setPending(null);
+            play(from, to, piece);
+          }}
+          onCancel={() => setPending(null)}
+        />
+      )}
+      </div>
 
       {mistake && feedback === null && (
         <div className="space-y-2">

@@ -46,8 +46,16 @@ export type BoardGoal =
   /** Хариу идэгдэхгүй ганц идэлт (бусад идэлт нь хариу иддэг). */
   | { kind: "safeCapture" }
   /** Тухайн төрлийн хар дүрсийг идэх ганц нүүдэл. */
-  | { kind: "captureType"; piece: PieceSymbol }
-  /** Ганц боломжтой рокировка. */
+  /**
+   * ТӨРЛИЙГ ЗААСАН ИДЭЛТ.
+   *
+   * ⚠ `by` НЬ ИДЭГЧИЙГ ХЯЗГААРЛАНА. Хичээл нь «Морь, хүүгээр
+   * идэх» гэж нэрлэгдсэн байхад идэлтийг НОЁН хийдэг байрлалууд
+   * үүссэн (бодитоор 7 дасгал) — шалгуур нь зөвхөн ИДЭГДСЭН
+   * дүрсийг хардаг байсан тул. Хүүхэд хичээлийн сэдвийг авахгүй.
+   */
+  | { kind: "captureType"; piece: PieceSymbol; by?: PieceSymbol[] }
+  /** Ганц боломжтой сэлгээ. */
   | { kind: "castle" }
   /** Ганц en passant идэлт. */
   | { kind: "enPassant" }
@@ -61,7 +69,13 @@ export type PuzzleGoal =
   /** N нүүдэлд мад — `auditMateLine`-аар (ганц шийдэл) шалгана. */
   | { kind: "mate" }
   /** 2 нүүдэлд материал хожих — `auditWinLine`-аар шалгана. */
-  | { kind: "win"; min: number };
+  /**
+   * МАТЕРИАЛ ХОЖИХ шугам.
+   *
+   * ⚠ `by` нь «бэрсээрээ / мориор / хүүгээр сэрээ хий» гэсэн
+   * даалгаврын АМЛАЛТ: цагааны нүүдэл бүрийг тэр дүрс хийнэ.
+   */
+  | { kind: "win"; min: number; by?: PieceSymbol; chain?: boolean };
 
 export type Task =
   | {
@@ -215,6 +229,35 @@ export function toFen(
  * Хүүхдэд ийм байрлал үзүүлбэл «энэ яаж боломжтой юм бэ?» гэсэн буруу
  * ойлголт үлдээнэ.
  */
+/**
+ * ДҮРСИЙН ТОО АРМИЙН ДҮРЭМЭЭС ДАВСАН БАЙНА УУ.
+ *
+ * ⚠ ЯАГААД ШААРДЛАГТАЙ ВЭ: үүсгэгчид нэмэлт дүрсийг САНАМСГҮЙ
+ * тавьдаг (`pick(rng, ["P", "P", "N", "B"])`) тул нүүж байгаа дүрстэй
+ * давхацаж ГУРВАН МОРЬ, гурван тэмээ гарах тохиолдол бий. `chess.js`
+ * энэйг ХУУЛЬ БУС гэж үздэггүй (хүү хувиргаснаар бодитоор гарах
+ * боломжтой) боловч СУРГАЛТЫН байрлалд тэр нь болохгүй: шинээр
+ * сурах хүүхэд «аль талд 3 морь байна?» гэж эрэгэлзэж, хөлгийн ҮНДСЭН
+ * дүрэм буруугаар бодлогдоно.
+ *
+ * ⚠ ТИЙмээс ХУВИРГАЛТЫГ ЗӨВШӨӨРӨХГҮЙ хатуу дүрэм: тал тусбүр эхний
+ * арми (1 ноён, 1 бэрс, 2 тэрэг, 2 тэмээ, 2 морь, 8 хүү)-аас давахгүй.
+ */
+const ARMY: Record<string, number> = { k: 1, q: 1, r: 2, b: 2, n: 2, p: 8 };
+
+export function censusProblem(boardPart: string): string | null {
+  for (const side of ["w", "b"] as const) {
+    for (const [piece, max] of Object.entries(ARMY)) {
+      const symbol = side === "w" ? piece.toUpperCase() : piece;
+      let count = 0;
+      for (const char of boardPart) if (char === symbol) count += 1;
+      if (count > max) return `${side === "w" ? "цагаан" : "хар"} ${symbol} ${count} байна — дээд тал даандаа ${max}`;
+      if (piece === "k" && count !== 1) return `${side === "w" ? "цагаан" : "хар"} ноён ${count} байна — яг нэг байх ёстой`;
+    }
+  }
+  return null;
+}
+
 export function loadPosition(fen: string): Chess | null {
   let chess: Chess;
   try {
@@ -226,6 +269,8 @@ export function loadPosition(fen: string): Chess | null {
   const [boardPart, turn] = fen.split(" ");
   const ranks = boardPart.split("/");
   if (/p|P/.test(ranks[0]) || /p|P/.test(ranks[7])) return null;
+  // ⚠ Армийн дүрэм — бүх үүсгэгч үүнээр дамждаг тул нэг газар барина.
+  if (censusProblem(boardPart)) return null;
 
   try {
     const flipped = new Chess(`${boardPart} ${turn === "w" ? "b" : "w"} - - 0 1`);
@@ -361,6 +406,44 @@ function opponentCanTake(chess: Chess, square: string): boolean {
   return legal(chess).some((move) => algebraic(move.to) === square);
 }
 
+/** Дүрсний үнэ — «бэлэгтэй шаг»-ийг шалгахад. Ноён идэгддэггүй тул 0. */
+const WORTH: Record<PieceSymbol, number> = { p: 1, n: 3, b: 3, r: 5, q: 9, k: 0 };
+
+/**
+ * НҮҮДЭЛ ДҮРСИЙГ ДАРААГИЙН НҮҮДЭЛД ҮНЭГҮЙ АЛДАЖ БАЙНА УУ.
+ *
+ * ⚠ ЯАГААД ШААРДЛАГТАЙ ВЭ: «Шаг өг» гэсэн дасгалууд тэргээ (эсвэл
+ * бэрсээ) шаг өгөх нүдэнд тавьж, хар тал түүнийг ДАРААГИЙН
+ * НҮҮДЛЭЭР ҮНЭГҮЙ иддэг байрлалаар дүүрэн байв (бодитоор 14 дасгал).
+ * Тэр нь шатрын хувьд АЛДАА нүүдэл: хүүхэд «шаг бол сайн» гэж
+ * сураад, бодит тоглолтод дүрсээ тараад байх болно.
+ *
+ * ⚠ АЛДАГДСАН ГЭЖ ҮЗНЭ:
+ *   • хар тал тэр нүдийг идэхэд цагаан БУЦААЖ ИДЭЖ ЧАДАХГҮЙ, эсвэл
+ *   • буцааж идсэн ч СОЛИЛЦОО АЛДАГДАЛТАЙ (идсэн дүрс нь биднихээс хямд).
+ */
+export function movePresentsPiece(chess: Chess, move: Move): boolean {
+  const worth = WORTH[move.piece];
+  if (worth === 0) return false;
+
+  chess.move(move);
+  try {
+    for (const reply of chess.moves({ verbose: true }) as Move[]) {
+      if (reply.to !== move.to) continue;
+
+      chess.move(reply);
+      const recapture = (chess.moves({ verbose: true }) as Move[]).some((back) => back.to === reply.to);
+      chess.undo();
+
+      if (!recapture) return true;
+      if (WORTH[reply.piece] < worth) return true;
+    }
+  } finally {
+    chess.undo();
+  }
+  return false;
+}
+
 function goalHolds(chess: Chess, move: Move, goal: BoardGoal, target: string): boolean {
   switch (goal.kind) {
     case "reach":
@@ -368,11 +451,24 @@ function goalHolds(chess: Chess, move: Move, goal: BoardGoal, target: string): b
     case "kingEscape":
       return move.piece === "k";
     case "block":
-      return move.piece !== "k" && !move.captured;
+      // ⚠ Хаасан дүрсийг үнэгүй идуулах нь хаасан д тооцохгүй.
+      return move.piece !== "k" && !move.captured && !movePresentsPiece(chess, move);
     case "captureChecker":
-      return chess.attackers(kingSquare(chess, "w"), "b").includes(move.to as Square);
+      // ⚠ Шаг өгсөн дүрсийг идсэн хэрнээ ДҮРСЭЭ АЛДАЖ болохгүй.
+      if (!chess.attackers(kingSquare(chess, "w"), "b").includes(move.to as Square)) return false;
+      return !movePresentsPiece(chess, move);
     case "captureType":
-      return move.captured === goal.piece;
+      // ⚠ ИДЭГДСЭН ба ИДСЭН хоёуланг шалгана.
+      if (move.captured !== goal.piece) return false;
+      return !goal.by || goal.by.includes(move.piece);
+    /*
+     * ⚠ НҮҮДЛИЙГ ХИЙХЭЭСЭэ ӨМНӨ шалгана (`movePresentsPiece` нь өөрөө
+     * нүүдлийг тавьж үздэг). `san` дээр шаг нь `+`, мад нь `#`.
+     */
+    case "check":
+      return (
+        move.san.includes("+") && !move.san.includes("#") && !movePresentsPiece(chess, move)
+      );
     case "castle":
       return move.flags.includes("k") || move.flags.includes("q");
     case "enPassant":
@@ -386,8 +482,6 @@ function goalHolds(chess: Chess, move: Move, goal: BoardGoal, target: string): b
   chess.move(move);
   try {
     switch (goal.kind) {
-      case "check":
-        return chess.inCheck() && !chess.isCheckmate();
       case "safeCapture":
         return Boolean(move.captured) && !opponentCanTake(chess, move.to);
       case "opposition": {
@@ -659,5 +753,45 @@ export function validateTask(task: Task): string | null {
   if (new Chess(parsed.fen).turn() !== "w") return "цагаан нүүх ээлжтэй байх ёстой";
 
   if (task.goal.kind === "mate") return validateMateSolution(parsed.fen, task.solution);
+
+  /*
+   * ⚠ ДААЛГАВРЫН АМЛАЛТЫГ ШАЛГАНА. «Бэрсээрээ сэрээ хий»
+   * гэсэн бодлогын шийдлийг НОЁН хийдэг байсан — `auditWinLine` зөвхөн
+   * МАТЕРИАЛыг хэмждэг, хэн хийснийг хардаггүй.
+   */
+  if (task.goal.by || task.goal.chain) {
+    const chess = new Chess(parsed.fen);
+    let origin: string | null = null;
+    for (let index = 0; index < parsed.moves.length; index += 1) {
+      const ply = parsed.moves[index];
+      const move = chess.move({
+        from: ply.from,
+        to: ply.to,
+        ...(ply.promotion ? { promotion: ply.promotion } : {}),
+      });
+      if (index % 2 !== 0) continue;
+
+      if (task.goal.by && move.piece !== task.goal.by) {
+        return `${index + 1}-р нүүдлийг ${move.piece} хийж байна — даалгавар ${task.goal.by} гэж амласан`;
+      }
+
+      /*
+       * ⚠ ХҮЛЭЭС / РЕНТГЕН: тайван бэлтгэл → ИЖИЛ дүрс иднэ.
+       * Эс бөгөөс даалгаврын тайлбар байрлалтайгаа огт холбоогүй болно.
+       */
+      if (task.goal.chain) {
+        if (index === 0) {
+          if (move.captured) return "хүлээс тавих эхний нүүдэл идэлт байж болохгүй";
+        } else {
+          if (move.from !== origin) return `${index + 1}-р нүүдлийг ӨӨР дүрс хийж байна`;
+          if (index === parsed.moves.length - 1 && !move.captured) {
+            return "цуваа идэлтээр төгсөхгүй байна";
+          }
+        }
+        origin = move.to;
+      }
+    }
+  }
+
   return auditWinLine(parsed.fen, task.solution, task.goal.min);
 }

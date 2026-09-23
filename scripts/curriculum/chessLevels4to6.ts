@@ -1,5 +1,5 @@
 /**
- * ШАТАР LEVEL 4–6 — шаг, рокировка ба онцгой дүрэм, 1 нүүдэлд мад.
+ * ШАТАР LEVEL 4–6 — шаг, сэлгээ ба онцгой дүрэм, 1 нүүдэлд мад.
  *
  * ⚠ «Шаг өг», «шагаас гар» даалгаврын байрлал бүр ГАНЦ зөв хариулттай:
  * тоглуулагч хадгалсан нэг нүүдэлтэй л жишдэг тул хоёр өөр зөв хариулт
@@ -68,15 +68,15 @@ export const LEVEL_4: SeedUnit = {
       exercises: [
         q(
           ["Шагаас гарах гурван арга аль нь вэ?", "What are the three ways out of check?"],
-          [["Ноёноо нүүлгэх, хаах, шаг өгсөн дүрсийг идэх", "Move the king, block, capture the checker"], ["Ноёноо нүүлгэх, рокировка, пат", "Move the king, castle, stalemate"], ["Бэрсээ өгөх, хүлээх, бууж өгөх", "Give the queen, wait, resign"]],
+          [["Ноёноо нүүлгэх, хаах, шаг өгсөн дүрсийг идэх", "Move the king, block, capture the checker"], ["Ноёноо нүүлгэх, сэлгээ, пат", "Move the king, castle, stalemate"], ["Бэрсээ өгөх, хүлээх, бууж өгөх", "Give the queen, wait, resign"]],
           0,
           ["Нүүх, хаах, идэх — энэ гурваас өөр арга байхгүй.", "Move, block, capture — there is no other way."]
         ),
         q(
-          ["Шагт байхдаа рокировка хийж болох уу?", "Can you castle while in check?"],
-          [["Үгүй", "No"], ["Тийм", "Yes"], ["Зөвхөн урт рокировка", "Only long castling"]],
+          ["Шагт байхдаа сэлгээ хийж болох уу?", "Can you castle while in check?"],
+          [["Үгүй", "No"], ["Тийм", "Yes"], ["Зөвхөн урт сэлгээ", "Only long castling"]],
           0,
-          ["Рокировкоор шагаас гарч болохгүй.", "Castling is not a way out of check."]
+          ["Сэлгээгээр шагаас гарч болохгүй.", "Castling is not a way out of check."]
         ),
         q(
           ["Морины шагийг хааж болох уу?", "Can a knight's check be blocked?"],
@@ -116,22 +116,28 @@ export const LEVEL_4: SeedUnit = {
 };
 
 export const LEVEL_5: SeedUnit = {
-  title: ["Рокировка ба онцгой дүрэм", "Castling and special rules"],
+  title: ["Сэлгээ ба онцгой дүрэм", "Castling and special rules"],
+  /*
+   * ⚠ ЭНЭ ТҮЛХҮҮР ХУУЧИН НЭРТЭЙГЭЭ ҮЛДЭНЭ. Гарчгийг «Рокировка» →
+   * «Сэлгээ» болгосон ч үрийн түлхүүрийг ХӨДӨЛГӨХГҮЙ: байрлалууд
+   * эндээс үүсдэг тул соливол дасгалын АГУУЛГА өөрчлөгдөнө
+   * (`chessShared.ts`-ийн `SeedUnit.seedKey` дээрх сануулга).
+   */
   seedKey: "Шатар Level 5 — Рокировка ба онцгой дүрэм",
   color: "orange",
   lessons: [
     {
-      title: ["Рокировка", "Castling"],
+      title: ["Сэлгээ", "Castling"],
       xp: 15,
       exercises: [
         q(
-          ["Рокировкод ноён хэдэн нүд нүүх вэ?", "How many squares does the king move when castling?"],
+          ["Сэлгээнд ноён хэдэн нүд нүүх вэ?", "How many squares does the king move when castling?"],
           [["Хоёр нүд, тэрэг тийш", "Two squares towards the rook"], ["Нэг нүд", "One square"], ["Булан хүртэл", "All the way to the corner"]],
           0,
           ["Ноён тэрэг тийш 2 нүд нүүж, тэрэг ноёны нөгөө талд үсэрч ирнэ.", "The king moves two squares towards the rook, and the rook hops to the other side of the king."]
         ),
         q(
-          ["Рокировка ямар зорилготой вэ?", "What is castling for?"],
+          ["Сэлгээ ямар зорилготой вэ?", "What is castling for?"],
           [["Ноёныг аюулгүй болгож, тэргийг тоглолтод оруулах", "Tuck the king to safety and bring the rook into play"], ["Бэрсийг хамгаалах", "Protect the queen"], ["Хүү бэрс болгох", "Promote a pawn"]],
           0,
           ["Нэг нүүдлээр хоёр ажил: ноён буланд нуугдаж, тэрэг төв рүү гарна.", "Two jobs in one move: the king hides in the corner and the rook comes to the centre."]
@@ -140,18 +146,18 @@ export const LEVEL_5: SeedUnit = {
       ],
     },
     {
-      title: ["Рокировка хийж болохгүй үе", "When you can't castle"],
+      title: ["Сэлгээ хийж болохгүй үе", "When you can't castle"],
       xp: 20,
       exercises: [
         q(
-          ["Аль үед рокировка хийж БОЛОХГҮЙ вэ?", "When is castling NOT allowed?"],
+          ["Аль үед сэлгээ хийж БОЛОХГҮЙ вэ?", "When is castling NOT allowed?"],
           [["Ноён эсвэл тэрэг аль хэдийн нүүсэн бол", "If the king or that rook has already moved"], ["Бэрс нүүсэн бол", "If the queen has moved"], ["Тоглолтын 10-р нүүдлээс хойш", "After move 10"]],
           0,
           ["Ноён ба тэр тэрэг огт нүүгээгүй, завсар нь хоосон байх ёстой.", "The king and that rook must never have moved, and the squares between must be empty."]
         ),
         q(
-          ["Ноён дайрагдсан нүдийг ДАМЖИЖ рокировка хийж болох уу?", "May the king castle THROUGH an attacked square?"],
-          [["Үгүй", "No"], ["Тийм", "Yes"], ["Зөвхөн богино рокировкод", "Only when castling short"]],
+          ["Ноён дайрагдсан нүдийг ДАМЖИЖ сэлгээ хийж болох уу?", "May the king castle THROUGH an attacked square?"],
+          [["Үгүй", "No"], ["Тийм", "Yes"], ["Зөвхөн богино сэлгээнд", "Only when castling short"]],
           0,
           ["Ноён шагт байж, дайрагдсан нүдийг дамжиж, дайрагдсан нүдэнд буух — гурвуулаа хориотой.", "Out of check, through check, into check — all three are forbidden."]
         ),
@@ -234,7 +240,7 @@ export const LEVEL_5: SeedUnit = {
       ],
     },
     {
-      title: ["Рокировка давтлага", "Castling review"],
+      title: ["Сэлгээний давтлага", "Castling review"],
       xp: 15,
       exercises: [gen(castleTask("one"), 5), gen(castleTask("choose"), 5)],
     },
