@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
     const known = new Set(options.map((option) => option.key));
     const leagueKey = (requested && known.has(requested) && requested) || options[0]?.key || "";
 
-    // Огт хичээл эхлээгүй бол лиг байхгүй — клиент урамшуулах мессеж харуулна.
+    // `leagueOptions` үргэлж дор хаяж нэг лиг буцаадаг тул энд бараг хүрэхгүй.
     if (!leagueKey) {
       return NextResponse.json({
         leagues: [],

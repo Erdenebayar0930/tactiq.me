@@ -17,6 +17,7 @@ import { addDays, daysBetween, startOfWeek, today } from "@/lib/tactiq/day";
 import {
   clampTier,
   COHORT_SIZE,
+  GLOBAL_LEAGUE,
   IDLE_WEEKS_TO_DEMOTE,
   leagueKeyForSchool,
   leagueKeysForSchools,
@@ -675,6 +676,13 @@ export async function leagueOptions(uid: string): Promise<LeagueOption[]> {
 
     if (busiest?.key) keys.add(busiest.key);
   }
+
+  /*
+   * ⚠ ЭЦСИЙН НӨӨЦ — нэг ч бүлэг үүсээгүй систем (шинэ сервер) дээр ч
+   * лиг ХАРАГДАНА: hero, шатлал, «Хичээл эхлүүлэх» товчтой. Лиг бүгдэд
+   * НЭГ тул энэ нь таамаг биш, яг тэр лиг.
+   */
+  if (keys.size === 0) keys.add(GLOBAL_LEAGUE);
 
   return [...keys]
     .map((key) => ({
