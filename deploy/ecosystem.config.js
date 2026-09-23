@@ -36,7 +36,22 @@
  * эсэхийг шалгаарай.
  */
 const os = require("os");
-const instances = Math.max(1, os.cpus().length - 1);
+/**
+ * ⚠ ИНСТАНСЫГ Ч ДАРЖ БОЛНО (`TACTIQ_INSTANCES`). Хуваалцсан сервер
+ * дээр бүх цөмийг эзлэх нь хөрш аппыг шахна.
+ */
+const instances = Number(process.env.TACTIQ_INSTANCES) || Math.max(1, os.cpus().length - 1);
+
+/**
+ * ПОРТ — ОРЧНООС ДАРЖ БОЛНО: `TACTIQ_PORT=3200 pm2 start ...`
+ *
+ * ⚠ ЯАГААД ТОГТМОЛ БАЙЖ БОЛОХГҮЙ ВЭ: нэг сервер дээр өөр
+ * төслүүд зэрэг ажиллаж болно. Жишээ нь энэ апп байршсан
+ * сервер дээр 3000-д өөр Next апп, 3100-д docker аль хэдийн сонсож
+ * байсан. Тогтмол 3000 байвал PM2 дахин дахин унаж, шалтгаан нь
+ * логгүйгээр ойлгомжгүй байна.
+ */
+const port = process.env.TACTIQ_PORT || "3000";
 
 module.exports = {
   apps: [
@@ -46,7 +61,7 @@ module.exports = {
       // `npm run start` биш next-ийн binary-г шууд дуудна — PM2 restart хийхэд
       // npm дундын процесс үлдэхгүй, дохио (SIGINT) шууд апп руу очно.
       script: "node_modules/next/dist/bin/next",
-      args: "start -H 127.0.0.1 -p 3000",
+      args: `start -H 127.0.0.1 -p ${port}`,
       instances,
       exec_mode: instances > 1 ? "cluster" : "fork",
       autorestart: true,
@@ -73,7 +88,7 @@ module.exports = {
       kill_timeout: 5_000,
       env: {
         NODE_ENV: "production",
-        PORT: "3000",
+        PORT: port,
       },
       error_file: "/var/log/tactiq/error.log",
       out_file: "/var/log/tactiq/out.log",
