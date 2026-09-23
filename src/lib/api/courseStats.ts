@@ -34,7 +34,11 @@ export type CourseStat = {
   exercisesPerLesson: number;
 };
 
-export async function listCourseStats(uid: string): Promise<CourseStat[]> {
+/**
+ * `uid = null` — ЗОЧИН: агуулгын тоо (хичээл, дасгал, XP, зоос) бүрэн гарна,
+ * явц нь 0. Тоо нь хувийн бус тул нэвтрээгүй хүнд ч харуулна.
+ */
+export async function listCourseStats(uid: string | null): Promise<CourseStat[]> {
   const rows = await db
     .select({
       courseSlug: units.courseSlug,
@@ -52,10 +56,12 @@ export async function listCourseStats(uid: string): Promise<CourseStat[]> {
      */
     .groupBy(units.courseSlug, lessons.id, lessons.xpReward);
 
-  const progressRows = await db
-    .select({ lessonId: lessonProgress.lessonId, xp: lessonProgress.xpEarned })
-    .from(lessonProgress)
-    .where(eq(lessonProgress.uid, uid));
+  const progressRows = uid
+    ? await db
+        .select({ lessonId: lessonProgress.lessonId, xp: lessonProgress.xpEarned })
+        .from(lessonProgress)
+        .where(eq(lessonProgress.uid, uid))
+    : [];
   const earnedByLesson = new Map(progressRows.map((row) => [row.lessonId, row.xp]));
 
   const byCourse = new Map<string, CourseStat>();

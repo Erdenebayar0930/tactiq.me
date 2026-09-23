@@ -53,9 +53,12 @@ export default function CoursesPage() {
    * Хувийн мэдээлэл — ТУСДАА хүсэлтүүд. `/api/courses` нь хувийн бус тул
    * кэшлэгддэг; хэрэглэгч тус бүрийн явц, хугацааг тэнд оруулбал кэш ашиггүй болно.
    *
-   * ⚠ Зочинд явц, хугацаа гэж БАЙХГҮЙ — хүсэлт нь 401 л буцаана.
+   * ⚠ Зочинд хугацаа гэж БАЙХГҮЙ (401 л буцаана). Харин stats нь зочинд
+   * ч ажиллана — агуулгын тоо гарч, явц нь 0 (`authOptional` заавал).
    */
-  const statsData = useApiData<{ courses: CourseStat[] }>(isGuest ? null : "/api/courses/stats");
+  const statsData = useApiData<{ courses: CourseStat[] }>("/api/courses/stats", {
+    authOptional: true,
+  });
   const timeData = useApiData<{ courses: { courseSlug: string; seconds: number }[] }>(
     isGuest ? null : "/api/courses/time"
   );
