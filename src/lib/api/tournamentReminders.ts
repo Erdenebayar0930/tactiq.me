@@ -141,9 +141,9 @@ export async function sendTournamentReminders(now = new Date()): Promise<Reminde
            * Service worker үүнийг уншиж цонх нээнэ
            * (`public/firebase-messaging-sw.js`).
            */
-          data: { url: "/tournament" },
+          data: { url: "/apps" },
           webpush: {
-            fcmOptions: { link: "/tournament" },
+            fcmOptions: { link: "/apps" },
             notification: { icon: "/icons/icon-192x192.png", badge: "/icons/icon-192x192.png" },
           },
         });

@@ -60,7 +60,7 @@ messaging.onBackgroundMessage(() => {});
  */
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
-  const url = (event.notification.data && event.notification.data.url) || "/tournament";
+  const url = (event.notification.data && event.notification.data.url) || "/apps";
 
   event.waitUntil(
     self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((list) => {

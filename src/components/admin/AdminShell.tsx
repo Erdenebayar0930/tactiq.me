@@ -6,11 +6,16 @@ import { useState } from "react";
 import {
   BookOpen,
   LayoutDashboard,
+  LayoutGrid,
   LogOut,
   Menu,
   Sparkles,
   Users,
-  X, Tag, Trophy, GraduationCap } from "lucide-react";
+  X,
+  Tag,
+  Trophy,
+  Building2,
+} from "lucide-react";
 
 import { useUser } from "@/context/UserContext";
 import { isAdminRole } from "@/lib/permissions";
@@ -29,7 +34,18 @@ const NAV = [
   { href: "/admin", label: "Хяналт", Icon: LayoutDashboard, exact: true, adminOnly: true },
   { href: "/admin/users", label: "Хэрэглэгчид", Icon: Users, adminOnly: true },
   { href: "/admin/courses", label: "Сургалт", Icon: BookOpen, adminOnly: false },
-  { href: "/admin/schools", label: "Сургууль", Icon: GraduationCap, adminOnly: true },
+  /*
+   * ⚠ «СУРГУУЛЬ» ЦЭСЭЭС ХАСАГДСАН (эзний шийдвэр).
+   *
+   * ⚠ ОНЦЛОГ ӨӨРӨӨ ХЭВЭЭР: `/admin/schools` хуудас, `schools`
+   * хүснэгт, API бүгд ажилласаар. Устгах боломжгүй: курс тус
+   * бүр сургуульд хамаардаг (`admin/courses`), долоо хоногийн лиг
+   * сургуулиараа хуваагддаг (`lib/tactiq/league.ts`), нийтийн сайт ч
+   * сургуулиар нь курсыг жагсаадаг.
+   *
+   * ⚠ Хэрэгтэй үед `/admin/schools` гэж шууд орж болно — зөвхөн
+   * хажуугийн цэснээс алга болсон.
+   */
   /*
    * ⚠ ТЭМЦЭЭН нь ТУСДАА серверт ажилладаг (`lib/tactiq/tournament.ts`)
    * ч ТОВЫГ энд тохируулна: админ нэг л хяналтын самбартай байх ёстой.
@@ -37,6 +53,8 @@ const NAV = [
    * (`/api/admin/tournament/*`).
    */
   { href: "/admin/tournaments", label: "Тэмцээн", Icon: Trophy, adminOnly: true },
+  { href: "/admin/training-centers", label: "Сургалтын төв", Icon: Building2, adminOnly: true },
+  { href: "/admin/apps", label: "Аппууд", Icon: LayoutGrid, adminOnly: true },
   { href: "/admin/promo", label: "Сурталчлагч", Icon: Tag, adminOnly: true },
 ];
 

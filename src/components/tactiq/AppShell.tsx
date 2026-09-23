@@ -17,9 +17,12 @@ import {
   Handshake,
   Languages,
   LayoutDashboard,
+  LayoutGrid,
+  TrendingUp,
+  Building2,
+  Bot,
   LogOut,
   Menu as MenuIcon,
-  Swords,
   Settings,
   X,
   Trophy,
@@ -38,12 +41,12 @@ import { getAdSenseSlotId } from "@/lib/tactiq/ads";
 import { coursePlay } from "@/lib/tactiq/courseNav";
 import { colorStyles } from "@/lib/tactiq/theme";
 import { useGuestCourse } from "@/lib/tactiq/guestCourse";
-import { tournamentEnabled } from "@/lib/tactiq/tournament";
 
 import { AdSlot } from "./AdSlot";
 import StreakCalendar from "./StreakCalendar";
 import { Icon as CourseIcon } from "./Icon";
 import { Logo } from "./Mascot";
+import { LanguageToggle } from "./LanguageToggle";
 import { ThemeToggle } from "./ThemeToggle";
 import { StatPill } from "./ui";
 import { backgroundClass } from "@/lib/tactiq/shop";
@@ -92,7 +95,10 @@ function buildNav(courseSlug: string | null | undefined): NavItem[] {
    * зүйл БИШ — нэг удаа тохируулаад мартдаг; доод туузны ховор суудлыг
    * эзлэхээсээ Профайл, Амжилттай нэг бүлэгт байх нь логиктой.
    *
-   * ⚠ ТЭМЦЭЭН нь `tournamentEnabled()` үед л гарна: хаяг тохируулаагүй
+   * ⚠ «АПП» ЦЭС ГАНЦ ЦЭГТЭЙ: платформын бусад апп руу эндээс
+   * орно. Жагсаалт нь сангаас ирдэг тул цэс өөрөө тогтмол.
+   *
+   * ⚠ ХУУЧИН ТАЙЛБАР (хоцрогдсон): тэмцээн хаяг тохируулаагүй
    * бол `/tournament` нь сесс үүсгэх хүсэлт илгээгээд унаж, улаан алдаа
    * харуулдаг. Тэр үед цэс НЭГЭЭР ЦӨӨН болно — хоосон алдаа руу
    * хөтлөхөөс дутуу цэс дээр.
@@ -101,9 +107,16 @@ function buildNav(courseSlug: string | null | undefined): NavItem[] {
     { href: "/learn", label: t("Сурах"), Icon: BookOpen, color: "violet" },
     { href: play.href, label: t(play.label), Icon: play.Icon, color: "rose" },
     { href: "/courses", label: t("Курс"), Icon: GraduationCap, color: "sky" },
-    ...(tournamentEnabled()
-      ? [{ href: "/tournament", label: t("Тэмцээн"), Icon: Swords, color: "amber" } as NavItem]
-      : []),
+    /*
+     * ⚠ «ТЭМЦЭЭН» → «АПП» (эзний шийдвэр). Цэс нь нэг апп руу
+     * хөтлөхөө болиж, ПЛАТФОРМЫН БҮХ апп руу орох хөөргүүр болов
+     * (`app/(app)/apps/page.tsx`, `apps` хүснэгт).
+     *
+     * ⚠ `tournamentEnabled()`-ЭЭС ХАМААРАХАА БОЛИВ: тэмцээн нь
+     * одоо ЖАГСААЛТЫН НЭГ МӨР төдий. Тэмцээнгүй ч бусад апп
+     * байж болно — цэсийг нь нуух үндэслэл алга.
+     */
+    { href: "/apps", label: t("Апп"), Icon: LayoutGrid, color: "amber" },
   ];
 }
 
@@ -250,6 +263,15 @@ function buildRoleNav(user: PublicUser | null): NavItem[] {
      */
     ...profile,
     { href: "/leaderboard", label: t("Тэргүүлэгчид"), Icon: Trophy, color: "amber" },
+    /*
+     * ⚠ ГУРВУУЛАА ҮРГЭЛЖ `/tournament`-ИЙН ТАБ БАЙВ. Тэр хуудас
+     * «Апп» хөөргүүр болоход табууд хасагдсан тул тусдаа хаягтай
+     * болж, энэ жагсаалтад суув. Бүгд бүрэн ажилладаг — хүснэгт,
+     * API, админы удирдлагатай тул хүрэх аргагүй үлдээх боломжгүй.
+     */
+    { href: "/rating", label: t("Чансаа"), Icon: TrendingUp, color: "violet" },
+    { href: "/centers", label: t("Сургалтын төв"), Icon: Building2, color: "amber" },
+    { href: "/coaches", label: t("Дасгалжуулагч"), Icon: Bot, color: "sky" },
     { href: "/friends", label: t("Найзууд"), Icon: Handshake, color: "emerald" },
     { href: "/achievements", label: t("Амжилтууд"), Icon: Award, color: "orange" },
     /*
@@ -344,6 +366,12 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                 <StatCounters user={user} />
               </div>
             )}
+            {/*
+              ⚠ ХЭЛ СОЛИХ нь ТОЛГОЙН МӨРӨНД ИЛ: монгол хэл мэдэхгүй хүн
+              «Тохиргоо» гэсэн бичгийг олж чадахгүй тул хэл солих зам нь
+              түүний ойлгохгүй бичвэрийн цаана байж болохгүй.
+            */}
+            <LanguageToggle />
             <ThemeToggle />
             <UserMenu />
           </div>
@@ -941,40 +969,12 @@ function UserMenu() {
             </Link>
           ))}
           {/*
-            Хэлний шилжүүлэгч ЭНД БАС байна (Тохиргоо дотроос гадна):
-            монгол хэл мэдэхгүй хүн "Тохиргоо" гэсэн бичгийг олж чадахгүй
-            тул хэлээ солих зам нь түүний ойлгохгүй бичвэрийн цаана
-            байж БОЛОХГҮЙ. MN/EN нь хэлнээс хамаарахгүй тэмдэглэгээ.
+            ⚠ MN/EN ТОВЧЛОЛ ХАСАГДСАН. Хэл сонгох нь ХОЁР газар л байна:
+            (1) сайт нээгдэх мөчийн попап (`LanguageGate` — нэвтрээгүй,
+            сонгоогүй хүнд), (2) Тохиргоо цэс. Гурав дахь хувилбар нь
+            хэрэглэгчийн цэсийг бөглөж, «MN/EN» гэсэн товчлол нь өөрөө
+            тайлбар шаарддаг тэмдэглэгээ байв.
           */}
-          <div className="mt-1 flex items-center gap-2 border-t border-gray-100 px-3 py-2 dark:border-white/10">
-            <span className="grid size-8 shrink-0 place-items-center rounded-xl bg-gray-100 text-gray-500 dark:bg-white/5 dark:text-gray-400">
-              <Languages className="size-4" aria-hidden />
-            </span>
-            {(["mn", "en"] as const).map((option) => (
-              <button
-                key={option}
-                type="button"
-                onClick={() => {
-                  setLocale(option);
-                  // Сонголтыг СЕРВЕРТ ч хадгална — `users.language` нь бусад
-                  // төхөөрөмж дээр хэлийг сэргээнэ (Тохиргоо хуудастай ижил).
-                  void updateMe({ language: option }).catch(() => {
-                    // Хадгалж чадаагүй ч ЭНЭ хөтөч дээр хэл аль хэдийн
-                    // солигдсон — хэрэглэгчийн UI-г эвдэхгүй.
-                  });
-                  setOpen(false);
-                }}
-                className={`rounded-lg px-2.5 py-1 text-xs font-bold ${
-                  locale === option
-                    ? "bg-brand-500 text-white"
-                    : "bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-white/5 dark:text-gray-300 dark:hover:bg-white/10"
-                }`}
-              >
-                {option.toUpperCase()}
-              </button>
-            ))}
-          </div>
-
           <button
             type="button"
             onClick={() => void signOutCompletely()}

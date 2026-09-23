@@ -2,14 +2,15 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
-import { CalendarClock, Check, Medal, ScrollText, Trophy, Users } from "lucide-react";
+import { CalendarClock, Check, Medal, ScrollText, TrendingUp, Trophy, Users } from "lucide-react";
 
 import { useUser } from "@/context/UserContext";
 import { InvoiceCard } from "@/components/tactiq/QpayInvoice";
 import { SponsorStrip } from "@/components/tactiq/SponsorStrip";
-import { TournamentCalendar } from "@/components/tactiq/TournamentCalendar";
 import { TournamentSponsors } from "@/components/tactiq/TournamentSponsors";
 import { gameTheme } from "@/lib/tactiq/gameTheme";
+
+import type { TournamentPrize } from "@/lib/api/tournamentServer";
 import { parseTournamentFormat, tournamentTypeLabel } from "@/lib/tactiq/tournamentFormat";
 import { mnDay, mnTime } from "@/lib/tactiq/dateMn";
 import { ErrorNote } from "@/components/tactiq/ui";
@@ -30,7 +31,6 @@ import {
 import { t } from "@/lib/i18n/t";
 
 import type { QpayCheckout } from "@/components/tactiq/QpayInvoice";
-import type { CalendarItem } from "@/components/tactiq/TournamentCalendar";
 import type { MembershipTierId } from "@/lib/billing";
 
 /**
@@ -65,6 +65,8 @@ type Tournament = {
   sponsorLogo: string;
   sponsorUrl: string;
   prize: string;
+  /** Байр тус бүрийн шагнал — `SponsorStrip` дээр «Дэлгэрэнгүй». */
+  prizes?: TournamentPrize[] | null;
   /**
    * ДАВТАМЖТАЙ (өдөр бүр автоматаар) эсэх.
    *
@@ -72,6 +74,14 @@ type Tournament = {
    * (`/api/tournament/list`) — энд зөвхөн ШОШГОНД хэрэглэгдэнэ.
    */
   recurring: boolean;
+  /**
+   * ЧАНСАА ТОГТООХ эсэх.
+   *
+   * ⚠ ИЛ ШОШГО ШААРДЛАГАТАЙ: чансаа нь ЗӨВХӨН энэ тугтай тэмцээнээр
+   * өрнөнө (хожигдвол оноо ХАСАГДАНА). Оролцогч түүнийг бүртгэхээсээ
+   * ӨМНӨ мэдэх ёстой — дараа мэдэх нь шударга бус.
+   */
+  rated: boolean;
   seats: number | null;
   registered: number;
   entryFeeMnt: number;
@@ -82,15 +92,6 @@ type ListResponse = {
   enabled: boolean;
   available: boolean;
   tournaments: Tournament[];
-  /**
-   * ХУАНЛИД зориулсан БҮТЭН төлөвлөгөө (14 хоног).
-   *
-   * ⚠ `tournaments`-аас ТУСДАА: тэр нь «ОДОО бүртгүүлж болох»
-   * тэмцээнүүд. Давтамжтай тэмцээн зөвхөн тухайн өдрөө нээгддэг тул
-   * хуанли нь түүнээс бусад өдөр хоосон болж, «тэмцээн байхгүй» гэсэн
-   * худал мессеж өгнө.
-   */
-  upcoming: CalendarItem[];
   membership: {
     tier: MembershipTierId | null;
     until: string | null;
@@ -209,7 +210,11 @@ export function TournamentSection({
    * үгүй болно.
    */
   const sponsored = (tournament: Tournament) =>
-    (tournament.sponsorName ?? "").length > 0 || (tournament.prize ?? "").length > 0;
+    (tournament.sponsorName ?? "").length > 0 ||
+    (tournament.prize ?? "").length > 0 ||
+    /* Шагналтай тэмцээн ч дээрээ байрлана — шагнал нь оролцох гол
+       шалтгаан (`SponsorStrip`-ийн `hasSponsor`-той ижил дүрэм). */
+    (tournament.prizes?.length ?? 0) > 0;
 
   for (const tournament of [...visible].sort((a, b) => {
     const at = new Date(a.startsAt).getTime();
@@ -279,9 +284,11 @@ export function TournamentSection({
       /*
        * БАННЕР — нэг мөр: дүрс, мессеж, товч.
        *
-       * ⚠ ЭНЭ НЬ ЗӨВХӨН ХАРАГДАЦЫН ХУРААНГУЙ: дарахад ижил компонент
-       * дэлгэрэнгүйгээ нээнэ (шинэ хуудас БИШ). Тусдаа хуудас болговол
-       * бүртгэл, төлбөрийн урсгал (`InvoiceCard`) хоёр газар бичигдэнэ.
+       * ⚠ ТОВЧ нь ТЭМЦЭЭНИЙ ХУУДАС руу ЗААНА (`/tournament`), урьдын
+       * адил доор нээхгүй. Шалтгаан: тэр хуудсанд хуанли, ивээн
+       * тэтгэгчид, дүрэм, чансаа бүгд байдаг бөгөөд лобби нь ТОГЛОХ
+       * хуудас — тэмцээний бүтэн жагсаалтыг дотор нь нээхэд хуудас
+       * хоёр өөр зорилготой болно.
        */
       <section className="w-full text-left">
         <div className="flex items-center gap-3 rounded-2xl bg-gradient-to-r from-amber-400 to-amber-500 px-4 py-3 shadow-sm">
@@ -303,13 +310,18 @@ export function TournamentSection({
             )}
           </div>
 
-          <button
-            type="button"
-            onClick={() => setOpen(true)}
+          {/*
+            ⚠ `Link` — товч БИШ: дарахад шинэ хуудас нээгддэг тул
+            хөтчийн «буцах», шинэ табд нээх зэрэг ЗАН ЧАНАР нь ажиллах
+            ёстой. `onClick` + `router.push` нь тэр хоёрыг чимээгүй
+            алдагдуулна.
+          */}
+          <Link
+            href="/apps"
             className="shrink-0 rounded-xl bg-white px-4 py-2 text-xs font-bold text-amber-700 hover:bg-amber-50"
           >
             {t("Тэмцээнд оролцох")}
-          </button>
+          </Link>
         </div>
       </section>
     );
@@ -360,15 +372,6 @@ export function TournamentSection({
         <p className="rounded-xl bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300">
           {notice}
         </p>
-      )}
-
-      {/*
-        САРЫН ХУАНЛИ — жагсаалтын ӨМНӨ.
-        ⚠ Жагсаалт нь «ОДОО юу байна», хуанли нь «ЭНЭ САРД ямар өдрүүдэд
-        байна» гэдгийг хэлнэ. Хоёр өөр асуулт тул хоёр өөр харагдац.
-      */}
-      {!payment && data.available && (data.upcoming?.length ?? 0) > 0 && (
-        <TournamentCalendar items={data.upcoming} />
       )}
 
       {!payment && data.available && (
@@ -567,6 +570,19 @@ export function TournamentSection({
                       {tournament.recurring && (
                         <span className="rounded-full bg-sky-100 px-1.5 py-0.5 text-[10px] font-bold text-sky-700 dark:bg-sky-500/20 dark:text-sky-200">
                           {t("Өдөр бүр")}
+                        </span>
+                      )}
+
+                      {/*
+                        ⚠ ЧАНСААНЫ ШОШГО: хожигдвол оноо хасагддаг тул
+                        энэ нь зүгээр нэг чимэг биш, ОРОЛЦОХ шийдвэрт
+                        нөлөөлөх мэдээлэл. Хөгжөөнт тэмцээн шошгогүй
+                        байх нь «чансаагүй» гэдгийг хэлнэ.
+                      */}
+                      {tournament.rated && (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-rose-100 px-1.5 py-0.5 text-[10px] font-bold text-rose-700 dark:bg-rose-500/20 dark:text-rose-200">
+                          <TrendingUp className="size-3 shrink-0" aria-hidden />
+                          {t("Чансаа тогтоох")}
                         </span>
                       )}
 
