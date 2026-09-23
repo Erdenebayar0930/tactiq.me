@@ -1,5 +1,6 @@
 "use client";
 
+import { PLAY_BOARD_RESERVE } from "@/lib/tactiq/boardTheme";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Flag, WifiOff } from "lucide-react";
@@ -295,7 +296,7 @@ export default function DraughtsRoomPage() {
   const myTurn = state === "playing" && (game.turn() === "w") === (room.color === "white");
 
   return (
-    <div className="mx-auto max-w-xl space-y-3">
+    <div className={`mx-auto max-w-xl space-y-3 ${PLAY_BOARD_RESERVE}`}>
       <div className="surface flex items-center justify-between p-4">
         <div className="min-w-0">
           <p className="truncate font-semibold text-gray-900 dark:text-white">

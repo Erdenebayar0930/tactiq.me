@@ -1,5 +1,6 @@
 "use client";
 
+import { PLAY_BOARD_RESERVE } from "@/lib/tactiq/boardTheme";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useMemo, useRef, useState } from "react";
@@ -289,7 +290,7 @@ function DraughtsBotPageInner() {
    * гол агуулга тул баганыг `max-w-xl` (576px) болгов.
    */
   return (
-    <div className="mx-auto max-w-xl space-y-3">
+    <div className={`mx-auto max-w-xl space-y-3 ${PLAY_BOARD_RESERVE}`}>
       {/*
         ⚠ НЭГ МӨР. Урьд нь хоёр мөр (нэр / төлөв) байсан тул толгой нь
         ~66px эзэлж, хөлөг тэр хэмжээгээр багасдаг байв. Хөлөг бол энэ

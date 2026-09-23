@@ -1,5 +1,6 @@
 "use client";
 
+import { PLAY_BOARD_RESERVE } from "@/lib/tactiq/boardTheme";
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Flag, WifiOff } from "lucide-react";
@@ -314,7 +315,7 @@ export default function ChessRoomPage() {
   const checkedSquare = chess.inCheck() ? findKingSquare(chess) : null;
 
   return (
-    <div className="mx-auto max-w-lg space-y-4">
+    <div className={`mx-auto max-w-lg space-y-4 ${PLAY_BOARD_RESERVE}`}>
       <div className="surface flex items-center justify-between p-4">
         <div className="min-w-0">
           <p className="truncate font-semibold text-gray-900 dark:text-white">
