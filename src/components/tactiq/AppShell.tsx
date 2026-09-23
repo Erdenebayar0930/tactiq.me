@@ -301,6 +301,13 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const { user } = useUser();
   const pathname = usePathname();
   const NAV = buildNav(user?.activeCourseSlug);
+  /*
+   * ⚠ ТОГЛООМЫН ДЭЛГЭЦ (`/play/...` — бот, онлайн өрөө) — ГАР УТСАН дээр
+   * хөлөг л гол зүйл. Онооны тууз, дээд реклам, доод цэс гурвуулаа
+   * ~200px булааж, хөлгийг жижгэрүүлдэг байв. Эндээс «Буцах» товчоор
+   * гарна. Ширээний хувилбар (`lg`) хөндөгдөхгүй.
+   */
+  const gameScreen = pathname.startsWith("/play/");
   const ROLE_NAV = buildRoleNav(user);
 
   /*
@@ -380,7 +387,11 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           320px өргөнд ч эрээвэргүй багтана.
         */}
         {user && (
-          <div className="no-scrollbar flex items-center justify-around gap-1 overflow-x-auto border-t border-gray-200 px-2 py-1.5 sm:hidden dark:border-white/10">
+          <div
+            className={`no-scrollbar items-center justify-around gap-1 overflow-x-auto border-t border-gray-200 px-2 py-1.5 sm:hidden dark:border-white/10 ${
+              gameScreen ? "hidden" : "flex"
+            }`}
+          >
             <StatCounters user={user} />
           </div>
         )}
@@ -393,11 +404,11 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         `lg`-ээс ДООШ, цэсний доорх нь `lg`…`xl`, баруун багана нь `xl`-ээс
         ДЭЭШ. Хоёр нь давхцвал нэг дэлгэцэнд хоёр зар гарна.
       */}
-      <div className={`pt-4 lg:hidden print:hidden ${SHELL_WIDTH}`}>
+      <div className={`pt-4 lg:hidden print:hidden ${gameScreen ? "hidden" : ""} ${SHELL_WIDTH}`}>
         <AdSlot slotId={getAdSenseSlotId("banner")} />
       </div>
 
-      <div className={`flex gap-6 py-6 ${SHELL_WIDTH}`}>
+      <div className={`flex gap-6 ${gameScreen ? "py-2 lg:py-6" : "py-6"} ${SHELL_WIDTH}`}>
         {/*
           ⚠ ӨРГӨН НЬ ХОЁР ШАТТАЙ. `lg` (1024px) дээр цэс гарч ирдэг ч тэр
           өргөнд агуулга нь аль хэдийн шахагдсан байдаг — `w-60` (240px)
@@ -494,7 +505,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
         {/* `min-w-0` — эс бөгөөс өргөн хүснэгт / кодын блок flex хүүхдийг
             тэлж, бүх хуудсыг хажуу тийш гүйлгэдэг болно. */}
-        <main className="min-w-0 flex-1 pb-24 lg:pb-0">
+        <main className={`min-w-0 flex-1 lg:pb-0 ${gameScreen ? "pb-4" : "pb-24"}`}>
           <EmailVerifyBanner />
           {children}
         </main>
@@ -509,7 +520,11 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         <MoreSheet items={ROLE_NAV} onClose={() => setMoreOpen(false)} />
       )}
 
-      <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-gray-200 bg-white/95 backdrop-blur print:hidden lg:hidden dark:border-white/10 dark:bg-gray-950/95">
+      <nav
+        className={`fixed inset-x-0 bottom-0 z-30 border-t border-gray-200 bg-white/95 backdrop-blur print:hidden lg:hidden dark:border-white/10 dark:bg-gray-950/95 ${
+          gameScreen ? "hidden" : ""
+        }`}
+      >
         <ul className="mx-auto flex max-w-md">
           {/*
             ⚠ ЭХНИЙ 4-ийг л зурна. Тавдугаарт "Бусад" товч сууж, үлдсэн бүх

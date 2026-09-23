@@ -55,7 +55,7 @@ export function CoachTip({
           aria-hidden
           width={179}
           height={305}
-          className="h-20 w-auto shrink-0"
+          className="h-12 w-auto shrink-0 sm:h-20"
         />
       ) : (
         <span
@@ -71,7 +71,7 @@ export function CoachTip({
         Зурагаар БИШ, эргүүлсэн div-ээр: дэвсгэр өнгө, харанхуй горим,
         хүрээ бүгд бөмбөлөгтэйгөө автоматаар таарна.
       */}
-      <div className="relative flex-1 rounded-2xl border border-brand-200 bg-brand-50 p-3 dark:border-brand-500/30 dark:bg-brand-500/10">
+      <div className="relative flex-1 rounded-2xl border border-brand-200 bg-brand-50 px-3 py-2 sm:p-3 dark:border-brand-500/30 dark:bg-brand-500/10">
         <span
           aria-hidden
           className="absolute -left-1.5 top-4 size-3 rotate-45 border-b border-l border-brand-200 bg-brand-50 dark:border-brand-500/30 dark:bg-brand-500/10"

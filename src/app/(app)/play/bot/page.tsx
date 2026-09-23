@@ -271,7 +271,7 @@ function BotPageInner() {
    * гол агуулга тул баганыг `max-w-xl` (576px) болгов.
    */
   return (
-    <div className={`mx-auto max-w-xl space-y-4 ${PLAY_BOARD_RESERVE}`}>
+    <div className={`mx-auto max-w-xl space-y-2 sm:space-y-4 ${PLAY_BOARD_RESERVE}`}>
       <div className="surface flex items-center justify-between p-4">
         <Link
           href="/play"

@@ -41,13 +41,22 @@ export function MatchHeader({
   const rightActive = showClocks && activeSide !== undefined && activeSide !== myColor;
 
   return (
-    <div className="rounded-2xl bg-gradient-to-b from-[#1c2740] to-[#0d1424] px-4 py-2 shadow-lg">
-      <p className="truncate text-center text-sm font-semibold text-white/90">
+    /*
+      ⚠ ГАР УТСАН дээр НЭГ МӨР (цаг · нэрс · цаг), титэмгүй — хоёр мөр
+      нь хөлгөөс ~30px булааж байв. `sm`-ээс дээш урьдын хоёр мөр.
+    */
+    <div className="rounded-2xl bg-gradient-to-b from-[#1c2740] to-[#0d1424] px-3 py-1.5 shadow-lg sm:px-4 sm:py-2">
+      <p className="hidden truncate text-center text-sm font-semibold text-white/90 sm:block">
         {leftName} <span className="font-normal text-white/40">vs</span> {rightName}
       </p>
-      <div className="mt-1.5 flex items-center justify-between">
+      <div className="flex items-center justify-between gap-2 sm:mt-1.5">
         <ClockBadge ms={leftMs} active={leftActive} />
-        <CrownBadge />
+        <p className="min-w-0 flex-1 truncate text-center text-xs font-semibold text-white/90 sm:hidden">
+          {leftName} <span className="font-normal text-white/40">vs</span> {rightName}
+        </p>
+        <span className="hidden sm:block">
+          <CrownBadge />
+        </span>
         <ClockBadge ms={rightMs} active={rightActive} />
       </div>
     </div>

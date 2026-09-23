@@ -37,7 +37,7 @@ export const BOARD_DARK = "bg-[#b58863]";
  * ⚠ Хүрээг ХАСААГҮЙ: координатын үсэг, тоо (a-h, 1-8) тэнд бичигддэг.
  */
 export const BOARD_FRAME =
-  "rounded-2xl bg-[#e7cfae] p-[4%] shadow-[0_2px_10px_rgba(80,55,30,0.18)] dark:bg-[#8a6f52]";
+  "rounded-2xl bg-[#e7cfae] p-[2.5%] shadow-[0_2px_10px_rgba(80,55,30,0.18)] sm:p-[4%] dark:bg-[#8a6f52]";
 
 /**
  * Координатын бичвэр — ЦАЙВАР хүрээ дээр тул БАРААН.
@@ -82,11 +82,11 @@ export const BOARD_GRAIN: Record<"light" | "dark", string> = {
  * ТОГЛОХ дэлгэцийн (`/play/...`) хөлгийн өндрийн нөөц — хуудсын гадна
  * элементэд тавина.
  *
- * ⚠ ГАР УТСАН дээр (`lg`-ээс доош) 31rem: ширээний хувилбарт байхгүй
- * гурван зүйл нэмэгддэг — онооны мөр (~60px), `fixed` доод цэс (~80px,
- * `dvh`-д тооцогддоггүй), Даамалын зөвлөгөө. 22rem байхад 412×800
- * утсан дээр зөвлөгөө доод цэсний дор орж, хуудас гүйлгэгддэг байв.
+ * ⚠ ГАР УТСАН дээр (`lg`-ээс доош) 17rem ≈ 272px: толгой 64 + дээд зай 8
+ * + «Буцах» мөр 36 + тоглогчийн мөр 40 + зөвлөгөө ~72 + завсар, доод зай
+ * ~50. Онооны тууз, реклам, доод цэс тоглоомын үед нуугддаг (`AppShell`,
+ * `gameScreen`) тул тэдгээрийг тооцохгүй — тэр зай бүхэлдээ хөлөгт очно.
  */
-export const PLAY_BOARD_RESERVE = "[--board-reserve:31rem] lg:[--board-reserve:22rem]";
+export const PLAY_BOARD_RESERVE = "[--board-reserve:17rem] lg:[--board-reserve:22rem]";
 
 export const BOARD_SIZE = "w-full max-w-[min(680px,calc(100dvh-var(--board-reserve,22rem)))]";
