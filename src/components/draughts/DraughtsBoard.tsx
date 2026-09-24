@@ -24,6 +24,12 @@ import type { Board as DraughtsGrid, Color, Square } from "@/lib/draughts/engine
 
 const SIZE = 10;
 
+/**
+ * Чирэлт гэж тооцох хамгийн бага хөдөлгөөн (px). Хуруугаар товшиход
+ * хэдэн пиксел гулсах нь элбэг — түүнийг чирэлт гэж андуурахгүй.
+ */
+const DRAG_THRESHOLD = 6;
+
 function isDark(row: number, col: number): boolean {
   return (row + col) % 2 === 1;
 }
@@ -89,6 +95,18 @@ export function DraughtsBoard({
   const [squareSize, setSquareSize] = useState(42);
   const boardRef = useRef<HTMLDivElement>(null);
   /**
+   * Дарсан мөчийн байрлал — ТОВШИЛТ, ЧИРЭЛТ хоёрыг ялгана.
+   *
+   * ⚠ Дарахад шууд чирэлт эхлүүлдэг байхад товшилт бүрд дүрс нүднээсээ
+   * алга болж, хуруун доор «үсэрдэг» байв. Одоо хуруу `DRAG_THRESHOLD`-оос
+   * илүү хөдөлсөн үед л чирэлт эхэлнэ — түүнээс өмнө бол энгийн сонголт:
+   * дүрс байрандаа үлдэж, очих нүднүүд нь тодорно, дараагийн товшилтоор нүүнэ.
+   *
+   * `wasSelected` — энэ дүрс дарахаас ӨМНӨ сонгогдсон байсан эсэх: дахин
+   * товшвол сонголтыг цуцална.
+   */
+  const pressRef = useRef<{ x: number; y: number; wasSelected: boolean } | null>(null);
+  /**
    * Хөдөлгөөний ЯВЦ: `false` = эхлэлийн нүдэнд, `true` = очих нүдэнд.
    *
    * ⚠ Хоёр ШАТ ЗААВАЛ: CSS шилжилт нь утга ӨӨРЧЛӨГДӨХӨД л ажилладаг.
@@ -133,6 +151,7 @@ export function DraughtsBoard({
     setSelected(null);
     setLegalTargets([]);
     setDragPos(null);
+    pressRef.current = null;
   };
 
   /* Дохиог өөрөө унтраана — дараагийн даралтад дахин асна. */
@@ -149,7 +168,8 @@ export function DraughtsBoard({
     return { row, col };
   };
 
-  const onPieceDown = (
+  /* ⚠ НҮД дээр барина, дүрс дээр БИШ — `ChessBoard.tsx`-ийн `onSquareDown`-ыг үзнэ үү. */
+  const onSquareDown = (
     event: ReactPointerEvent<HTMLDivElement>,
     square: Square,
     piece: DraughtsGrid[number][number]
@@ -180,21 +200,39 @@ export function DraughtsBoard({
       return;
     }
 
+    pressRef.current = {
+      x: event.clientX,
+      y: event.clientY,
+      wasSelected: Boolean(selected && sameSquare(selected, square)),
+    };
     setSelected(square);
     setLegalTargets(targets);
-    setDragPos({ x: event.clientX, y: event.clientY });
     const rect = boardRef.current?.getBoundingClientRect();
     if (rect) setSquareSize(rect.width / SIZE);
     boardRef.current?.setPointerCapture(event.pointerId);
   };
 
   const onBoardMove = (event: ReactPointerEvent<HTMLDivElement>) => {
-    if (!dragPos) return;
+    const press = pressRef.current;
+    if (!dragPos) {
+      if (!press) return;
+      const moved = Math.hypot(event.clientX - press.x, event.clientY - press.y);
+      if (moved < DRAG_THRESHOLD) return;
+    }
     setDragPos({ x: event.clientX, y: event.clientY });
   };
 
   const onBoardUp = (event: ReactPointerEvent<HTMLDivElement>) => {
-    if (!dragPos || !selected) return;
+    const press = pressRef.current;
+    pressRef.current = null;
+
+    // Чирэлгүй ТОВШИЛТ: сонголт хэвээр үлдэнэ (очих нүдээ товшихыг хүлээнэ),
+    // харин аль хэдийн сонгосон дүрсээ дахин товшсон бол сонголтыг цуцална.
+    if (!dragPos) {
+      if (press?.wasSelected) reset();
+      return;
+    }
+    if (!selected) return;
 
     const target = squareFromPoint(event.clientX, event.clientY);
     if (target && legalTargets.some((t) => sameSquare(t, target))) {
@@ -279,10 +317,11 @@ export function DraughtsBoard({
                 <div
                   key={`${row},${col}`}
                   data-square={dark ? `${row},${col}` : undefined}
+                  onPointerDown={(event) => onSquareDown(event, square, piece)}
                   style={dark ? { backgroundImage: GRAIN.dark } : { backgroundImage: GRAIN.light }}
                   className={`relative flex items-center justify-center ${
                     dark ? BOARD_DARK : BOARD_LIGHT
-                  }`}
+                  } ${isTarget ? "cursor-pointer" : ""}`}
                 >
                   {isLastMove && <div className={`absolute inset-0 ${BOARD_LAST_MOVE}`} />}
 
@@ -296,7 +335,6 @@ export function DraughtsBoard({
 
                   {piece && !isDraggingThis && !isAnimTarget && (
                     <div
-                      onPointerDown={(event) => onPieceDown(event, square, piece)}
                       className={`relative flex size-[78%] items-center justify-center rounded-full ${
                         PIECE_LOOK[piece.color]
                       } ${interactive ? "cursor-grab active:cursor-grabbing" : ""} shadow-[0_2px_2px_rgba(0,0,0,0.35)]`}

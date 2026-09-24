@@ -33,6 +33,12 @@ import type { Color, PieceSymbol, Square } from "chess.js";
  * ч анх сонгосон нүд хадгалагдаад, дараагийн товшилтоор шилжинэ.
  */
 
+/**
+ * Чирэлт гэж тооцох хамгийн бага хөдөлгөөн (px). Хуруугаар товшиход
+ * хэдэн пиксел гулсах нь элбэг — түүнийг чирэлт гэж андуурахгүй.
+ */
+const DRAG_THRESHOLD = 6;
+
 const FILES = ["a", "b", "c", "d", "e", "f", "g", "h"];
 
 /** Хоёр талд ижил (дүүрэн) дүрсний хэлбэр ашиглаж, зөвхөн өнгөөр ялгана —
@@ -109,6 +115,18 @@ export function ChessBoard({
    */
   const [refused, setRefused] = useState<Square | null>(null);
   const boardRef = useRef<HTMLDivElement>(null);
+  /**
+   * Дарсан мөчийн байрлал — ТОВШИЛТ, ЧИРЭЛТ хоёрыг ялгана.
+   *
+   * ⚠ Дарахад шууд чирэлт эхлүүлдэг байхад товшилт бүрд дүрс нүднээсээ
+   * алга болж, хуруун доор «үсэрдэг» байв. Одоо хуруу `DRAG_THRESHOLD`-оос
+   * илүү хөдөлсөн үед л чирэлт эхэлнэ — түүнээс өмнө бол энгийн сонголт:
+   * дүрс байрандаа үлдэж, очих нүднүүд нь тодорно, дараагийн товшилтоор нүүнэ.
+   *
+   * `wasSelected` — энэ дүрс дарахаас ӨМНӨ сонгогдсон байсан эсэх: дахин
+   * товшвол сонголтыг цуцална.
+   */
+  const pressRef = useRef<{ x: number; y: number; wasSelected: boolean } | null>(null);
 
   const rows = orientation === "white" ? [0, 1, 2, 3, 4, 5, 6, 7] : [7, 6, 5, 4, 3, 2, 1, 0];
   const cols = orientation === "white" ? [0, 1, 2, 3, 4, 5, 6, 7] : [7, 6, 5, 4, 3, 2, 1, 0];
@@ -119,6 +137,7 @@ export function ChessBoard({
     setSelected(null);
     setLegalTargets([]);
     setDragPos(null);
+    pressRef.current = null;
   };
 
   /* Дохиог өөрөө унтраана — дараагийн даралтад дахин асна. */
@@ -133,7 +152,12 @@ export function ChessBoard({
     return (el?.dataset.square as Square | undefined) ?? null;
   };
 
-  const onPieceDown = (
+  /*
+   * ⚠ НҮД дээр барина, дүрс дээр БИШ: урьд нь зөвхөн дүрсний элемент
+   * сонсдог байсан тул дүрс сонгоод ХООСОН нүд дарахад юу ч болдоггүй
+   * байв — товшилт-товшилтоор зөвхөн идэх нүүдэл л ажилладаг байв.
+   */
+  const onSquareDown = (
     event: ReactPointerEvent<HTMLDivElement>,
     square: Square,
     piece: BoardSquare
@@ -166,21 +190,35 @@ export function ChessBoard({
       return;
     }
 
+    pressRef.current = { x: event.clientX, y: event.clientY, wasSelected: selected === square };
     setSelected(square);
     setLegalTargets(targets);
-    setDragPos({ x: event.clientX, y: event.clientY });
     const rect = boardRef.current?.getBoundingClientRect();
     if (rect) setSquareSize(rect.width / 8);
     boardRef.current?.setPointerCapture(event.pointerId);
   };
 
   const onBoardMove = (event: ReactPointerEvent<HTMLDivElement>) => {
-    if (!dragPos) return;
+    const press = pressRef.current;
+    if (!dragPos) {
+      if (!press) return;
+      const moved = Math.hypot(event.clientX - press.x, event.clientY - press.y);
+      if (moved < DRAG_THRESHOLD) return;
+    }
     setDragPos({ x: event.clientX, y: event.clientY });
   };
 
   const onBoardUp = (event: ReactPointerEvent<HTMLDivElement>) => {
-    if (!dragPos || !selected) return;
+    const press = pressRef.current;
+    pressRef.current = null;
+
+    // Чирэлгүй ТОВШИЛТ: сонголт хэвээр үлдэнэ (очих нүдээ товшихыг хүлээнэ),
+    // харин аль хэдийн сонгосон дүрсээ дахин товшсон бол сонголтыг цуцална.
+    if (!dragPos) {
+      if (press?.wasSelected) reset();
+      return;
+    }
+    if (!selected) return;
 
     const target = squareFromPoint(event.clientX, event.clientY);
     if (target && legalTargets.includes(target)) {
@@ -281,10 +319,11 @@ export function ChessBoard({
                 <div
                   key={square}
                   data-square={square}
+                  onPointerDown={(event) => onSquareDown(event, square, piece)}
                   style={{ backgroundImage: BOARD_GRAIN[isLight ? "light" : "dark"] }}
                   className={`relative flex items-center justify-center ${
                     isLight ? BOARD_LIGHT : BOARD_DARK
-                  }`}
+                  } ${isTarget ? "cursor-pointer" : ""}`}
                 >
                   {isLastMove && <div className={`absolute inset-0 ${BOARD_LAST_MOVE}`} />}
                   {isChecked && <div className="absolute inset-0 bg-rose-500/60" />}
@@ -299,7 +338,6 @@ export function ChessBoard({
 
                   {piece && !isDraggingThis && (
                     <div
-                      onPointerDown={(event) => onPieceDown(event, square, piece)}
                       className={`relative flex size-full items-center justify-center ${
                         interactive ? "cursor-grab active:cursor-grabbing" : ""
                       }`}
