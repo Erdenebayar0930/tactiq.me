@@ -7,7 +7,6 @@ import { pets, users } from "@/lib/db/schema";
 import {
   canCare,
   CARE_BREAK_HOURS,
-  claimableMilestones,
   findSpecies,
   MAX_PETS,
   petState,
@@ -25,13 +24,12 @@ import type { PetRow } from "@/lib/db/schema";
  *   2. ЗООС ХАСАХ нь АТОМИК — нөхцөлт UPDATE. Уншаад-бодоод-бичвэл хоёр таб
  *      зэрэг дарахад нэг үнээр хоёр удаа авна.
  *   3. АСАРГАА ӨДӨРТ НЭГ УДАА. Хугацааг СЕРВЕР шалгана: клиент товчоо
- *      хэдэн ч удаа дарж чадах ба тэр бүрд шагналын дараалал өсөх ёсгүй.
+ *      хэдэн ч удаа дарж чадах ба тэр бүрд асаргааны дараалал өсөх ёсгүй.
  */
 
 export type PetView = PetRow & {
   mood: "happy" | "hungry" | "sad";
   msToNextCare: number;
-  claimable: { days: number; gems: number; label: string }[];
 };
 
 function toView(row: PetRow, now: Date): PetView {
@@ -44,14 +42,12 @@ function toView(row: PetRow, now: Date): PetView {
    * дараагийн АСАРГААНЫ үед (`carePet`) шинэчлэгдэнэ.
    */
   const careStreak = state.streakBroken ? 0 : row.careStreak;
-  const claimed = (row.claimedMilestones ?? []) as number[];
 
   return {
     ...row,
     careStreak,
     mood: state.mood,
     msToNextCare: state.msToNextCare,
-    claimable: claimableMilestones(careStreak, claimed),
   };
 }
 
@@ -168,67 +164,6 @@ async function applyCare(row: PetRow, now: Date): Promise<PetRow> {
     .returning();
 
   return updated ?? row;
-}
-
-export type ClaimOutcome =
-  | { ok: true; pet: PetView; gems: number; reward: number }
-  | { ok: false; reason: "not-found" | "not-earned" };
-
-/**
- * Асаргааны шагнал авах.
- *
- * ⚠ Шагналыг ЗӨВХӨН НЭГ УДАА: `claimedMilestones` жагсаалтад нэмэгдсэн
- * эсэхийг UPDATE-ийн НӨХЦӨЛД шалгана. Уншаад-шалгаад-бичвэл хоёр таб
- * зэрэг дарахад хоёр удаа олгогдоно.
- */
-export async function claimMilestone(
-  uid: string,
-  petId: string,
-  days: number
-): Promise<ClaimOutcome> {
-  const now = new Date();
-
-  const [row] = await db
-    .select()
-    .from(pets)
-    .where(and(eq(pets.id, petId), eq(pets.uid, uid)))
-    .limit(1);
-
-  if (!row) return { ok: false, reason: "not-found" };
-
-  const view = toView(row, now);
-  const milestone = view.claimable.find((item) => item.days === days);
-  if (!milestone) return { ok: false, reason: "not-earned" };
-
-  const claimedUpdate = await db
-    .update(pets)
-    .set({
-      claimedMilestones: sql`${pets.claimedMilestones} || ${JSON.stringify([days])}::jsonb`,
-      updatedAt: now,
-    })
-    .where(
-      and(
-        eq(pets.id, row.id),
-        sql`not (${pets.claimedMilestones} @> ${JSON.stringify([days])}::jsonb)`
-      )
-    )
-    .returning();
-
-  // Хоёр дахь зэрэгцээ хүсэлт — аль хэдийн олгогдсон.
-  if (claimedUpdate.length === 0) return { ok: false, reason: "not-earned" };
-
-  const [me] = await db
-    .update(users)
-    .set({ gems: sql`${users.gems} + ${milestone.gems}`, updatedAt: now })
-    .where(eq(users.uid, uid))
-    .returning({ gems: users.gems });
-
-  return {
-    ok: true,
-    pet: toView(claimedUpdate[0], now),
-    gems: me?.gems ?? 0,
-    reward: milestone.gems,
-  };
 }
 
 /** Нэрлэх — хүүхэд тэжээвэртээ нэр өгөх нь хамгийн эхний холбоо. */

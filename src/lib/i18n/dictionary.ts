@@ -106,7 +106,7 @@ export const EN: Record<string, string> = {
   "24 цагаас илүү усласангүй бол гандаж эхэлнэ.":
     "Go longer than 24 hours without water and it starts to wilt.",
   Мод: "Tree",
-  "Хамгийн үнэтэй ч хамгийн том шагналтай.": "The most expensive, and the most rewarding.",
+  "Хамгийн үнэтэй, хамгийн сүрлэг ургамал.": "The most expensive and the grandest plant.",
   "Өдөрт НЭГ удаа услана (10 зоос).": "Water it ONCE a day (10 coins).",
   "24 цагаас илүү усласангүй бол навч нь унаж эхэлнэ.":
     "Go longer than 24 hours without water and its leaves start to fall.",
@@ -329,8 +329,8 @@ export const EN: Record<string, string> = {
   "Дэвших бүс": "Promotion zone",
   Дэлгэрэнгүй: "Details",
   "Дэлгүүр рүү": "Go to the shop",
-  "Дэлгүүрээс амьтан эсвэл цэцэг аваарай. Өдөр бүр асарвал зоосон шагнал авна.":
-    "Pick up a pet or a plant in the shop. Care for it every day and earn coins.",
+  "Дэлгүүрээс амьтан эсвэл цэцэг аваарай.":
+    "Get an animal or a flower from the shop.",
   "Дүрмийг уншиж, ботын эсрэг дадлагажаад тэмцээнд ор.":
     "Read the rules, practise against the bot, then enter a tournament.",
   Дүүрсэн: "Full",
@@ -470,7 +470,6 @@ export const EN: Record<string, string> = {
   "энэ сард үнэгүй": "free this month",
   "Үнэгүй бүртгүүлэх": "Sign up free",
   "Өдөр бүр": "Daily",
-  "Өдөр бүр асарвал шагнал авна.": "Care for it every day and earn a reward.",
   "Өмнөх сар": "Previous month",
   "Өнөөдрийн жижиг амжилт, маргаашийн их боломж юм.": "A small win today is a big chance tomorrow.",
   "Өнөөдөр шинэ зүйл сурч, өөрийгөө хөгжүүлээрэй": "Learn something new today and grow",

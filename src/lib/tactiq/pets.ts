@@ -153,7 +153,7 @@ export const PET_SPECIES: PetSpecies[] = [
     careCost: 10,
     careLabel: "Услах",
     careItem: "ус",
-    description: "Хамгийн үнэтэй ч хамгийн том шагналтай.",
+    description: "Хамгийн үнэтэй, хамгийн сүрлэг ургамал.",
     instructions: [
       "Өдөрт НЭГ удаа услана (10 зоос).",
       "24 цагаас илүү усласангүй бол навч нь унаж эхэлнэ.",
@@ -222,39 +222,6 @@ export function petState(lastCareAt: Date | null, now: Date = new Date()): PetSt
 /** Асрах боломжтой эсэх — өдөрт нэг удаа. */
 export function canCare(lastCareAt: Date | null, now: Date = new Date()): boolean {
   return petState(lastCareAt, now).msToNextCare === 0;
-}
-
-/* -------------------------------------------------------------------------
- * Шагнал
- * ---------------------------------------------------------------------- */
-
-/**
- * АСАРГААНЫ ДАРААЛЛЫН шагналууд.
- *
- * ⚠ Шагнал нь зарцуулсан зоосноос ИХ байх ёстой — эс бөгөөс тэжээвэр нь
- * цэвэр алдагдал болж, хүүхэд хоёр дахь удаагаа авахгүй. 7 хоног × 10 зоос
- * = 70 зарцуулаад 150 авна: асаргаа нь БАГА зэрэг ашигтай.
- */
-export const CARE_MILESTONES: { days: number; gems: number; label: string }[] = [
-  { days: 3, gems: 500, label: "3 хоног" },
-  { days: 7, gems: 1500, label: "1 долоо хоног" },
-  { days: 14, gems: 3500, label: "2 долоо хоног" },
-  { days: 30, gems: 8000, label: "1 сар" },
-];
-
-/** Тухайн дараалалд ХҮРСЭН боловч хараахан аваагүй шагналууд. */
-export function claimableMilestones(
-  careStreak: number,
-  claimed: number[]
-): typeof CARE_MILESTONES {
-  return CARE_MILESTONES.filter(
-    (milestone) => careStreak >= milestone.days && !claimed.includes(milestone.days)
-  );
-}
-
-/** Дараагийн зорилт — хүүхдэд "хэдэн хоног үлдсэн" гэдгийг харуулахад. */
-export function nextMilestone(careStreak: number): { days: number; gems: number } | null {
-  return CARE_MILESTONES.find((milestone) => milestone.days > careStreak) ?? null;
 }
 
 /** Нэг хэрэглэгчийн эзэмших тэжээврийн ДЭЭД тоо. */

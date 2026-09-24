@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { badRequest, requireActiveUser, serverError } from "@/lib/api/auth";
-import { buyPet, carePet, claimMilestone, listPets, renamePet } from "@/lib/api/pets";
+import { buyPet, carePet, listPets, renamePet } from "@/lib/api/pets";
 
 import type { NextRequest } from "next/server";
 
@@ -9,7 +9,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 /**
- * ТЭЖЭЭВЭР — жагсаалт, худалдан авалт, асаргаа, шагнал.
+ * ТЭЖЭЭВЭР — жагсаалт, худалдан авалт, асаргаа.
  *
  * ⚠ Бүх үйлдэл ЗӨВХӨН ӨӨРИЙН тэжээвэр дээр (`caller.uid`). Тэжээврийн ID
  * нь UUID боловч эзэмшлийг шалгахгүй бол таамагласан ID-гаар бусдын
@@ -70,21 +70,6 @@ export async function POST(request: NextRequest) {
       }
 
       return NextResponse.json({ pet: outcome.pet, gems: outcome.gems });
-    }
-
-    /* ---------- Шагнал авах ---------- */
-    if (action === "claim") {
-      const days = Math.round(Number(body.days));
-      if (!Number.isFinite(days)) return badRequest("Шагналын хугацаа буруу.");
-
-      const outcome = await claimMilestone(uid, petId, days);
-      if (!outcome.ok) return badRequest("Энэ шагналыг авах боломжгүй байна.");
-
-      return NextResponse.json({
-        pet: outcome.pet,
-        gems: outcome.gems,
-        reward: outcome.reward,
-      });
     }
 
     /* ---------- Нэрлэх ---------- */

@@ -2,16 +2,15 @@
 
 import { useState } from "react";
 import { PetArt } from "@/components/tactiq/PetArt";
-import { Coins, Gift, Info } from "lucide-react";
+import { Coins, Info } from "lucide-react";
 import Link from "next/link";
 
 import { useUser } from "@/context/UserContext";
 import { ErrorNote, Skeleton } from "@/components/tactiq/ui";
-import PurchaseToast from "@/components/tactiq/PurchaseToast";
 import { useApiData } from "@/hooks/useApiData";
 import { apiFetch, ApiError } from "@/lib/apiClient";
 import { sfx } from "@/lib/audio/sfx";
-import { findSpecies, nextMilestone } from "@/lib/tactiq/pets";
+import { findSpecies } from "@/lib/tactiq/pets";
 import { t } from "@/lib/i18n/t";
 
 type Pet = {
@@ -23,7 +22,6 @@ type Pet = {
   totalCare: number;
   mood: "happy" | "hungry" | "sad";
   msToNextCare: number;
-  claimable: { days: number; gems: number; label: string }[];
 };
 
 const MOOD: Record<Pet["mood"], { label: string; tone: string }> = {
@@ -51,7 +49,7 @@ function untilNext(ms: number): string {
 }
 
 /**
- * МИНИЙ ТЭЖЭЭВЭР — хооллох, услах, шагнал авах.
+ * МИНИЙ ТЭЖЭЭВЭР — хооллох, услах.
  *
  * ⚠ Тэжээвэр нь ХАРИУЦЛАГА заах хэрэгсэл, шийтгэл БИШ: асаргаагүй үлдсэн ч
  * үхэх/хатахгүй, зөвхөн гунигтай болж дараалал нь тэгээс эхэлнэ
@@ -62,27 +60,19 @@ export default function PetsPage() {
   const { data, error, loading, reload } = useApiData<{ pets: Pet[] }>("/api/pets");
   const [busy, setBusy] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
-  const [reward, setReward] = useState<number | null>(null);
 
   const act = async (key: string, body: Record<string, unknown>) => {
     setBusy(key);
     setActionError(null);
-    setReward(null);
     try {
-      const res = await apiFetch<{ gems?: number; reward?: number }>("/api/pets", {
+      const res = await apiFetch<{ gems?: number }>("/api/pets", {
         method: "POST",
         body,
       });
       // Зоосны тоо толгойд харагддаг тул шууд шинэчилнэ — дахин татахгүй.
       if (user && typeof res.gems === "number") apply({ ...user, gems: res.gems });
 
-      // Шагнал нь асаргаанаас илүү том үйл явдал — өөр, урт дуутай.
-      if (typeof res.reward === "number") {
-        setReward(res.reward);
-        sfx.reward();
-      } else {
-        sfx.care();
-      }
+      sfx.care();
       reload();
     } catch (cause) {
       setActionError(cause instanceof ApiError ? cause.message : "Алдаа гарлаа.");
@@ -101,7 +91,6 @@ export default function PetsPage() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t("Миний тэжээвэр")}</h1>
-          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{t("Өдөр бүр асарвал шагнал авна.")}</p>
         </div>
 
         <span className="flex items-center gap-1.5 rounded-full bg-sky-50 px-3 py-1.5 font-bold text-sky-700 dark:bg-sky-500/15 dark:text-sky-300">
@@ -112,20 +101,6 @@ export default function PetsPage() {
 
       {actionError && <ErrorNote message={actionError} />}
 
-{/*
-        ⚠ Шагналыг ХУУДАСНЫ ДОТОР жижиг мөрөөр биш, дэлгэцийн дээд талд
-        ТОМООР харуулна: тэжээврийн жагсаалт урт байж болох ба хэрэглэгч
-        доод талын тэжээвэр дээр товч дарахад дээр гарсан мессежийг
-        ХАРАХГҮЙ өнгөрнө.
-      */}
-      {reward !== null && (
-        <PurchaseToast
-          emoji="🎁"
-          title={`Шагнал: +${reward} зоос!`}
-          detail="Өдөр бүр асарсны төлөө"
-          onDone={() => setReward(null)}
-        />
-      )}
 
       {pets.length === 0 ? (
         <div className="surface space-y-3 p-5 text-center">
@@ -133,7 +108,7 @@ export default function PetsPage() {
             🐰 🌸
           </p>
           <p className="font-bold text-gray-900 dark:text-white">{t("Танд тэжээвэр байхгүй байна")}</p>
-          <p className="text-sm text-gray-500 dark:text-gray-400">{t("Дэлгүүрээс амьтан эсвэл цэцэг аваарай. Өдөр бүр асарвал зоосон шагнал авна.")}</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400">{t("Дэлгүүрээс амьтан эсвэл цэцэг аваарай.")}</p>
           <Link href="/shop" className="btn-primary inline-block px-5 py-2.5 text-sm">{t("Дэлгүүр рүү")}</Link>
         </div>
       ) : (
@@ -144,7 +119,6 @@ export default function PetsPage() {
 
             const mood = MOOD[pet.mood];
             const canCareNow = pet.msToNextCare === 0;
-            const goal = nextMilestone(pet.careStreak);
 
             return (
               <div key={pet.id} className="surface space-y-4 p-5">
@@ -161,14 +135,7 @@ export default function PetsPage() {
                       </span>
                     </div>
 
-                    <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{t("Дараалал:")}{" "}<span className="num font-semibold">{pet.careStreak}</span>{" "}{t("хоног · нийт")}{" "}<span className="num">{pet.totalCare}</span> удаа асарсан
-                      {goal && (
-                        <>
-                          {" · дараагийн шагнал "}
-                          <span className="num font-semibold">{goal.days}</span> хоногт{" "}
-                          <span className="num">{goal.gems}</span>{" "}{t("зоос")}</>
-                      )}
-                    </p>
+                    <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{t("Дараалал:")}{" "}<span className="num font-semibold">{pet.careStreak}</span>{" "}{t("хоног · нийт")}{" "}<span className="num">{pet.totalCare}</span> удаа асарсан</p>
                   </div>
                 </div>
 
@@ -196,25 +163,6 @@ export default function PetsPage() {
                         ? `${t(species.careLabel)} — ${species.careCost} ${t("зоос")}`
                         : `${untilNext(pet.msToNextCare)} ${t("дараа")}`}
                   </button>
-
-                  {pet.claimable.map((milestone) => (
-                    <button
-                      key={milestone.days}
-                      type="button"
-                      onClick={() =>
-                        void act(pet.id + milestone.days, {
-                          action: "claim",
-                          petId: pet.id,
-                          days: milestone.days,
-                        })
-                      }
-                      disabled={busy !== null}
-                      className="flex items-center gap-1.5 rounded-xl border-2 border-emerald-500 px-3 py-2 text-sm font-semibold text-emerald-600 disabled:opacity-50 dark:text-emerald-300"
-                    >
-                      <Gift className="size-4" aria-hidden />
-                      {t(milestone.label)} — {milestone.gems} {t("зоос")}
-                    </button>
-                  ))}
                 </div>
               </div>
             );
