@@ -1,6 +1,10 @@
 "use client";
 
-import { PLAY_BOARD_RESERVE } from "@/lib/tactiq/boardTheme";
+import {
+  PLAY_BOARD_BLEED,
+  PLAY_BOARD_RESERVE,
+  PLAY_BOARD_RESERVE_ENDED,
+} from "@/lib/tactiq/boardTheme";
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Flag, WifiOff } from "lucide-react";
@@ -315,8 +319,12 @@ export default function ChessRoomPage() {
   const checkedSquare = chess.inCheck() ? findKingSquare(chess) : null;
 
   return (
-    <div className={`mx-auto max-w-lg space-y-2 sm:space-y-4 ${PLAY_BOARD_RESERVE}`}>
-      <div className="surface flex items-center justify-between p-4">
+    <div
+      className={`mx-auto flex max-w-lg flex-col gap-2 sm:gap-4 ${
+        state === "ended" ? PLAY_BOARD_RESERVE_ENDED : PLAY_BOARD_RESERVE
+      }`}
+    >
+      <div className="surface flex items-center justify-between px-4 py-2 sm:p-4">
         <div className="min-w-0">
           <p className="truncate font-semibold text-gray-900 dark:text-white">
             {room.opponent?.displayName || t("Өрсөлдөгч")}
@@ -339,99 +347,107 @@ export default function ChessRoomPage() {
         )}
       </div>
 
-      <MatchHeader
-        leftName={me.displayName || t("Та")}
-        rightName={room.opponent?.displayName || t("Өрсөлдөгч")}
-        /* ⚠ Зүүн цаг нь ЯМАГТ миний цаг — хөлгийн чиглэлээс хамаарахгүй. */
-        leftMs={room.color === "white" ? clock.white : clock.black}
-        rightMs={room.color === "white" ? clock.black : clock.white}
-        activeSide={chess.turn()}
-        myColor={room.color === "white" ? "w" : "b"}
-      />
+      {/* Гар утсан дээр цаг ХӨЛГИЙН ДООР; дууссаны дараа зай нь дүнгийн картад очно. */}
+      <div className={`max-lg:order-3 ${state === "ended" ? "max-lg:hidden" : ""}`}>
+        <MatchHeader
+          leftName={me.displayName || t("Та")}
+          rightName={room.opponent?.displayName || t("Өрсөлдөгч")}
+          /* ⚠ Зүүн цаг нь ЯМАГТ миний цаг — хөлгийн чиглэлээс хамаарахгүй. */
+          leftMs={room.color === "white" ? clock.white : clock.black}
+          rightMs={room.color === "white" ? clock.black : clock.white}
+          activeSide={chess.turn()}
+          myColor={room.color === "white" ? "w" : "b"}
+        />
+      </div>
 
-      <ChessBoard
-        board={chess.board()}
-        orientation={room.color}
-        interactive={myTurn}
-        getLegalTargets={(square) =>
-          (chess.moves({ square, verbose: true }) as Move[]).map((move) => move.to as Square)
-        }
-        onMove={handleMove}
-        lastMove={lastMoveRef.current}
-        checkedSquare={checkedSquare}
-      />
+      <div className={`max-lg:order-2 ${PLAY_BOARD_BLEED}`}>
+        <ChessBoard
+          coordinates={false}
+          board={chess.board()}
+          orientation={room.color}
+          interactive={myTurn}
+          getLegalTargets={(square) =>
+            (chess.moves({ square, verbose: true }) as Move[]).map((move) => move.to as Square)
+          }
+          onMove={handleMove}
+          lastMove={lastMoveRef.current}
+          checkedSquare={checkedSquare}
+        />
+      </div>
 
-      {state === "connecting" && (
-        <div className="flex flex-col items-center gap-3 py-4 text-center">
-          <GameRobot game="chess" className="h-20 w-auto" />
-          <p className="text-sm text-gray-500 dark:text-gray-400">
-            {t("Өрсөлдөгчтэй шууд холбогдож байна…")}
-          </p>
-        </div>
-      )}
+      <div className="flex flex-col gap-2 empty:hidden max-lg:order-4 sm:gap-4">
+        {state === "connecting" && (
+          <div className="flex flex-col items-center gap-3 py-4 text-center">
+            <GameRobot game="chess" className="h-20 w-auto" />
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              {t("Өрсөлдөгчтэй шууд холбогдож байна…")}
+            </p>
+          </div>
+        )}
 
-      {state === "ended" && end && !adDone && <GameOverAd onDone={() => setAdDone(true)} />}
+        {state === "ended" && end && !adDone && <GameOverAd onDone={() => setAdDone(true)} />}
 
-      {state === "ended" && end && adDone && (
-        <div className="surface flex flex-col items-center gap-3 p-6 text-center">
-          {/*
-            ⚠ ЯЛАЛТ үед БАЯР ХҮРГЭХ ВИДЕО (хичээл дуусгах дэлгэцтэй
-            ижил `CelebrationVideo`): хөдөлгөөнтэй баяр нь ялалтыг
-            «дараагийн дэлгэц» биш, ҮЙЛ ЯВДАЛ болгоно. Хоёр газарт
-            ижил баяр хэрэглэх нь платформыг нэг хэлтэй болгоно.
+        {state === "ended" && end && adDone && (
+          <div className="surface flex flex-col items-center gap-2 p-4 text-center sm:gap-3 sm:p-6">
+            {/*
+              ⚠ ЯЛАЛТ үед БАЯР ХҮРГЭХ ВИДЕО (хичээл дуусгах дэлгэцтэй
+              ижил `CelebrationVideo`): хөдөлгөөнтэй баяр нь ялалтыг
+              «дараагийн дэлгэц» биш, ҮЙЛ ЯВДАЛ болгоно. Хоёр газарт
+              ижил баяр хэрэглэх нь платформыг нэг хэлтэй болгоно.
 
-            ⚠ ХОЖИГДОЛ, ТЭНЦЭЭ үед баяр ХЭРЭГЛЭХГҮЙ: хожигдсон
-            хүүхдэд баяр хүргэх нь гутаан доромжлол шиг мэдрэгдэнэ.
-            Тэр үед бодолтой дүрс (`think`) хэвээр.
+              ⚠ ХОЖИГДОЛ, ТЭНЦЭЭ үед баяр ХЭРЭГЛЭХГҮЙ: хожигдсон
+              хүүхдэд баяр хүргэх нь гутаан доромжлол шиг мэдрэгдэнэ.
+              Тэр үед бодолтой дүрс (`think`) хэвээр.
 
-            ⚠ `size-28` + дугуй хүрээ: видео нь дөрвөлжин тул хүрээгүй
-            бол картын дэвсгэр дээр тэгш өнцөгт хэсэг болж харагдана.
-          */}
-          {end.didIWin ? (
-            <div className="size-28 overflow-hidden rounded-full ring-4 ring-brand-100 dark:ring-white/15">
-              <CelebrationVideo className="size-full object-cover" />
-            </div>
-          ) : end.reason === "disconnect" ? (
-            /*
-              ⚠ ТАСАРСАН ҮЕД дүрс БИШ, ХОЛБООНЫ тэмдэг: өмнө нь
-              бодолтой дүрс (титэмтэй) гарч байсан тул «би яллаа»
-              эсвэл «би бодож байна» гэсэн ойлголт төрүүлдэг байв.
-              Үнэндээ тоглолт нь ҮР ДҮНГҮЙ дууссан — тэр нь ялалт ч,
-              хожигдол ч биш.
+              ⚠ `size-28` + дугуй хүрээ: видео нь дөрвөлжин тул хүрээгүй
+              бол картын дэвсгэр дээр тэгш өнцөгт хэсэг болж харагдана.
+            */}
+            {end.didIWin ? (
+              <div className="size-16 overflow-hidden rounded-full sm:size-28 ring-4 ring-brand-100 dark:ring-white/15">
+                <CelebrationVideo className="size-full object-cover" />
+              </div>
+            ) : end.reason === "disconnect" ? (
+              /*
+                ⚠ ТАСАРСАН ҮЕД дүрс БИШ, ХОЛБООНЫ тэмдэг: өмнө нь
+                бодолтой дүрс (титэмтэй) гарч байсан тул «би яллаа»
+                эсвэл «би бодож байна» гэсэн ойлголт төрүүлдэг байв.
+                Үнэндээ тоглолт нь ҮР ДҮНГҮЙ дууссан — тэр нь ялалт ч,
+                хожигдол ч биш.
 
-              ⚠ Дүрс сонголт: `WifiOff` нь хэлээс хамааралгүй бөгөөд
-              шалтгааныг (сүлжээ) шууд хэлнэ. Өнгө нь БҮДЭГ (саарал) —
-              баяр ч, сэрэмжлүүлэг ч биш, зүгээр л «болоогүй».
-            */
-            <span className="grid size-24 place-items-center rounded-full bg-gray-100 text-gray-400 dark:bg-white/10 dark:text-gray-500">
-              <WifiOff className="size-10" aria-hidden />
-            </span>
-          ) : end.didIWin === false ? (
-            /*
-              ⚠ ХОЖИГДОЛ үед ЗОРИГЖУУЛАХ хөдөлгөөнт зураг
-              (`EncourageGif`): урьд нь бодолтой дүрс гарч байсан тул
-              «яагаад бодож байна?» гэсэн ойлгомжгүй мэдрэмж төрдөг
-              байв. Хожигдол нь дасгалын нэг хэсэг — дүрс нь түүнийг
-              шийтгэл БИШ гэдгийг хэлэх ёстой.
-            */
-            <div className="size-28 overflow-hidden rounded-full ring-4 ring-gray-100 dark:ring-white/10">
-              <EncourageGif className="size-full object-cover" />
-            </div>
-          ) : (
-            <Mascot mood="think" className="size-24" />
-          )}
-          <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-            {endMessage(end)}
-          </h2>
-          <button
-            type="button"
-            onClick={() => router.push("/play")}
-            className="rounded-xl bg-brand-500 px-6 py-2.5 font-semibold text-white hover:bg-brand-600"
-          >
-            {t("Дахин тоглох")}
-          </button>
-        </div>
-      )}
+                ⚠ Дүрс сонголт: `WifiOff` нь хэлээс хамааралгүй бөгөөд
+                шалтгааныг (сүлжээ) шууд хэлнэ. Өнгө нь БҮДЭГ (саарал) —
+                баяр ч, сэрэмжлүүлэг ч биш, зүгээр л «болоогүй».
+              */
+              <span className="grid size-16 place-items-center rounded-full bg-gray-100 sm:size-24 text-gray-400 dark:bg-white/10 dark:text-gray-500">
+                <WifiOff className="size-8 sm:size-10" aria-hidden />
+              </span>
+            ) : end.didIWin === false ? (
+              /*
+                ⚠ ХОЖИГДОЛ үед ЗОРИГЖУУЛАХ хөдөлгөөнт зураг
+                (`EncourageGif`): урьд нь бодолтой дүрс гарч байсан тул
+                «яагаад бодож байна?» гэсэн ойлгомжгүй мэдрэмж төрдөг
+                байв. Хожигдол нь дасгалын нэг хэсэг — дүрс нь түүнийг
+                шийтгэл БИШ гэдгийг хэлэх ёстой.
+              */
+              <div className="size-16 overflow-hidden rounded-full sm:size-28 ring-4 ring-gray-100 dark:ring-white/10">
+                <EncourageGif className="size-full object-cover" />
+              </div>
+            ) : (
+              <Mascot mood="think" className="size-16 sm:size-24" />
+            )}
+            <h2 className="text-lg font-bold text-gray-900 sm:text-xl dark:text-white">
+              {endMessage(end)}
+            </h2>
+            <button
+              type="button"
+              onClick={() => router.push("/play")}
+              className="rounded-xl bg-brand-500 px-4 py-2 text-sm font-semibold sm:px-6 sm:py-2.5 sm:text-base text-white hover:bg-brand-600"
+            >
+              {t("Дахин тоглох")}
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

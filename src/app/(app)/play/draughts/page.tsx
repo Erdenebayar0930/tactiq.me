@@ -1,6 +1,10 @@
 "use client";
 
-import { PLAY_BOARD_RESERVE } from "@/lib/tactiq/boardTheme";
+import {
+  PLAY_BOARD_BLEED,
+  PLAY_BOARD_RESERVE,
+  PLAY_BOARD_RESERVE_ENDED,
+} from "@/lib/tactiq/boardTheme";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useMemo, useRef, useState } from "react";
@@ -290,7 +294,11 @@ function DraughtsBotPageInner() {
    * гол агуулга тул баганыг `max-w-xl` (576px) болгов.
    */
   return (
-    <div className={`mx-auto max-w-xl space-y-2 sm:space-y-3 ${PLAY_BOARD_RESERVE}`}>
+    <div
+      className={`mx-auto flex max-w-xl flex-col gap-2 sm:gap-4 ${
+        end ? PLAY_BOARD_RESERVE_ENDED : PLAY_BOARD_RESERVE
+      }`}
+    >
       {/*
         ⚠ НЭГ МӨР. Урьд нь хоёр мөр (нэр / төлөв) байсан тул толгой нь
         ~66px эзэлж, хөлөг тэр хэмжээгээр багасдаг байв. Хөлөг бол энэ
@@ -326,28 +334,34 @@ function DraughtsBotPageInner() {
         </p>
       </div>
 
-      <MatchHeader
-        leftName={user?.displayName || t("Та")}
-        rightName={`${t("Бот")} · ${t(DIFFICULTY_LABELS[difficulty])}`}
-        leftMs={clock.white}
-        rightMs={clock.black}
-        activeSide={snapshot.turn === "b" ? "b" : "w"}
-        myColor="w"
-      />
+      {/* Гар утсан дээр цаг ХӨЛГИЙН ДООР; дууссаны дараа зай нь дүнгийн картад очно. */}
+      <div className={`max-lg:order-3 ${end ? "max-lg:hidden" : ""}`}>
+        <MatchHeader
+          leftName={user?.displayName || t("Та")}
+          rightName={`${t("Бот")} · ${t(DIFFICULTY_LABELS[difficulty])}`}
+          leftMs={clock.white}
+          rightMs={clock.black}
+          activeSide={snapshot.turn === "b" ? "b" : "w"}
+          myColor="w"
+        />
+      </div>
 
-      <DraughtsBoard
-        board={reviewSnapshot ? reviewSnapshot.board : snapshot.board}
-        orientation="white"
-        /* ⚠ Шинжилгээний байрлалд НҮҮХ БОЛОМЖГҮЙ: тэр бол өнгөрсөн
-           байрлал бөгөөд тэндээс нүүвэл дууссан тоглоом «сэргэнэ». */
-        interactive={myTurn && !reviewSnapshot}
-        getLegalTargets={(square) => gameRef.current.movesFrom(square).map((m) => m.to)}
-        onMove={handleMove}
-        lastMove={reviewSnapshot ? reviewSnapshot.lastMove : snapshot.lastMove}
-        /* ⚠ Шинжилгээний байрлалд хөдөлгөөн хэрэггүй — тэр бол өнгөрсөн. */
-        animate={reviewSnapshot ? null : botAnim}
-        onAnimationEnd={() => setBotAnim(null)}
-      />
+      <div className={`max-lg:order-2 ${PLAY_BOARD_BLEED}`}>
+        <DraughtsBoard
+          framed={false}
+          board={reviewSnapshot ? reviewSnapshot.board : snapshot.board}
+          orientation="white"
+          /* ⚠ Шинжилгээний байрлалд НҮҮХ БОЛОМЖГҮЙ: тэр бол өнгөрсөн
+             байрлал бөгөөд тэндээс нүүвэл дууссан тоглоом «сэргэнэ». */
+          interactive={myTurn && !reviewSnapshot}
+          getLegalTargets={(square) => gameRef.current.movesFrom(square).map((m) => m.to)}
+          onMove={handleMove}
+          lastMove={reviewSnapshot ? reviewSnapshot.lastMove : snapshot.lastMove}
+          /* ⚠ Шинжилгээний байрлалд хөдөлгөөн хэрэггүй — тэр бол өнгөрсөн. */
+          animate={reviewSnapshot ? null : botAnim}
+          onAnimationEnd={() => setBotAnim(null)}
+        />
+      </div>
 
       {reviewSnapshot && (
         <div className="flex items-center justify-between gap-3 rounded-xl bg-amber-50 px-4 py-2.5 text-sm dark:bg-amber-500/10">
@@ -364,71 +378,79 @@ function DraughtsBotPageInner() {
         </div>
       )}
 
-      {tip && !end && (
-        <CoachTip coachId={DAAMAL.id} text={tip.text} onDismiss={dismiss} />
-      )}
-
-      {end && !adDone && <GameOverAd onDone={() => setAdDone(true)} />}
-
-      {end && adDone && (
-        <div className="surface flex flex-col items-center gap-3 p-6 text-center">
-          {/*
-            ⚠ ЯЛАЛТ үед БАЯР ХҮРГЭХ ВИДЕО — онлайн тоглолт, хичээл
-            дуусгах дэлгэцтэй ИЖИЛ (`CelebrationVideo`). Ботыг ялах нь
-            ч ялалт; өөр баяр хэрэглэвэл «бот ялах нь дутуу ялалт»
-            гэсэн мессеж чимээгүй гарна.
-
-            ⚠ ХОЖИГДОЛ, ТЭНЦЭЭ үед баяр ХЭРЭГЛЭХГҮЙ: хожигдсон
-            хүүхдэд баяр хүргэх нь доромжлол шиг мэдрэгдэнэ.
-          */}
-          {end.didIWin ? (
-            <div className="size-28 overflow-hidden rounded-full ring-4 ring-brand-100 dark:ring-white/15">
-              <CelebrationVideo className="size-full object-cover" />
-            </div>
-          ) : end.didIWin === false ? (
-            /*
-              ⚠ ХОЖИГДОЛ үед ЗОРИГЖУУЛАХ хөдөлгөөнт зураг
-              (`EncourageGif`): урьд нь бодолтой дүрс гарч байсан тул
-              «яагаад бодож байна?» гэсэн ойлгомжгүй мэдрэмж төрдөг
-              байв. Хожигдол нь дасгалын нэг хэсэг — дүрс нь түүнийг
-              шийтгэл БИШ гэдгийг хэлэх ёстой.
-            */
-            <div className="size-28 overflow-hidden rounded-full ring-4 ring-gray-100 dark:ring-white/10">
-              <EncourageGif className="size-full object-cover" />
-            </div>
-          ) : (
-            <Mascot mood="think" className="size-24" />
-          )}
-          <h2 className="text-xl font-bold text-gray-900 dark:text-white">{endMessage(end)}</h2>
-          <div className="flex flex-wrap justify-center gap-3">
-            <button
-              type="button"
-              onClick={restart}
-              className="rounded-xl bg-brand-500 px-6 py-2.5 font-semibold text-white hover:bg-brand-600"
-            >
-              {t("Дахин тоглох")}
-            </button>
-            <button
-              type="button"
-              onClick={() => router.push("/play")}
-              className="rounded-xl border border-gray-300 px-6 py-2.5 font-semibold text-gray-600 hover:bg-gray-100 dark:border-white/15 dark:text-gray-300 dark:hover:bg-white/5"
-            >
-              {t("Буцах")}
-            </button>
-          </div>
+      {/*
+        ⚠ Гар утсан дээр дүр ХӨЛГИЙН ДЭЭР. Зөвлөгөө гарах/алга болох бүрд
+        хөлөг үсрэхгүйн тулд зайг нь (`min-h-12` — дүрийн өндөр) барина.
+      */}
+      {!end && (
+        <div className="max-lg:order-1 max-lg:min-h-12 lg:empty:hidden">
+          {tip && <CoachTip coachId={DAAMAL.id} text={tip.text} onDismiss={dismiss} />}
         </div>
       )}
 
-      {end && adDone && review && (
-        /* ⚠ Даамд ҮРГЭЛЖ «Даамал» — бүртгэлийн үед сонгосон багш нь
-           шатрын дүр (`lib/tactiq/coaches.ts`-ийн тайлбарыг үзнэ үү). */
-        <CoachReview
-          coachId={DAAMAL.id}
-          review={review}
-          selectedPly={reviewPly}
-          onSelectMove={(ply) => setReviewPly((current) => (current === ply ? null : ply))}
-        />
-      )}
+      <div className="flex flex-col gap-2 empty:hidden max-lg:order-4 sm:gap-4">
+        {end && !adDone && <GameOverAd onDone={() => setAdDone(true)} />}
+
+        {end && adDone && (
+          <div className="surface flex flex-col items-center gap-2 p-4 text-center sm:gap-3 sm:p-6">
+            {/*
+              ⚠ ЯЛАЛТ үед БАЯР ХҮРГЭХ ВИДЕО — онлайн тоглолт, хичээл
+              дуусгах дэлгэцтэй ИЖИЛ (`CelebrationVideo`). Ботыг ялах нь
+              ч ялалт; өөр баяр хэрэглэвэл «бот ялах нь дутуу ялалт»
+              гэсэн мессеж чимээгүй гарна.
+
+              ⚠ ХОЖИГДОЛ, ТЭНЦЭЭ үед баяр ХЭРЭГЛЭХГҮЙ: хожигдсон
+              хүүхдэд баяр хүргэх нь доромжлол шиг мэдрэгдэнэ.
+            */}
+            {end.didIWin ? (
+              <div className="size-16 overflow-hidden rounded-full sm:size-28 ring-4 ring-brand-100 dark:ring-white/15">
+                <CelebrationVideo className="size-full object-cover" />
+              </div>
+            ) : end.didIWin === false ? (
+              /*
+                ⚠ ХОЖИГДОЛ үед ЗОРИГЖУУЛАХ хөдөлгөөнт зураг
+                (`EncourageGif`): урьд нь бодолтой дүрс гарч байсан тул
+                «яагаад бодож байна?» гэсэн ойлгомжгүй мэдрэмж төрдөг
+                байв. Хожигдол нь дасгалын нэг хэсэг — дүрс нь түүнийг
+                шийтгэл БИШ гэдгийг хэлэх ёстой.
+              */
+              <div className="size-16 overflow-hidden rounded-full sm:size-28 ring-4 ring-gray-100 dark:ring-white/10">
+                <EncourageGif className="size-full object-cover" />
+              </div>
+            ) : (
+              <Mascot mood="think" className="size-16 sm:size-24" />
+            )}
+            <h2 className="text-lg font-bold text-gray-900 sm:text-xl dark:text-white">{endMessage(end)}</h2>
+            <div className="flex flex-wrap justify-center gap-2 sm:gap-3">
+              <button
+                type="button"
+                onClick={restart}
+                className="rounded-xl bg-brand-500 px-4 py-2 text-sm font-semibold sm:px-6 sm:py-2.5 sm:text-base text-white hover:bg-brand-600"
+              >
+                {t("Дахин тоглох")}
+              </button>
+              <button
+                type="button"
+                onClick={() => router.push("/play")}
+                className="rounded-xl border border-gray-300 px-4 py-2 text-sm font-semibold sm:px-6 sm:py-2.5 sm:text-base text-gray-600 hover:bg-gray-100 dark:border-white/15 dark:text-gray-300 dark:hover:bg-white/5"
+              >
+                {t("Буцах")}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {end && adDone && review && (
+          /* ⚠ Даамд ҮРГЭЛЖ «Даамал» — бүртгэлийн үед сонгосон багш нь
+             шатрын дүр (`lib/tactiq/coaches.ts`-ийн тайлбарыг үзнэ үү). */
+          <CoachReview
+            coachId={DAAMAL.id}
+            review={review}
+            selectedPly={reviewPly}
+            onSelectMove={(ply) => setReviewPly((current) => (current === ply ? null : ply))}
+          />
+        )}
+      </div>
     </div>
   );
 }

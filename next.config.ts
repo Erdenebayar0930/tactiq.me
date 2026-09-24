@@ -243,6 +243,13 @@ const securityHeaders = [
 // route нь сервер талд ажиллах шаардлагатай (FCM service account түлхүүр браузерт гарч болохгүй).
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  /*
+   * ⚠ Гар утаснаас дотоод сүлжээгээр (`http://192.168.x.x:3310`) туршихад
+   * Next.js dev нь `/_next/*` хүсэлтийг «гадны эх үүсвэр» гэж ХААДАГ —
+   * утас шинэ кодыг авахгүй, ХУУЧИН хуудсаа харуулсаар байна. Зөвхөн
+   * `next dev`-д хамаарна, production build-д нөлөөгүй.
+   */
+  allowedDevOrigins: ["192.168.*.*"],
   images: {
     unoptimized: true,
   },

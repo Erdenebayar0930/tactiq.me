@@ -5,6 +5,7 @@ import {
   BOARD_COORD,
   BOARD_DARK,
   BOARD_FRAME,
+  BOARD_FRAME_BARE,
   BOARD_GRAIN,
   BOARD_LAST_MOVE,
   BOARD_LIGHT,
@@ -67,6 +68,7 @@ export function DraughtsBoard({
   lastMove,
   animate,
   onAnimationEnd,
+  framed = true,
 }: {
   /** `Draughts.board()`-ийн гаралт — 10 мөр, мөр бүр 10 багана. */
   board: DraughtsGrid;
@@ -88,6 +90,8 @@ export function DraughtsBoard({
    */
   animate?: { from: Square; to: Square } | null;
   onAnimationEnd?: () => void;
+  /** Хүрээ — тоглоом дээр ХАСНА, хөлөг дэлгэцийн өргөнийг бүтнээр эзэлнэ (`ChessBoard`-ийн `coordinates`). */
+  framed?: boolean;
 }) {
   const [selected, setSelected] = useState<Square | null>(null);
   const [legalTargets, setLegalTargets] = useState<Square[]>([]);
@@ -283,7 +287,7 @@ export function DraughtsBoard({
    * зүйл.
    */
   return (
-    <div className={`relative mx-auto aspect-square select-none ${BOARD_SIZE} ${BOARD_FRAME}`}>
+    <div className={`relative mx-auto aspect-square select-none ${BOARD_SIZE} ${framed ? BOARD_FRAME : BOARD_FRAME_BARE}`}>
       <div
         ref={boardRef}
         onPointerMove={onBoardMove}
@@ -296,7 +300,9 @@ export function DraughtsBoard({
         */
         onPointerCancel={reset}
         onLostPointerCapture={() => setDragPos(null)}
-        className="relative size-full touch-none overflow-hidden rounded-md shadow-[inset_0_0_0_1px_rgba(90,65,35,0.35)]"
+        className={`relative size-full touch-none overflow-hidden shadow-[inset_0_0_0_1px_rgba(90,65,35,0.35)] ${
+          framed ? "rounded-md" : "rounded-[inherit]"
+        }`}
       >
         <div className="grid size-full grid-cols-10 grid-rows-10">
           {rowsOrder.map((row) =>

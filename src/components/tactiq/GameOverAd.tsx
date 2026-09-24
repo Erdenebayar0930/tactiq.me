@@ -28,9 +28,9 @@ export function GameOverAd({ onDone }: { onDone: () => void }) {
   }, [secondsLeft]);
 
   return (
-    <div className="surface flex flex-col items-center gap-2 p-6 text-center">
-      <span className="grid size-14 place-items-center rounded-full bg-amber-100 text-amber-600 dark:bg-amber-500/15 dark:text-amber-400">
-        <Megaphone className="size-6" aria-hidden />
+    <div className="surface flex flex-col items-center gap-2 p-4 text-center sm:p-6">
+      <span className="grid size-10 place-items-center sm:size-14 rounded-full bg-amber-100 text-amber-600 dark:bg-amber-500/15 dark:text-amber-400">
+        <Megaphone className="size-5 sm:size-6" aria-hidden />
       </span>
       <p className="text-xs font-medium text-gray-500 dark:text-gray-400">
         Реклам үзэж байна… (жишээ)

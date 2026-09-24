@@ -5,6 +5,7 @@ import {
   BOARD_COORD,
   BOARD_DARK,
   BOARD_FRAME,
+  BOARD_FRAME_BARE,
   BOARD_GRAIN,
   BOARD_LAST_MOVE,
   BOARD_LIGHT,
@@ -53,6 +54,17 @@ const GLYPH: Record<PieceSymbol, string> = {
   k: "♚",
 };
 
+/**
+ * Дасгалын бичвэр НҮДНИЙ НЭР (e4, h7 гэх мэт) дурдаж байгаа эсэх — тийм
+ * бол сурагч координатыг хөлөг дээрээс уншиж чаддаг байх ёстой.
+ *
+ * ⚠ `` нь кирилл үсгийг «үгийн тэмдэгт» гэж тооцдоггүй тул «e4-руу»,
+ * «(e4)» зэрэг монгол бичвэр дотор ч зөв танина.
+ */
+export function mentionsSquare(text: string | null | undefined): boolean {
+  return /[a-h][1-8]/.test(text ?? "");
+}
+
 export type BoardSquare = { type: PieceSymbol; color: Color } | null;
 
 /**
@@ -88,6 +100,7 @@ export function ChessBoard({
   onMove,
   lastMove,
   checkedSquare,
+  coordinates = true,
 }: {
   /** `Chess.board()`-ийн гаралт — 8 мөр (8-р эгнээнээс 1-р эгнээ хүртэл), мөр бүр 8 багана (a-h) */
   board: BoardSquare[][];
@@ -100,6 +113,13 @@ export function ChessBoard({
   lastMove?: { from: Square; to: Square } | null;
   /** Шахад орсон хааны нүд — улаан туяагаар тодотгоно */
   checkedSquare?: Square | null;
+  /**
+   * Координатын бичвэр (a-h, 1-8) + түүний хүрээ.
+   *
+   * ⚠ ТОГЛООМ дээр ХАРУУЛАХГҮЙ: хүрээ нь хөлгийг жижгэрүүлдэг, тоглогчид
+   * бичвэр хэрэггүй. Зөвхөн нүдний нэр дурдсан ДАСГАЛ дээр (`mentionsSquare`).
+   */
+  coordinates?: boolean;
 }) {
   const [selected, setSelected] = useState<Square | null>(null);
   const [legalTargets, setLegalTargets] = useState<Square[]>([]);
@@ -261,7 +281,13 @@ export function ChessBoard({
    * зүйл.
    */
   return (
-    <div className={`relative mx-auto aspect-square select-none ${BOARD_SIZE} ${BOARD_FRAME}`}>
+    <div
+      className={`relative mx-auto aspect-square select-none ${BOARD_SIZE} ${
+        coordinates ? BOARD_FRAME : BOARD_FRAME_BARE
+      }`}
+    >
+      {coordinates && (
+        <>
       {/* Мөрийн дугаар (1-8) — хүрээний баруун захад, хөлөгтэй ижил чиглэлтэй эргэдэг */}
       <div className={`pointer-events-none absolute inset-y-[4%] right-0 flex w-[4%] flex-col text-[2.4vw] font-semibold sm:text-xs ${BOARD_COORD}`}>
         {rows.map((row) => (
@@ -278,6 +304,8 @@ export function ChessBoard({
           </span>
         ))}
       </div>
+        </>
+      )}
 
       <div
         ref={boardRef}
@@ -301,7 +329,9 @@ export function ChessBoard({
           ⚠ Дотоод хүрээ нь НИМГЭН, ЗӨӨЛӨН: хар 2px хүрээ нь цайвар
           хөлгийн зах дээр хар шугам болж, нүд татдаг байв.
         */
-        className="relative size-full touch-none overflow-hidden rounded-md shadow-[inset_0_0_0_1px_rgba(90,65,35,0.35)]"
+        className={`relative size-full touch-none overflow-hidden shadow-[inset_0_0_0_1px_rgba(90,65,35,0.35)] ${
+          coordinates ? "rounded-md" : "rounded-[inherit]"
+        }`}
       >
         <div className="grid size-full grid-cols-8 grid-rows-8">
           {rows.map((row) =>

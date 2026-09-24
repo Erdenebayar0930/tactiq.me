@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Chess } from "chess.js";
 
-import { ChessBoard } from "@/components/chess/ChessBoard";
+import { ChessBoard, mentionsSquare } from "@/components/chess/ChessBoard";
 import { PromotionPicker } from "@/components/chess/PromotionPicker";
 import { parsePuzzle, puzzleGoalLabel, puzzleOrientation } from "@/lib/chess/puzzle";
 import { findKingSquare, resolveMove } from "@/lib/chess/utils";
@@ -229,6 +229,8 @@ export default function ChessPuzzleExercise({
       {/* ⚠ `relative` — сонголтын цонх хөлгийн ДЭЭР бүрхэнэ. */}
       <div className="relative">
       <ChessBoard
+        /* Нүдний нэр дурдсан дасгал дээр л координат харуулна. */
+        coordinates={mentionsSquare(exercise.prompt)}
         board={board}
         orientation={orientation}
         interactive={!feedback && !waiting && !reverting && !pending}

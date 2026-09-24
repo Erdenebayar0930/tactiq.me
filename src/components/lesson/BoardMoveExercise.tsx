@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Chess } from "chess.js";
 
 import { resolveMove } from "@/lib/chess/utils";
-import { ChessBoard } from "@/components/chess/ChessBoard";
+import { ChessBoard, mentionsSquare } from "@/components/chess/ChessBoard";
 import { PromotionPicker } from "@/components/chess/PromotionPicker";
 
 import type { Color, Move, PieceSymbol, Square } from "chess.js";
@@ -131,6 +131,8 @@ export default function BoardMoveExercise({
       */}
       <div className="relative">
       <ChessBoard
+        /* Нүдний нэр дурдсан дасгал дээр л координат харуулна. */
+        coordinates={mentionsSquare(exercise.prompt)}
         board={board}
         orientation="white"
         interactive={feedback === null && !reverting && !pending}
