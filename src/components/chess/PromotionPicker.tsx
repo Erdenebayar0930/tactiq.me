@@ -29,8 +29,8 @@ const GLYPH: Record<PieceSymbol, string> = {
 };
 
 const PIECE_LOOK: Record<Color, string> = {
-  w: "text-[#fbf6ea] [-webkit-text-stroke:1px_rgba(94,68,38,0.5)] drop-shadow-[0_1px_1px_rgba(0,0,0,0.25)]",
-  b: "text-[#33302b] [-webkit-text-stroke:1px_rgba(0,0,0,0.25)] drop-shadow-[0_1px_1px_rgba(0,0,0,0.25)]",
+  w: "text-[#fdfaf3] [-webkit-text-stroke:1px_rgba(74,54,32,0.7)]",
+  b: "text-[#2b2824] [-webkit-text-stroke:1px_rgba(0,0,0,0.2)]",
 };
 
 /**

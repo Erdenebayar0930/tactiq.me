@@ -19,8 +19,8 @@ import { ChessBoard } from "@/components/chess/ChessBoard";
 import { CoachReview } from "@/components/tactiq/CoachReview";
 import { CoachTip } from "@/components/tactiq/CoachTip";
 import { MatchHeader } from "@/components/chess/MatchHeader";
+import { PromotionPicker } from "@/components/chess/PromotionPicker";
 import { useGameClock } from "@/lib/tactiq/gameClock";
-import { GameOverAd } from "@/components/tactiq/GameOverAd";
 import { CelebrationVideo } from "@/components/tactiq/CelebrationVideo";
 import { EncourageGif } from "@/components/tactiq/LoopGif";
 import { Mascot } from "@/components/tactiq/Mascot";
@@ -33,7 +33,7 @@ import { chessTips } from "@/lib/tactiq/coachTips";
 import type { GameReview } from "@/lib/tactiq/moveQuality";
 import type { BotDifficulty } from "@/lib/chess/bot";
 import type { PublicUser } from "@/lib/api/publicUser";
-import type { Move, Square } from "chess.js";
+import type { Color, Move, PieceSymbol, Square } from "chess.js";
 import { t } from "@/lib/i18n/t";
 
 /**
@@ -90,7 +90,6 @@ function BotPageInner() {
   const [version, forceUpdate] = useState(0);
   const [thinking, setThinking] = useState(false);
   const [end, setEnd] = useState<EndInfo | null>(null);
-  const [adDone, setAdDone] = useState(false);
   const [review, setReview] = useState<GameReview | null>(null);
   /** 0..1 — шинжилгээний явц, "Шинжилж байна…" мөрөнд харуулна */
   const [progress, setProgress] = useState(0);
@@ -192,14 +191,35 @@ function BotPageInner() {
     checkGameOver();
   }, [difficulty, checkGameOver, clock]);
 
+  /**
+   * ХҮҮ ХУВИРАХ СОНГОЛТ хүлээгдэж байна (`PromotionPicker`).
+   *
+   * ⚠ Урьд нь `resolveMove`-ийн бэрсийг ШУУД хийдэг байсан тул хүү
+   * ямагт бэрс болдог байв — тэрэг, тэмээ, морь сонгох боломжгүй.
+   */
+  const [promotion, setPromotion] = useState<{ from: Square; to: Square; color: Color } | null>(
+    null
+  );
+
   const handleMove = (from: Square, to: Square) => {
     if (thinking || end || chessRef.current.turn() !== "w") return;
+    if (promotion) return;
 
     const chess = chessRef.current;
     const match = resolveMove(chess, from, to);
     if (!match) return;
 
-    const applied = chess.move({ from, to, promotion: match.promotion });
+    if (match.promotion) {
+      setPromotion({ from, to, color: match.color });
+      return;
+    }
+
+    play(from, to, undefined);
+  };
+
+  const play = (from: Square, to: Square, promotion: PieceSymbol | undefined) => {
+    const chess = chessRef.current;
+    const applied = chess.move({ from, to, promotion });
     if (!applied) return;
 
     lastMoveRef.current = { from, to };
@@ -214,9 +234,9 @@ function BotPageInner() {
     // instance-ийг эхний байрлал руу шинэчилнэ, `/play/[roomId]`-тэй адил.
     chessRef.current.reset();
     clock.reset();
+    setPromotion(null);
     lastMoveRef.current = null;
     setEnd(null);
-    setAdDone(false);
     setReview(null);
     forceUpdate((v) => v + 1);
   };
@@ -318,7 +338,8 @@ function BotPageInner() {
         />
       </div>
 
-      <div className={PLAY_BOARD_BLEED}>
+      {/* ⚠ `relative` — хувиргалтын сонголт хөлгийн ДЭЭР бүрхэнэ. */}
+      <div className={`relative ${PLAY_BOARD_BLEED}`}>
         <ChessBoard
           coordinates={false}
           board={snapshot.board}
@@ -333,15 +354,25 @@ function BotPageInner() {
           lastMove={snapshot.lastMove}
           checkedSquare={snapshot.checkedSquare}
         />
+        {promotion && (
+          <PromotionPicker
+            color={promotion.color}
+            onPick={(piece) => {
+              const { from, to } = promotion;
+              setPromotion(null);
+              play(from, to, piece);
+            }}
+            onCancel={() => setPromotion(null)}
+          />
+        )}
       </div>
 
       {/* Тайлбарлагч дүр ХӨЛГИЙН ДООР. */}
       {tip && !end && <CoachTip coachId={user?.coachId} text={tip.text} onDismiss={dismiss} />}
 
       <div className="flex flex-col gap-2 empty:hidden sm:gap-4">
-        {end && !adDone && <GameOverAd onDone={() => setAdDone(true)} />}
 
-        {end && adDone && (
+        {end && (
           <div className="surface flex flex-col items-center gap-2 p-4 text-center sm:gap-3 sm:p-6">
             {/*
               ⚠ ЯЛАЛТ үед БАЯР ХҮРГЭХ ВИДЕО — онлайн тоглолт, хичээл

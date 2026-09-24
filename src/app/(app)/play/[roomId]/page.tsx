@@ -15,8 +15,8 @@ import { ChessWebRTC } from "@/lib/chess/webrtc";
 import { findKingSquare, resolveMove } from "@/lib/chess/utils";
 import { ChessBoard } from "@/components/chess/ChessBoard";
 import { MatchHeader } from "@/components/chess/MatchHeader";
+import { PromotionPicker } from "@/components/chess/PromotionPicker";
 import { useGameClock } from "@/lib/tactiq/gameClock";
-import { GameOverAd } from "@/components/tactiq/GameOverAd";
 import { GameRobot } from "@/components/tactiq/GameRobot";
 import { CelebrationVideo } from "@/components/tactiq/CelebrationVideo";
 import { EncourageGif } from "@/components/tactiq/LoopGif";
@@ -25,7 +25,7 @@ import { ErrorNote, Skeleton } from "@/components/tactiq/ui";
 import { useCurrentUser, useUser } from "@/context/UserContext";
 
 import type { PublicUser } from "@/lib/api/publicUser";
-import type { Move, Square } from "chess.js";
+import type { Color as PieceColor, Move, PieceSymbol, Square } from "chess.js";
 import { t } from "@/lib/i18n/t";
 
 type Color = "white" | "black";
@@ -67,7 +67,6 @@ export default function ChessRoomPage() {
   const [state, setState] = useState<ConnState>("loading");
   const [error, setError] = useState<string | null>(null);
   const [end, setEnd] = useState<EndInfo | null>(null);
-  const [adDone, setAdDone] = useState(false);
   // Зөвхөн rerender өдөөхөд хэрэглэнэ — `chessRef` mutable тул утгыг нь уншихгүй.
   const [, forceUpdate] = useState(0);
 
@@ -271,20 +270,42 @@ export default function ChessRoomPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params.roomId]);
 
+  /**
+   * ХҮҮ ХУВИРАХ СОНГОЛТ хүлээгдэж байна (`PromotionPicker`).
+   *
+   * ⚠ Урьд нь `resolveMove`-ийн бэрсийг ШУУД хийдэг байсан тул хүү
+   * ямагт бэрс болдог байв — тэрэг, тэмээ, морь сонгох боломжгүй.
+   */
+  const [promotion, setPromotion] = useState<{ from: Square; to: Square; color: PieceColor } | null>(
+    null
+  );
+
   const handleMove = (from: Square, to: Square) => {
     if (!room || state !== "playing") return;
+    if (promotion) return;
 
     const chess = chessRef.current;
     const match = resolveMove(chess, from, to);
     if (!match) return;
 
-    const applied = chess.move({ from, to, promotion: match.promotion });
+    if (match.promotion) {
+      setPromotion({ from, to, color: match.color });
+      return;
+    }
+
+    play(from, to, undefined);
+  };
+
+  const play = (from: Square, to: Square, promotion: PieceSymbol | undefined) => {
+    const chess = chessRef.current;
+    if (!room) return;
+    const applied = chess.move({ from, to, promotion });
     if (!applied) return;
 
     lastMoveRef.current = { from, to };
     clock.onMove(applied.color === "w" ? "w" : "b");
     forceUpdate((v) => v + 1);
-    rtcRef.current?.send({ type: "move", from, to, promotion: match.promotion });
+    rtcRef.current?.send({ type: "move", from, to, promotion });
     checkGameOver(room.color, room.opponent?.uid ?? null);
   };
 
@@ -360,7 +381,8 @@ export default function ChessRoomPage() {
         />
       </div>
 
-      <div className={PLAY_BOARD_BLEED}>
+      {/* ⚠ `relative` — хувиргалтын сонголт хөлгийн ДЭЭР бүрхэнэ. */}
+      <div className={`relative ${PLAY_BOARD_BLEED}`}>
         <ChessBoard
           coordinates={false}
           board={chess.board()}
@@ -373,6 +395,17 @@ export default function ChessRoomPage() {
           lastMove={lastMoveRef.current}
           checkedSquare={checkedSquare}
         />
+        {promotion && (
+          <PromotionPicker
+            color={promotion.color}
+            onPick={(piece) => {
+              const { from, to } = promotion;
+              setPromotion(null);
+              play(from, to, piece);
+            }}
+            onCancel={() => setPromotion(null)}
+          />
+        )}
       </div>
 
       <div className="flex flex-col gap-2 empty:hidden sm:gap-4">
@@ -385,9 +418,8 @@ export default function ChessRoomPage() {
           </div>
         )}
 
-        {state === "ended" && end && !adDone && <GameOverAd onDone={() => setAdDone(true)} />}
 
-        {state === "ended" && end && adDone && (
+        {state === "ended" && end && (
           <div className="surface flex flex-col items-center gap-2 p-4 text-center sm:gap-3 sm:p-6">
             {/*
               ⚠ ЯЛАЛТ үед БАЯР ХҮРГЭХ ВИДЕО (хичээл дуусгах дэлгэцтэй

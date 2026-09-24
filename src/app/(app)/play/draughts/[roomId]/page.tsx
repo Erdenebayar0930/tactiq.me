@@ -15,7 +15,6 @@ import { Draughts } from "@/lib/draughts/engine";
 import { DraughtsBoard } from "@/components/draughts/DraughtsBoard";
 import { MatchHeader } from "@/components/chess/MatchHeader";
 import { useGameClock } from "@/lib/tactiq/gameClock";
-import { GameOverAd } from "@/components/tactiq/GameOverAd";
 import { GameRobot } from "@/components/tactiq/GameRobot";
 import { CelebrationVideo } from "@/components/tactiq/CelebrationVideo";
 import { EncourageGif } from "@/components/tactiq/LoopGif";
@@ -76,7 +75,6 @@ export default function DraughtsRoomPage() {
   const [state, setState] = useState<ConnState>("loading");
   const [error, setError] = useState<string | null>(null);
   const [end, setEnd] = useState<EndInfo | null>(null);
-  const [adDone, setAdDone] = useState(false);
   // Зөвхөн rerender өдөөхөд — `gameRef` mutable тул утгыг нь уншихгүй.
   const [, forceUpdate] = useState(0);
 
@@ -363,9 +361,8 @@ export default function DraughtsRoomPage() {
           </div>
         )}
 
-        {state === "ended" && end && !adDone && <GameOverAd onDone={() => setAdDone(true)} />}
 
-        {state === "ended" && end && adDone && (
+        {state === "ended" && end && (
           <div className="surface flex flex-col items-center gap-2 p-4 text-center sm:gap-3 sm:p-6">
             {/*
               ⚠ ЯЛАЛТ үед БАЯР ХҮРГЭХ ВИДЕО (хичээл дуусгах дэлгэцтэй

@@ -18,7 +18,6 @@ import { MatchHeader } from "@/components/chess/MatchHeader";
 import { useGameClock } from "@/lib/tactiq/gameClock";
 import { CoachReview } from "@/components/tactiq/CoachReview";
 import { CoachTip } from "@/components/tactiq/CoachTip";
-import { GameOverAd } from "@/components/tactiq/GameOverAd";
 import { analyzeDraughtsGame } from "@/lib/draughts/analysis";
 import { DAAMAL } from "@/lib/tactiq/coaches";
 
@@ -98,7 +97,6 @@ function DraughtsBotPageInner() {
   const [version, forceUpdate] = useState(0);
   const [thinking, setThinking] = useState(false);
   const [end, setEnd] = useState<EndInfo | null>(null);
-  const [adDone, setAdDone] = useState(false);
   const [review, setReview] = useState<GameReview | null>(null);
   /**
    * Шинжилгээнд сонгосон нүүдэл — тоглоомыг ТЭР ЦЭГ ХҮРТЭЛ дахин
@@ -236,7 +234,6 @@ function DraughtsBotPageInner() {
     lastMoveRef.current = null;
     setEnd(null);
     setReview(null);
-    setAdDone(false);
     setReviewPly(null);
     setBotAnim(null);
     forceUpdate((v) => v + 1);
@@ -382,9 +379,8 @@ function DraughtsBotPageInner() {
       {tip && !end && <CoachTip coachId={DAAMAL.id} text={tip.text} onDismiss={dismiss} />}
 
       <div className="flex flex-col gap-2 empty:hidden sm:gap-4">
-        {end && !adDone && <GameOverAd onDone={() => setAdDone(true)} />}
 
-        {end && adDone && (
+        {end && (
           <div className="surface flex flex-col items-center gap-2 p-4 text-center sm:gap-3 sm:p-6">
             {/*
               ⚠ ЯЛАЛТ үед БАЯР ХҮРГЭХ ВИДЕО — онлайн тоглолт, хичээл
@@ -433,7 +429,7 @@ function DraughtsBotPageInner() {
           </div>
         )}
 
-        {end && adDone && review && (
+        {end && review && (
           /* ⚠ Даамд ҮРГЭЛЖ «Даамал» — бүртгэлийн үед сонгосон багш нь
              шатрын дүр (`lib/tactiq/coaches.ts`-ийн тайлбарыг үзнэ үү). */
           <CoachReview
