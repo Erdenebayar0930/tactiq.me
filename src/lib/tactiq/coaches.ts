@@ -34,7 +34,7 @@ export type Coach = {
 export const COACHES: Coach[] = [
   {
     id: "bataa",
-    name: "Багш Батаа",
+    name: "ДААМАЛ",
     blurb: "Анхан шатны дүрмийг тайван тайлбарлана.",
     icon: "graduation",
     gradient: "from-sky-400 to-blue-600",

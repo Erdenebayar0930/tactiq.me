@@ -709,7 +709,7 @@ export const EN: Record<string, string> = {
   "Замд буцах": "Back to the path",
 
   // --- Дасгалжуулагчийн дүрүүд (`lib/tactiq/coaches.ts`) ---
-  "Багш Батаа": "Coach Bataa",
+  ДААМАЛ: "DAAMAL",
   "Дасгалжуулагч Сараа": "Trainer Saraa",
   "Мастер Эрдэнэ": "Master Erdene",
   "Профессор Оюу": "Professor Oyu",
