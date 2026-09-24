@@ -58,24 +58,34 @@ const GLYPH: Record<PieceSymbol, string> = {
  * Дасгалын бичвэр НҮДНИЙ НЭР (e4, h7 гэх мэт) дурдаж байгаа эсэх — тийм
  * бол сурагч координатыг хөлөг дээрээс уншиж чаддаг байх ёстой.
  *
- * ⚠ `` нь кирилл үсгийг «үгийн тэмдэгт» гэж тооцдоггүй тул «e4-руу»,
+ * ⚠ `\b` нь кирилл үсгийг «үгийн тэмдэгт» гэж тооцдоггүй тул «e4-руу»,
  * «(e4)» зэрэг монгол бичвэр дотор ч зөв танина.
  */
 export function mentionsSquare(text: string | null | undefined): boolean {
-  return /[a-h][1-8]/.test(text ?? "");
+  return /\b[a-h][1-8]\b/.test(text ?? "");
 }
+
+/**
+ * Дүрсний хэмжээ — НҮДНИЙ өргөнтэй харьцуулсан (нүд бүр `@container`).
+ *
+ * ⚠ Урьд нь `8vw` / `text-5xl` байсан: дэлгэцийн өргөнөөс хамаардаг тул
+ * хөлгийн бодит хэмжээтэй таардаггүй, нүдний ~64%-ийг л эзэлдэг байв.
+ */
+const PIECE_SCALE = 0.78;
 
 export type BoardSquare = { type: PieceSymbol; color: Color } | null;
 
 /**
- * Дүрсний харагдац — ЭНГИЙН, ЗӨӨЛӨН хавтгай өнгө (өмнө нь glossy градиент +
- * зузаан контур байсан нь хүүхдийн нүдэнд хэт "чанга"/эрчимтэй санагдсан тул
- * хассан). Дулаан цайвар (цагаан) ба зөөлөн бараан (хар) өнгө, нимгэн контур,
- * маш хөнгөн сүүдэртэй — унших/ялгахад хялбар хэвээрээ, гэхдээ тайван.
+ * Дүрсний харагдац — ХАВТГАЙ, СҮҮДЭРГҮЙ, нимгэн контуртай.
+ *
+ * ⚠ Сүүдэр (drop-shadow + дүрсний доорх бүдэг зууван) нь дүрсийг «бохир»,
+ * хуучны харагдуулж байв. Цэвэр хавтгай өнгө нь илүү цэвэрхэн, premium
+ * мэдрэмжтэй. Цагаан дүрсийн контурыг бага зэрэг ТОДРУУЛАВ — сүүдэргүй
+ * болсноор цайвар нүдэн дээр ялгагдах цорын ганц зүйл нь контур.
  */
 const PIECE_LOOK: Record<Color, string> = {
-  w: "text-[#fbf6ea] [-webkit-text-stroke:1px_rgba(94,68,38,0.5)] drop-shadow-[0_1px_1px_rgba(0,0,0,0.25)]",
-  b: "text-[#33302b] [-webkit-text-stroke:1px_rgba(0,0,0,0.25)] drop-shadow-[0_1px_1px_rgba(0,0,0,0.25)]",
+  w: "text-[#fdfaf3] [-webkit-text-stroke:1px_rgba(74,54,32,0.7)]",
+  b: "text-[#2b2824] [-webkit-text-stroke:1px_rgba(0,0,0,0.2)]",
 };
 
 function squareToIndices(square: Square): { row: number; col: number } {
@@ -351,7 +361,7 @@ export function ChessBoard({
                   data-square={square}
                   onPointerDown={(event) => onSquareDown(event, square, piece)}
                   style={{ backgroundImage: BOARD_GRAIN[isLight ? "light" : "dark"] }}
-                  className={`relative flex items-center justify-center ${
+                  className={`@container relative flex items-center justify-center ${
                     isLight ? BOARD_LIGHT : BOARD_DARK
                   } ${isTarget ? "cursor-pointer" : ""}`}
                 >
@@ -372,7 +382,6 @@ export function ChessBoard({
                         interactive ? "cursor-grab active:cursor-grabbing" : ""
                       }`}
                     >
-                      <div className="absolute bottom-[8%] h-[14%] w-[55%] rounded-full bg-black/20 blur-[2px]" />
                       {/* Сонгосон дүрс — цэнхэр дэвсгэрийн оронд алт өнгийн цагираг дүрсний эргэн тойронд */}
                       {refused === square && (
                         <div className="board-refuse pointer-events-none absolute inset-[6%] rounded-full ring-[3px] ring-rose-500" />
@@ -381,7 +390,7 @@ export function ChessBoard({
                         <div className="pointer-events-none absolute inset-[6%] rounded-full ring-[3px] ring-amber-400 ring-offset-1 ring-offset-transparent" />
                       )}
                       <div
-                        className={`relative text-[8vw] leading-none sm:text-5xl ${PIECE_LOOK[piece.color]}`}
+                        className={`relative text-[length:78cqw] leading-none ${PIECE_LOOK[piece.color]}`}
                       >
                         {GLYPH[piece.type]}
                       </div>
@@ -420,7 +429,10 @@ function FloatingPiece({
       style={{ position: "fixed", left: x - size / 2, top: y - size / 2, width: size, height: size }}
       className="pointer-events-none z-50 flex scale-110 items-center justify-center"
     >
-      <div className={`text-[8vw] leading-none sm:text-5xl ${PIECE_LOOK[piece.color]}`}>
+      <div
+        style={{ fontSize: size * PIECE_SCALE }}
+        className={`leading-none ${PIECE_LOOK[piece.color]}`}
+      >
         {GLYPH[piece.type]}
       </div>
     </div>

@@ -334,8 +334,8 @@ function DraughtsBotPageInner() {
         </p>
       </div>
 
-      {/* Гар утсан дээр цаг ХӨЛГИЙН ДООР; дууссаны дараа зай нь дүнгийн картад очно. */}
-      <div className={`max-lg:order-3 ${end ? "max-lg:hidden" : ""}`}>
+      {/* Цаг ХӨЛГИЙН ДЭЭР; утсан дээр дууссаны дараа нуугдаж, зай нь дүнгийн картад очно. */}
+      <div className={end ? "max-lg:hidden" : undefined}>
         <MatchHeader
           leftName={user?.displayName || t("Та")}
           rightName={`${t("Бот")} · ${t(DIFFICULTY_LABELS[difficulty])}`}
@@ -346,7 +346,7 @@ function DraughtsBotPageInner() {
         />
       </div>
 
-      <div className={`max-lg:order-2 ${PLAY_BOARD_BLEED}`}>
+      <div className={PLAY_BOARD_BLEED}>
         <DraughtsBoard
           framed={false}
           board={reviewSnapshot ? reviewSnapshot.board : snapshot.board}
@@ -378,17 +378,10 @@ function DraughtsBotPageInner() {
         </div>
       )}
 
-      {/*
-        ⚠ Гар утсан дээр дүр ХӨЛГИЙН ДЭЭР. Зөвлөгөө гарах/алга болох бүрд
-        хөлөг үсрэхгүйн тулд зайг нь (`min-h-12` — дүрийн өндөр) барина.
-      */}
-      {!end && (
-        <div className="max-lg:order-1 max-lg:min-h-12 lg:empty:hidden">
-          {tip && <CoachTip coachId={DAAMAL.id} text={tip.text} onDismiss={dismiss} />}
-        </div>
-      )}
+      {/* Тайлбарлагч дүр ХӨЛГИЙН ДООР. */}
+      {tip && !end && <CoachTip coachId={DAAMAL.id} text={tip.text} onDismiss={dismiss} />}
 
-      <div className="flex flex-col gap-2 empty:hidden max-lg:order-4 sm:gap-4">
+      <div className="flex flex-col gap-2 empty:hidden sm:gap-4">
         {end && !adDone && <GameOverAd onDone={() => setAdDone(true)} />}
 
         {end && adDone && (

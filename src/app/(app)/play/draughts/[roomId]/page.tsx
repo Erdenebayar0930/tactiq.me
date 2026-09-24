@@ -328,8 +328,8 @@ export default function DraughtsRoomPage() {
         )}
       </div>
 
-      {/* Гар утсан дээр цаг ХӨЛГИЙН ДООР; дууссаны дараа зай нь дүнгийн картад очно. */}
-      <div className={`max-lg:order-3 ${state === "ended" ? "max-lg:hidden" : ""}`}>
+      {/* Цаг ХӨЛГИЙН ДЭЭР; утсан дээр дууссаны дараа нуугдаж, зай нь дүнгийн картад очно. */}
+      <div className={state === "ended" ? "max-lg:hidden" : undefined}>
         <MatchHeader
           leftName={me.displayName || t("Та")}
           rightName={room.opponent?.displayName || t("Өрсөлдөгч")}
@@ -341,7 +341,7 @@ export default function DraughtsRoomPage() {
         />
       </div>
 
-      <div className={`max-lg:order-2 ${PLAY_BOARD_BLEED}`}>
+      <div className={PLAY_BOARD_BLEED}>
         <DraughtsBoard
           framed={false}
           board={game.board()}
@@ -353,7 +353,7 @@ export default function DraughtsRoomPage() {
         />
       </div>
 
-      <div className="flex flex-col gap-2 empty:hidden max-lg:order-4 sm:gap-4">
+      <div className="flex flex-col gap-2 empty:hidden sm:gap-4">
         {state === "connecting" && (
           <div className="flex flex-col items-center gap-3 py-4 text-center">
             <GameRobot game="draughts" className="h-20 w-auto" />

@@ -46,8 +46,8 @@ const GRAIN: Record<"light" | "dark", string> = {
 };
 
 const PIECE_LOOK: Record<Color, string> = {
-  w: "bg-gradient-to-br from-[#fdfaf3] to-[#e2d3ab] border-2 border-[#c9b48a]",
-  b: "bg-gradient-to-br from-[#4a463f] to-[#1c1a17] border-2 border-black/50",
+  w: "bg-[#fbf6ea] border-2 border-[#bfa77c] shadow-[inset_0_0_0_4px_#fbf6ea,inset_0_0_0_5px_rgba(150,120,80,0.45)]",
+  b: "bg-[#2b2824] border-2 border-black/60 shadow-[inset_0_0_0_4px_#2b2824,inset_0_0_0_5px_rgba(255,255,255,0.14)]",
 };
 
 /**
@@ -58,6 +58,12 @@ const PIECE_LOOK: Record<Color, string> = {
  * хангалттай, гэхдээ хүлээлт мэдрэгдэхгүй завсар.
  */
 const ANIM_MS = 260;
+
+/**
+ * Дүрсний диаметр — нүдний өргөнтэй харьцуулсан. `size-[86%]`-тэй ИЖИЛ байх
+ * ёстой (гулсах хөдөлгөөний хуулбар нүдэн дэх дүрстэйгээ ижил хэмжээтэй).
+ */
+const PIECE_SCALE = 0.86;
 
 export function DraughtsBoard({
   board,
@@ -260,10 +266,10 @@ export function DraughtsBoard({
   const animSquare = animate ? (animDone ? animate.to : animate.from) : null;
   const animPoint = {
     x: animSquare
-      ? (colsOrder.indexOf(animSquare.col) + 0.5) * squareSize - squareSize * 0.39
+      ? (colsOrder.indexOf(animSquare.col) + 0.5) * squareSize - squareSize * (PIECE_SCALE / 2)
       : 0,
     y: animSquare
-      ? (rowsOrder.indexOf(animSquare.row) + 0.5) * squareSize - squareSize * 0.39
+      ? (rowsOrder.indexOf(animSquare.row) + 0.5) * squareSize - squareSize * (PIECE_SCALE / 2)
       : 0,
   };
 
@@ -341,9 +347,9 @@ export function DraughtsBoard({
 
                   {piece && !isDraggingThis && !isAnimTarget && (
                     <div
-                      className={`relative flex size-[78%] items-center justify-center rounded-full ${
+                      className={`relative flex size-[86%] items-center justify-center rounded-full ${
                         PIECE_LOOK[piece.color]
-                      } ${interactive ? "cursor-grab active:cursor-grabbing" : ""} shadow-[0_2px_2px_rgba(0,0,0,0.35)]`}
+                      } ${interactive ? "cursor-grab active:cursor-grabbing" : ""}`}
                     >
                       {isSelected && (
                         <div className="pointer-events-none absolute -inset-1 rounded-full ring-[3px] ring-amber-400" />
@@ -380,10 +386,10 @@ export function DraughtsBoard({
           <div
             className={`pointer-events-none absolute grid place-items-center rounded-full ${
               PIECE_LOOK[animatedPiece.color]
-            } shadow-[0_2px_2px_rgba(0,0,0,0.35)]`}
+            }`}
             style={{
-              width: squareSize * 0.78,
-              height: squareSize * 0.78,
+              width: squareSize * PIECE_SCALE,
+              height: squareSize * PIECE_SCALE,
               left: animPoint.x,
               top: animPoint.y,
               transition: `left ${ANIM_MS}ms ease-in-out, top ${ANIM_MS}ms ease-in-out`,
@@ -427,7 +433,7 @@ function FloatingPiece({
       className="pointer-events-none z-50 flex scale-110 items-center justify-center"
     >
       <div
-        className={`flex size-[78%] items-center justify-center rounded-full ${PIECE_LOOK[piece.color]} shadow-[0_3px_4px_rgba(0,0,0,0.45)]`}
+        className={`flex size-[86%] items-center justify-center rounded-full ${PIECE_LOOK[piece.color]}`}
       >
         {piece.king && (
           <Crown
